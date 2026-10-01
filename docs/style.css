@@ -520,10 +520,27 @@ p strong {
   gap: 28px 40px;
   padding: 40px 24px;
   background:
+    radial-gradient(
+        circle at 1px 1px,
+        rgba(255, 255, 255, 0.09) 1px,
+        transparent 0
+      )
+      0 0 / 22px 22px,
     radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.09) 1px, transparent 0) 0 0 / 22px 22px,
     #000;
   -webkit-mask-composite: source-over;
   mask-composite: source-over;
+}
+.stage::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 35%, #0a0a0a 100%);
+}
+.stage > * {
+  position: relative;
+  z-index: 1;
 }
 .stage::after {
   content: "";
@@ -828,4 +845,116 @@ dialog.pal::backdrop {
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
   }
+}
+
+/* ---------- Page projet : aperçu intégré, tableaux, listes ---------- */
+.frame {
+  margin: 20px 0 0;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  overflow: hidden;
+  background: #0d0d0d;
+}
+
+.frame iframe {
+  display: block;
+  width: 100%;
+  height: 560px;
+  border: 0;
+}
+
+.cap {
+  margin: 10px 0 0;
+  font-size: 13.5px;
+  color: var(--dim);
+}
+
+.cap a {
+  color: var(--text);
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.tblwrap {
+  margin: 20px 0;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow-x: auto;
+}
+
+.tbl {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.tbl th,
+.tbl td {
+  padding: 12px 16px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--line);
+}
+
+.tbl tr:last-child td {
+  border-bottom: 0;
+}
+
+.tbl th {
+  font: 500 12px var(--mono);
+  color: var(--dim);
+  background: var(--surface);
+}
+
+.tbl td {
+  color: var(--muted);
+}
+
+.tbl td:first-child {
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.bul {
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+}
+
+.bul li {
+  position: relative;
+  margin: 8px 0;
+  padding-left: 22px;
+  color: var(--muted);
+}
+
+.bul li::before {
+  content: "–";
+  position: absolute;
+  left: 4px;
+  color: var(--dim);
+}
+
+.bul strong {
+  color: var(--text);
+  font-weight: 500;
+}
+
+/* Bloc de code sans aperçu (data-static) */
+.demo.static .bar,
+.demo.static .stage {
+  display: none;
+}
+
+.demo.static .codewrap {
+  min-height: 0;
+}
+
+.demo + .vars,
+.demo + .tblwrap {
+  margin-top: 16px;
+}
+
+.vars + p,
+.tblwrap + p {
+  margin-top: 16px;
 }

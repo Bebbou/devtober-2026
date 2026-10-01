@@ -1,0 +1,516 @@
+/*
+  Direction artistique reprise du profil GitHub :
+  fond #0D0D0D, texte #E0E0E0, accent #FF0055, titres en minuscules façon terminal.
+  La ligne de vie reprend le rose : c'est la seule couleur "vivante" de la page.
+*/
+:root {
+  --bg: #0d0d0d;
+  --surface: #111111;
+  --text: #e0e0e0;
+  --muted: #8c8c8c;
+  --dim: #5a5a5a;
+  --line: #1f1f1f;
+  --line-strong: #333333;
+  --pink: #ff0055;
+  /* Couleur de la ligne de vie : à changer ici, et nulle part ailleurs (le JS la lit) */
+  --life: var(--pink);
+  --flat: #6b6b6b;
+  --font: "Geist", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "Geist Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--bg);
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.6 var(--font);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--pink);
+  color: #fff;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 2px solid var(--pink);
+  outline-offset: 3px;
+}
+
+/* Marqueur de section : ">> projets" */
+.mark {
+  margin: 0;
+  font: 500 13px var(--mono);
+  color: var(--muted);
+}
+
+.mark::before {
+  content: ">> ";
+  color: var(--pink);
+}
+
+/* ---------- Barre du haut ---------- */
+.top {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 20px 28px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font: 500 15px var(--mono);
+}
+
+.logo i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--life);
+  animation: blink 1.6s steps(1) infinite;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+.grow {
+  flex: 1;
+}
+
+.stamp {
+  font: 400 12px var(--mono);
+  color: var(--dim);
+}
+
+.icon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+}
+
+.icon:hover {
+  color: var(--pink);
+}
+
+.icon svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.icon.busy svg {
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+/* ---------- Mise en page ---------- */
+main {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 0 28px;
+}
+
+/* ---------- Rythme global ---------- */
+.hero {
+  padding: 24px 0 0;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.bpm {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.bpm b {
+  font: 500 clamp(3.4rem, 9vw, 5.4rem) / 1 var(--font);
+  letter-spacing: -0.04em;
+  color: var(--life);
+  font-variant-numeric: tabular-nums;
+}
+
+.bpm small {
+  font: 400 13px var(--mono);
+  color: var(--muted);
+}
+
+.kpis {
+  display: flex;
+  gap: 40px;
+  margin: 0;
+}
+
+.kpis dt {
+  font: 400 12px var(--mono);
+  color: var(--muted);
+}
+
+.kpis dd {
+  margin: 0;
+  font: 500 1.7rem / 1.2 var(--font);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.trace {
+  position: relative;
+  height: 220px;
+  margin: 12px 0 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  background-image: linear-gradient(var(--line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--line) 1px, transparent 1px);
+  background-size: 28px 28px;
+  background-position: -1px -1px;
+}
+
+.trace canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* ---------- Avertissement ---------- */
+.notice {
+  margin: 20px 0 0;
+  padding: 10px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 13.5px;
+}
+
+/* ---------- Liste des projets ---------- */
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin: 44px 0 14px;
+}
+
+.section-head span:last-child {
+  font: 400 12px var(--mono);
+  color: var(--dim);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
+  gap: 12px;
+}
+
+.card {
+  --tone: var(--life);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  padding: 18px 18px 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  transition: border-color 0.2s;
+}
+
+.card:hover {
+  border-color: var(--line-strong);
+}
+
+.card[data-state="calm"] {
+  --tone: color-mix(in srgb, var(--life) 72%, var(--bg));
+}
+
+.card[data-state="sleep"] {
+  --tone: color-mix(in srgb, var(--life) 45%, var(--bg));
+}
+
+.card[data-state="flat"],
+.card[data-state="missing"],
+.card[data-state="planned"],
+.card[data-state="limit"],
+.card[data-state="loading"] {
+  --tone: var(--flat);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--tone);
+}
+
+.head h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.state {
+  margin-left: auto;
+  margin-right: 2px;
+  font: 400 12px var(--mono);
+  color: var(--tone);
+  white-space: nowrap;
+}
+
+.rate {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  min-width: 56px;
+  justify-content: flex-end;
+  padding-left: 12px;
+  border-left: 1px solid var(--line);
+}
+
+.rate b {
+  font-size: 1.15rem;
+  font-weight: 500;
+  color: var(--tone);
+  font-variant-numeric: tabular-nums;
+}
+
+.rate small {
+  font: 400 11px var(--mono);
+  color: var(--dim);
+}
+
+.desc {
+  margin: -6px 0 0;
+  min-height: 1.6em;
+  font-size: 13.5px;
+  color: var(--muted);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ecg {
+  height: 72px;
+  margin: 0 -4px;
+}
+
+.ecg canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.bars {
+  display: grid;
+  grid-template-columns: repeat(30, 1fr);
+  align-items: end;
+  gap: 2px;
+  height: 18px;
+}
+
+.bars i {
+  display: block;
+  height: var(--h, 12%);
+  background: var(--tone);
+  opacity: calc(0.18 + var(--o, 0) * 0.82);
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin: 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.stats dt {
+  font: 400 11.5px var(--mono);
+  color: var(--dim);
+  white-space: nowrap;
+}
+
+.stats dd {
+  margin: 1px 0 0;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pills:empty {
+  display: none;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 2px 9px;
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.pill::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.pill.up {
+  color: var(--life);
+}
+
+/* Alerte : blanc et point creux, pour ne pas se confondre avec la couleur "vivante" */
+.pill.down,
+.pill.bad {
+  color: var(--text);
+  border-color: var(--text);
+}
+
+.pill.down::before,
+.pill.bad::before {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px currentColor;
+}
+
+.pill.neutral::before {
+  display: none;
+}
+
+/* ---------- Pied de page ---------- */
+.foot {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 32px 48px;
+  max-width: 1160px;
+  margin: 72px auto 0;
+  padding: 32px 28px 48px;
+  border-top: 1px solid var(--line);
+  font-size: 13.5px;
+  color: var(--muted);
+}
+
+.foot ul {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.foot li + li {
+  margin-top: 4px;
+}
+
+.foot a {
+  color: var(--text);
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.foot a:hover {
+  color: var(--pink);
+  border-color: var(--pink);
+}
+
+.foot .legend {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+  font: 400 12px var(--mono);
+  color: var(--dim);
+}
+
+@media (max-width: 640px) {
+  .top,
+  main,
+  .foot {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+  .trace {
+    height: 170px;
+  }
+  .kpis {
+    gap: 24px;
+  }
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .foot {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

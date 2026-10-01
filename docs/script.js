@@ -3,10 +3,12 @@
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
   var esc = function (s) { return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); };
+  var DOCS = window.DOCS || [];
+  var currentPage = location.pathname.split("/").pop() || "index.html";
 
   /* ---------- Titre du héros : apparition mot par mot ---------- */
   var h1 = $("#heroTitle");
-  h1.innerHTML = h1.textContent.split(" ").map(function (w, i) { return '<span style="--i:' + i + '">' + w + "</span>"; }).join(" ");
+  if (h1) h1.innerHTML = h1.textContent.split(" ").map(function (w, i) { return '<span style="--i:' + i + '">' + w + "</span>"; }).join(" ");
 
   /* ---------- Coloration syntaxique (monochrome) ---------- */
   var RULES = {
@@ -14,6 +16,7 @@
     css: { re: /(\/\*[\s\S]*?\*\/)|("(?:[^"\\]|\\.)*")|(@[\w-]+)|((?:--)?[a-z][\w-]*(?=\s*:))|(\.[\w-]+|::?[a-z][\w-]*)|(#[0-9a-fA-F]{3,8}\b|\b\d*\.?\d+(?:px|ms|s|em|rem|%|deg)?)/g, cls: [0, "c", "s", "a", "p", "q", "n"] },
     js: { re: /(\/\/[^\n]*)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|\b(const|let|var|function|return|if|else|new|for|of|while|import|from|export|default|true|false|null|this)\b|\b(\d*\.?\d+)\b/g, cls: [0, "c", "s", "k", "n"] }
   };
+  RULES.json = RULES.js;
   function highlight(code, lang) {
     var rule = RULES[lang], out = "", last = 0, m;
     if (!rule) return esc(code);
@@ -28,14 +31,17 @@
     return out + esc(code.slice(last));
   }
 
-  /* ---------- Démos : le code affiché est le code exécuté ---------- */
-  var LABEL = { html: "HTML", css: "CSS", js: "JS" };
+  /* ---------- Blocs de code ----------
+     - démo   : le code affiché est le code exécuté (onglets Aperçu / Code)
+     - static : data-static, juste du code à lire et à copier (pas d'aperçu) */
+  var LABEL = { html: "HTML", css: "CSS", js: "JS", json: "JSON" };
   var clean = function (t) { return t.replace(/^\n/, "").replace(/\s+$/, ""); };
 
   function buildDemo(demo) {
+    var isStatic = demo.hasAttribute("data-static");
     var src = {};
     $$('script[type="text/plain"]', demo).forEach(function (s) { src[s.getAttribute("data-lang")] = clean(s.textContent); s.remove(); });
-    var langs = ["html", "css", "js"].filter(function (l) { return src[l]; });
+    var langs = ["html", "css", "js", "json"].filter(function (l) { return src[l]; });
     var active = langs[0], mounted = false, styleEl = null;
 
     demo.innerHTML =
@@ -45,7 +51,7 @@
       "</div>" +
       '<div class="stage"></div>' +
       '<div class="codewrap" hidden>' +
-        '<div class="ctabs">' + langs.map(function (l, i) { return '<button class="t" data-l="' + l + '" aria-selected="' + (i === 0) + '">' + LABEL[l] + "</button>"; }).join("") +
+        '<div class="ctabs">' + langs.map(function (l, i) { return '<button class="t" data-l="' + l + '" aria-selected="' + (i === 0) + '">' + (demo.getAttribute("data-label-" + l) || LABEL[l]) + "</button>"; }).join("") +
         '<button class="ico" data-act="copy"><svg class="i"><use href="#i-copy"/></svg><span>Copier</span></button></div>' +
         "<pre><code></code></pre>" +
       "</div>";
@@ -86,6 +92,8 @@
       }
     });
 
+    if (isStatic) { demo.classList.add("static"); stage.hidden = true; wrap.hidden = false; return; }
+
     // l'animation démarre quand la démo entre à l'écran
     if ("IntersectionObserver" in window) {
       var io = new IntersectionObserver(function (entries) {
@@ -96,15 +104,33 @@
   }
   $$(".demo").forEach(buildDemo);
 
-  /* ---------- Navigation latérale ---------- */
-  var comps = $$(".comp");
-  var navBox = $("#compNav");
-  comps.forEach(function (c) {
+  /* ---------- Liste des projets (accueil) et navigation entre documents ---------- */
+  var plist = $("#plist");
+  if (plist) {
+    plist.innerHTML = DOCS.map(function (d) {
+      return '<a href="' + d.href + '"><span class="d">' + d.day + '</span><span class="n">' + d.title + '</span><span class="s">' + d.status + "</span></a>";
+    }).join("");
+  }
+  var docNav = $("#docNav");
+  if (docNav) {
+    DOCS.forEach(function (d) {
+      var a = document.createElement("a");
+      a.href = d.href; a.textContent = d.day + " · " + d.title;
+      if (d.href === currentPage) a.classList.add("on");
+      docNav.appendChild(a);
+    });
+  }
+
+  /* ---------- Navigation latérale : une entrée par section nommée ---------- */
+  var sectionsNav = $("#compNav");
+  var named = $$("main section[data-name]");
+  named.forEach(function (c) {
     var a = document.createElement("a");
     a.href = "#" + c.id; a.textContent = c.getAttribute("data-name");
-    navBox.appendChild(a);
+    sectionsNav.appendChild(a);
   });
-  var links = $$(".side a"), sections = ["intro", "projects"].concat(comps.map(function (c) { return c.id; }));
+  var links = $$('.side a[href^="#"]');
+  var sections = links.map(function (a) { return a.getAttribute("href").slice(1); });
   function spy() {
     var cur = sections[0];
     sections.forEach(function (id) { var el = document.getElementById(id); if (el && el.getBoundingClientRect().top < 140) cur = id; });
@@ -120,18 +146,23 @@
 
   /* ---------- Palette de recherche ---------- */
   var pal = $("#pal"), palIn = $("#palIn"), palList = $("#palList"), items = [], sel = 0;
-  var entries = [{ t: "Introduction", id: "intro", k: "Page" }, { t: "Projets", id: "projects", k: "Page" }]
-    .concat(comps.map(function (c) { return { t: c.getAttribute("data-name"), id: c.id, k: "Composant", d: c.textContent.toLowerCase() }; }));
+  var entries = DOCS.map(function (d) { return { t: d.day + " · " + d.title, href: d.href, k: "Projet", d: d.title.toLowerCase() }; })
+    .concat(named.map(function (c) { return { t: c.getAttribute("data-name"), id: c.id, k: "Cette page", d: c.textContent.toLowerCase() }; }));
   function render() {
     var q = palIn.value.trim().toLowerCase();
     items = entries.filter(function (e) { return !q || e.t.toLowerCase().indexOf(q) >= 0 || (e.d && e.d.indexOf(q) >= 0); }).slice(0, 9);
     sel = 0;
     palList.innerHTML = items.length
-      ? items.map(function (e, i) { return '<li><a href="#' + e.id + '" data-i="' + i + '" class="' + (i ? "" : "sel") + '">' + e.t + "<small>" + e.k + "</small></a></li>"; }).join("")
+      ? items.map(function (e, i) { return '<li><a href="' + (e.href || "#" + e.id) + '" data-i="' + i + '" class="' + (i ? "" : "sel") + '">' + e.t + "<small>" + e.k + "</small></a></li>"; }).join("")
       : '<li class="none">Aucun résultat</li>';
   }
   function mark() { $$("#palList a").forEach(function (a, i) { a.classList.toggle("sel", i === sel); }); }
-  function go(e) { pal.close(); var el = document.getElementById(e.id); if (el) { history.replaceState(null, "", "#" + e.id); el.scrollIntoView(); } }
+  function go(e) {
+    pal.close();
+    if (e.href) { location.href = e.href; return; }
+    var el = document.getElementById(e.id);
+    if (el) { history.replaceState(null, "", "#" + e.id); el.scrollIntoView(); }
+  }
   function openPal() { palIn.value = ""; render(); pal.showModal(); palIn.focus(); }
   $("#kbtn").addEventListener("click", openPal);
   palIn.addEventListener("input", render);

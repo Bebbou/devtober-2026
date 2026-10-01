@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#0d0d0d" />
+    <title>Pulse · le rythme de mes projets</title>
+    <meta name="description" content="Le rythme cardiaque de mes projets : activité, déploiements et disponibilité." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="top">
+      <a class="logo" href="#"><i></i>pulse</a>
+      <span class="grow"></span>
+      <span class="stamp" id="stamp">chargement…</span>
+      <button class="icon" id="refresh" aria-label="Actualiser">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M3 12a9 9 0 1 0 3-6.7" />
+          <path d="M3 4v5h5" />
+        </svg>
+      </button>
+    </header>
+
+    <main>
+      <section class="hero" aria-label="Rythme global">
+        <div class="meta">
+          <div class="bpm" aria-live="polite"><b id="bpm">--</b><small>bpm</small></div>
+          <dl class="kpis">
+            <div><dt>projets actifs</dt><dd id="kActive">–</dd></div>
+            <div><dt>commits · 7 j</dt><dd id="kCommits">–</dd></div>
+            <div><dt>en ligne</dt><dd id="kOnline">–</dd></div>
+            <div id="kReqBox" hidden><dt>requêtes · 24 h</dt><dd id="kReq">–</dd></div>
+          </dl>
+        </div>
+        <div class="trace"><canvas id="heroEcg"></canvas></div>
+      </section>
+
+      <p class="notice" id="notice" hidden></p>
+
+      <div class="section-head">
+        <h2 class="mark">projets</h2>
+        <span id="count"></span>
+      </div>
+      <section class="grid" id="grid" aria-label="Projets"></section>
+    </main>
+
+    <footer class="foot">
+      <div>
+        <p class="mark">crédits</p>
+        <ul>
+          <li>Conçu et développé par <a href="https://github.com/Bebbou">Lino Volle</a></li>
+          <li>Réalisé évidemment avec l'aide de l'Intelligence Artificielle</li>
+          <li>Données : API publique de GitHub</li>
+        </ul>
+      </div>
+      <div>
+        <p class="mark">liens</p>
+        <ul>
+          <li><a href="../docs/">Documentation</a></li>
+          <li><a href="https://github.com/Bebbou/devtober-2026">Code source</a></li>
+          <li><a href="https://github.com/Bebbou">GitHub</a></li>
+        </ul>
+      </div>
+    </footer>
+
+    <script src="projects.js"></script>
+    <script src="script.js"></script>
+  </body>
+</html>

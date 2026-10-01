@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#000000">
+<title>Pulse · Jour 01 · Devtober 2026</title>
+<meta name="description" content="Jour 01 du Devtober 2026 : Pulse, le rythme cardiaque de mes projets.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7.5"/><path d="m21 21-4.3-4.3"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 8h16M4 16h16"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2.5"/><path d="M5 15a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-replay" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></symbol>
+  <symbol id="i-right" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+</svg>
+
+<header class="top">
+  <button class="burger" id="burger" aria-label="Menu"><svg class="i"><use href="#i-menu"/></svg></button>
+  <a class="logo" href="index.html"><span class="dot"></span>Devtober - 2026</a>
+  <span class="grow"></span>
+  <button class="kbtn" id="kbtn" aria-label="Rechercher"><svg class="i"><use href="#i-search"/></svg><span>Rechercher</span><kbd>Ctrl K</kbd></button>
+</header>
+
+<div class="shell" id="top">
+  <aside class="side" id="side">
+    <nav>
+      <h6>Devtober 2026</h6>
+      <a href="index.html">Accueil</a>
+    </nav>
+    <nav id="docNav">
+      <h6>Documents</h6>
+    </nav>
+    <nav id="compNav">
+      <h6>Sur cette page</h6>
+    </nav>
+  </aside>
+
+  <main>
+    <div class="wrap">
+
+      <header class="hero" id="intro">
+        <div class="rings" aria-hidden="true"><i></i><i></i><i></i></div>
+        <p class="eyebrow">Jour 01</p>
+        <h1 id="heroTitle">Pulse.</h1>
+        <p class="lead">Le rythme cardiaque de mes projets : une ligne de vie par projet, qui bat plus vite quand il est actif, et en direct quand un serveur est branché.</p>
+        <div class="cta">
+          <a class="btn solid" href="../01-Pulse/">Ouvrir le dashboard <svg class="i"><use href="#i-right"/></svg></a>
+          <a class="btn" href="https://github.com/Bebbou/devtober-2026/tree/main/01-Pulse">Code source</a>
+        </div>
+      </header>
+
+      <!-- ============ APERÇU ============ -->
+
+      <section id="apercu" data-name="Aperçu">
+        <p class="eyebrow">Présentation</p>
+        <h2>Aperçu</h2>
+        <p class="desc">Un tableau de bord noir, sans décor : la ligne globale en haut résume l'ensemble, et chaque projet a sa carte avec sa propre ligne de vie.</p>
+        <div class="frame">
+          <iframe src="../01-Pulse/index.html" title="Le dashboard Pulse, en direct" loading="lazy"></iframe>
+        </div>
+        <p class="cap">Version en direct. <a href="../01-Pulse/">L'ouvrir en plein écran</a></p>
+      </section>
+
+      <!-- ============ DONNÉES ============ -->
+
+      <section id="donnees" data-name="Ce qui est affiché">
+        <p class="eyebrow">Données</p>
+        <h2>Ce qui est affiché</h2>
+        <p class="desc">Chaque chiffre vient d'une source précise. Rien n'est inventé, et ce qui ne peut pas être mesuré n'est pas affiché.</p>
+        <dl class="vars">
+          <div><dt>rythme (bpm)</dt><dd>Commits des 7 derniers jours, via l'API GitHub</dd></div>
+          <div><dt>histogramme</dt><dd>Commits par jour sur 30 jours</dd></div>
+          <div><dt>push · issues</dt><dd>Dernier push et issues ouvertes du dépôt</dd></div>
+          <div><dt>déployé</dt><dd>Dernier déploiement GitHub, s'il existe</dd></div>
+          <div><dt>site en ligne</dt><dd>Le site répond-il ? Durée de la réponse en ms</dd></div>
+          <div><dt>serveur en ligne</dt><dd>Lecture de la route /stats du serveur du projet</dd></div>
+          <div><dt>requêtes · connectés</dt><dd>Compteur du serveur sur 24 h, et utilisateurs Socket.IO</dd></div>
+          <div><dt>en direct</dt><dd>Flux temps réel : une requête fait battre la ligne</dd></div>
+        </dl>
+      </section>
+
+      <!-- ============ RYTHME ============ -->
+
+      <section id="rythme" data-name="Le rythme">
+        <p class="eyebrow">Calcul</p>
+        <h2>Le rythme</h2>
+        <p class="desc">Le nombre de battements par minute traduit l'activité du dépôt. Un projet abandonné finit en ligne plate.</p>
+        <div class="tblwrap">
+          <table class="tbl">
+            <thead><tr><th>État</th><th>Condition</th><th>Rythme</th></tr></thead>
+            <tbody>
+              <tr><td>actif</td><td>Au moins un commit dans les 7 derniers jours</td><td>46 + 5 par commit, 150 au maximum</td></tr>
+              <tr><td>calme</td><td>Des commits dans les 30 jours, aucun cette semaine</td><td>36</td></tr>
+              <tr><td>endormi</td><td>Dernier push il y a moins de 90 jours</td><td>28</td></tr>
+              <tr><td>ligne plate</td><td>Rien depuis 90 jours, ou dépôt introuvable</td><td>aucun battement</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>La ligne globale du haut affiche la moyenne des projets qui battent encore. Quand un projet est branché en temps réel, son rythme de fond s'efface à 55 % pour laisser les vrais événements dominer : une requête fait un pic, une connexion un pic plus haut.</p>
+      </section>
+
+      <!-- ============ CONFIGURATION ============ -->
+
+      <section id="config" data-name="Configuration">
+        <p class="eyebrow">Utilisation</p>
+        <h2>Configuration</h2>
+        <p class="desc">Tout se règle dans un seul fichier, <code>01-Pulse/projects.js</code>. Chaque ligne est un projet à surveiller.</p>
+        <div class="demo" data-static data-label-js="projects.js">
+<script type="text/plain" data-lang="js">
+window.PULSE = {
+  owner: "Bebbou",
+  projects: [
+    {
+      repo: "MMI-ProNote",
+      name: "ProNote MMI",
+      url: "https://mmi2-pronote.netlify.app/",                    // le site répond-il ?
+      stats: "https://mmi-pronote-production.up.railway.app/stats", // serveur, requêtes, temps réel
+    },
+    { repo: "SAE-301", name: "SAE 301" },
+    { repo: "mon-futur-projet", name: "Mon futur projet", planned: true },
+  ],
+};
+</script>
+        </div>
+        <div class="tblwrap">
+          <table class="tbl">
+            <thead><tr><th>Champ</th><th>Rôle</th></tr></thead>
+            <tbody>
+              <tr><td>repo</td><td>Nom du dépôt GitHub. Seul champ obligatoire.</td></tr>
+              <tr><td>name</td><td>Nom affiché, sinon celui du dépôt.</td></tr>
+              <tr><td>owner</td><td>Propriétaire du dépôt, si ce n'est pas le compte par défaut.</td></tr>
+              <tr><td>url</td><td>Site déployé : active la pastille « site en ligne ».</td></tr>
+              <tr><td>stats</td><td>URL du serveur qui expose <code>/stats</code> : active « serveur en ligne », les requêtes et le temps réel.</td></tr>
+              <tr><td>planned</td><td>Projet à venir : ligne plate grisée, aucun appel réseau.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ============ SERVEUR ============ -->
+
+      <section id="serveur" data-name="Brancher un serveur">
+        <p class="eyebrow">Serveur</p>
+        <h2>Brancher un serveur</h2>
+        <p class="desc">Un serveur Express peut exposer ses chiffres au dashboard en trois morceaux : un compteur, une route <code>/stats</code> et un flux en direct. C'est ce qui a été fait pour ProNote, dans <code>server/utils/stats.js</code>.</p>
+        <div class="demo" data-static data-label-js="Express" data-label-json="Réponse de /stats">
+<script type="text/plain" data-lang="js">
+import { compteRequetes, lireStats, fluxEvenements, signalerConnexion } from "./utils/stats.js";
+
+// Compte chaque requête une fois la réponse envoyée
+app.use(compteRequetes);
+
+// CORS ouvert sur ces deux routes seulement : le dashboard est sur un autre site
+app.get("/stats", cors({ origin: "*" }), (req, res) => res.json(lireStats(io)));
+app.get("/stats/stream", cors({ origin: "*" }), fluxEvenements);
+
+// Une connexion Socket.IO = un battement plus fort
+io.on("connection", () => signalerConnexion());
+</script>
+<script type="text/plain" data-lang="json">
+{
+  "requests": 52,
+  "errors": 5,
+  "total": 52,
+  "uptime": 6150,
+  "sockets": 6,
+  "startedAt": "2026-10-01T18:19:46.154Z"
+}
+</script>
+        </div>
+        <dl class="vars">
+          <div><dt>requests</dt><dd>Requêtes des 24 dernières heures</dd></div>
+          <div><dt>errors</dt><dd>Dont erreurs serveur (5xx)</dd></div>
+          <div><dt>total</dt><dd>Depuis le dernier démarrage</dd></div>
+          <div><dt>uptime</dt><dd>Secondes depuis le démarrage</dd></div>
+          <div><dt>sockets</dt><dd>Utilisateurs connectés en temps réel</dd></div>
+          <div><dt>startedAt</dt><dd>Date du dernier démarrage</dd></div>
+        </dl>
+        <p>Le code ci-dessus est une version simplifiée : la version réelle ajoute une limite de débit sur ces deux routes.</p>
+        <h3>Ce que le flux envoie</h3>
+        <p>Chaque message est de la forme <code>{ "type": "requete", "n": 3 }</code>, avec un type <code>requete</code> ou <code>connexion</code>. Les événements d'un même instant sont regroupés sur 150 ms. Le flux ne transmet jamais de chemin d'URL, d'adresse IP ni d'identité.</p>
+        <ul class="bul">
+          <li>Le dashboard ferme le flux quand l'onglet passe en arrière-plan, et le rouvre au retour.</li>
+          <li>Le serveur accepte 100 spectateurs en direct au maximum.</li>
+          <li>La page d'accueil du serveur, <code>/stats</code> et les préflights CORS ne sont pas comptés comme du trafic.</li>
+        </ul>
+      </section>
+
+      <!-- ============ LIMITES ============ -->
+
+      <section id="limites" data-name="Limites et pistes">
+        <p class="eyebrow">Bilan</p>
+        <h2>Limites et pistes</h2>
+        <p class="desc">Ce que Pulse ne fait pas encore, et ce qui pourrait venir ensuite.</p>
+        <h3>Limites</h3>
+        <ul class="bul">
+          <li><strong>L'API GitHub est limitée à 60 appels par heure</strong> sans clé. Les réponses sont gardées 10 minutes en cache, et le dashboard se met en pause jusqu'à l'heure de reprise indiquée par GitHub.</li>
+          <li><strong>« Site en ligne » veut dire que le site répond</strong>, pas qu'il répond correctement : un navigateur ne peut pas lire le code HTTP d'un autre site. La lecture de <code>/stats</code> corrige cela pour les projets qui ont un serveur.</li>
+          <li><strong>Le compteur est en mémoire</strong> : il repart de zéro à chaque redémarrage du serveur, déploiement compris.</li>
+          <li><strong>Seul ProNote est branché en temps réel</strong>, car c'est le seul projet avec un serveur à moi. Les autres cartes battent selon leurs commits.</li>
+        </ul>
+        <h3>Pistes</h3>
+        <ul class="bul">
+          <li>Une GitHub Action programmée qui écrit un fichier <code>status.json</code> : plus de limite d'appels, les dépôts privés, et l'état des builds de chaque projet.</li>
+          <li>Un historique de disponibilité : pourcentage sur 30 jours et courbe de latence par carte.</li>
+          <li>Écrire le compteur en base de données pour garder l'historique entre deux redémarrages.</li>
+        </ul>
+      </section>
+
+      <footer class="foot">
+        <span>Devtober 2026 · Jour 01</span>
+        <a href="index.html">← Retour à l'accueil</a>
+      </footer>
+    </div>
+  </main>
+</div>
+
+<dialog class="pal" id="pal" aria-label="Recherche">
+  <div class="pal-in"><svg class="i"><use href="#i-search"/></svg><input id="palIn" placeholder="Aller à un projet ou une section…" autocomplete="off"><kbd>Échap</kbd></div>
+  <ul id="palList"></ul>
+</dialog>
+
+<script src="pages.js"></script>
+<script src="script.js"></script>
+</body>
+</html>

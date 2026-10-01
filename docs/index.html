@@ -37,6 +37,9 @@
       <a href="#intro">Introduction</a>
       <a href="#projects">Projets</a>
     </nav>
+    <nav id="docNav">
+      <h6>Documents</h6>
+    </nav>
     <nav id="compNav">
       <h6>Composants</h6>
     </nav>
@@ -57,9 +60,7 @@
       <section id="projects">
         <p class="eyebrow">Démarrer</p>
         <h2>Projets</h2>
-        <div class="plist">
-          <a href="../01-Pulse/"><span class="d">01</span><span class="n">Pulse</span><span class="s">En réflexion</span></a>
-        </div>
+        <div class="plist" id="plist"></div>
       </section>
 
       <!-- ============ COMPOSANTS ============ -->
@@ -547,6 +548,7 @@ document.querySelectorAll("[data-count]").forEach((el) => {
   <ul id="palList"></ul>
 </dialog>
 
+<script src="pages.js"></script>
 <script src="script.js"></script>
 </body>
 </html>
