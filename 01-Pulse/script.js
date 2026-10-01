@@ -6,6 +6,7 @@
 
   const DAY = 86400000;
   const CACHE_TTL = 30 * 60 * 1000; // l'API GitHub (60 appels/h sans clé) n'est rappelée qu'après 30 min
+  const STATUS_MAX_AGE = 3 * 60 * 60 * 1000; // au-delà, status.json est jugé périmé
   const AUTO_REFRESH = 60 * 1000; // les pings « en ligne » sont refaits chaque minute
   // Les couleurs viennent du CSS (--life, --flat, --bg) : un seul endroit à modifier
   const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
@@ -307,8 +308,25 @@
     };
   }
 
-  async function loadProject(p, force) {
+  // Données collectées toutes les 15 min par l'Action GitHub (.github/workflows/pulse-data.yml) :
+  // un seul fichier, aucune limite d'appels. Absent ou périmé : on retombe sur l'API directe.
+  async function loadStatus() {
+    if (!cfg.status) return null;
+    try {
+      const res = await fetch(cfg.status, { cache: "no-cache" });
+      if (!res.ok) return null;
+      const json = await res.json();
+      const age = Date.now() - new Date(json.generatedAt).getTime();
+      return age < STATUS_MAX_AGE ? json : null;
+    } catch {
+      return null;
+    }
+  }
+
+  async function loadProject(p, force, status) {
     if (p.planned) return { data: { planned: true }, state: "ok" };
+    const shot = status && status.projects && status.projects[`${p.owner}/${p.repo}`];
+    if (shot) return { data: shot, state: "ok" };
     const cached = readCache(p);
     if (cached && !force && Date.now() - cached.t < CACHE_TTL) return { data: cached.data, state: "ok" };
 
@@ -520,9 +538,10 @@
     refreshing = true;
     $("#refresh").classList.add("busy");
 
+    const status = await loadStatus();
     await Promise.all(
       projects.map(async (p) => {
-        p.result = await loadProject(p, force);
+        p.result = await loadProject(p, force, status);
         const extras = [];
         if (p.url) extras.push(ping(p.url).then((h) => (p.health = h)));
         if (p.stats) extras.push(fetchStats(p.stats).then((s) => (p.api = s)));

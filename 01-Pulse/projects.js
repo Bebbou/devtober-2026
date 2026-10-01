@@ -12,11 +12,16 @@
                             tracé à chaque requête réelle (flux <stats>/stream).
     planned  (optionnel)    true = projet à venir, ligne plate grisée, aucun appel réseau
 
+  Source des données GitHub (clé "status", plus bas) : le fichier status.json écrit toutes les
+  15 minutes par l'Action .github/workflows/pulse-data.yml. S'il est absent ou vieux de plus de
+  3 h, le dashboard interroge l'API GitHub directement (limitée à 60 appels/h par adresse IP).
+
   Exemple de projet à venir :
     { repo: "mon-futur-projet", name: "Mon futur projet", planned: true }
 */
 window.PULSE = {
   owner: "Bebbou",
+  status: "https://raw.githubusercontent.com/Bebbou/devtober-2026/pulse-data/status.json",
   projects: [
     { repo: "MMI-ProNote", name: "ProNote MMI", url: "https://mmi2-pronote.netlify.app/", stats: "https://mmi-pronote-production.up.railway.app/stats" },
     { repo: "SAE-301", name: "SAE 301" },
