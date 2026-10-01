@@ -475,8 +475,11 @@
     $("#kActive").textContent = ready.length ? `${vs.filter((v) => v.key === "active").length}/${projects.length}` : "–";
     $("#kCommits").textContent = ready.length ? commits : "–";
     $("#kOnline").textContent = watched.length ? `${online}/${watched.length}` : "—";
-    $("#kReqBox").hidden = !hasStats;
-    $("#kReq").textContent = nf.format(requests);
+    const reqBox = $("#kReqBox");
+    if (reqBox) {
+      reqBox.hidden = !hasStats;
+      $("#kReq").textContent = nf.format(requests);
+    }
     hero.set(bpm, bpm ? 1 : 0, bpm ? LIFE : FLAT);
   }
 

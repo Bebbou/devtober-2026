@@ -17,7 +17,7 @@
 window.PULSE = {
   owner: "Bebbou",
   projects: [
-    { repo: "MMI-ProNote", name: "ProNote MMI", url: "https://mmi2-pronote.netlify.app/" },
+    { repo: "MMI-ProNote", name: "ProNote MMI", url: "https://mmi2-pronote.netlify.app/", stats: "https://mmi-pronote-production.up.railway.app/stats" },
     { repo: "SAE-301", name: "SAE 301" },
     { repo: "Projet-Phaser-R312", name: "Phaser R312" },
     { repo: "ARAM-mayhem-indicator", name: "ARAM Mayhem" },
