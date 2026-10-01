@@ -5,7 +5,7 @@
   const $ = (sel, root = document) => root.querySelector(sel);
 
   const DAY = 86400000;
-  const CACHE_TTL = 10 * 60 * 1000; // l'API GitHub n'est rappelée qu'après 10 min
+  const CACHE_TTL = 30 * 60 * 1000; // l'API GitHub (60 appels/h sans clé) n'est rappelée qu'après 30 min
   const AUTO_REFRESH = 60 * 1000; // les pings « en ligne » sont refaits chaque minute
   // Les couleurs viennent du CSS (--life, --flat, --bg) : un seul endroit à modifier
   const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
@@ -270,8 +270,10 @@
     const since = new Date(Date.now() - 30 * DAY).toISOString();
     const repo = await gh(base);
     if (!repo) return { missing: true };
+    // Pas de push depuis 30 jours : aucun commit récent possible, inutile de les demander
+    const recent = daysSince(repo.pushed_at) < 31;
     const [commits, deployments] = await Promise.all([
-      gh(`${base}/commits?since=${since}&per_page=100`),
+      recent ? gh(`${base}/commits?since=${since}&per_page=100`) : null,
       gh(`${base}/deployments?per_page=1`),
     ]);
 
