@@ -8,7 +8,8 @@
     url      (optionnel)    site déployé : sert à savoir s'il est en ligne
     stats    (optionnel)    URL du serveur qui expose /stats : { requests, errors, sockets, … }
                             (voir MMI-ProNote : server/utils/stats.js). Active "serveur en ligne",
-                            les requêtes sur 24 h et le nombre de connectés.
+                            les requêtes sur 24 h, le nombre de connectés, et un battement du
+                            tracé à chaque requête réelle (flux <stats>/stream).
     planned  (optionnel)    true = projet à venir, ligne plate grisée, aucun appel réseau
 
   Exemple de projet à venir :

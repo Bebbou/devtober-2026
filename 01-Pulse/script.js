@@ -37,6 +37,8 @@
     0.22 * gauss(p, 0.305, 0.011) +
     0.26 * gauss(p, 0.52, 0.05);
 
+  const BEAT_DURATION = 0.8; // secondes : durée d'un battement déclenché par un événement
+
   class Ecg {
     constructor(canvas, { speed = 90, gap = 18, lineWidth = 1.6 } = {}) {
       this.canvas = canvas;
@@ -50,6 +52,8 @@
       this.visible = true;
       this.last = 0;
       this.acc = 0;
+      this.events = []; // battements en cours, déclenchés par pulse()
+      this.damp = 1; // < 1 quand le temps réel est connecté : le rythme de fond s'efface un peu
 
       new ResizeObserver(() => this.resize()).observe(canvas);
       new IntersectionObserver(([e]) => {
@@ -77,9 +81,18 @@
       this.redraw();
     }
 
+    // Un événement réel : un battement complet, qui s'ajoute au rythme de fond
+    pulse(amp = 1) {
+      if (!this.visible || reduceMotion) return;
+      // t0 décalé pour que le pic R apparaisse presque tout de suite au bout du tracé
+      this.events.push({ t0: this.t - 0.22 * BEAT_DURATION, amp });
+      if (this.events.length > 12) this.events.shift();
+    }
+
     // Remplit tout l'écran d'historique pour que le tracé vive dès le départ
     redraw() {
       this.ys = new Float32Array(this.W);
+      this.events = [];
       this.t = -this.W / this.speed;
       this.cursor = 0;
       for (let i = 0; i < this.W; i++) this.sample(i);
@@ -90,16 +103,21 @@
       let v = 0;
       if (this.bpm > 0) {
         const phase = (((this.t * this.bpm) / 60) % 1 + 1) % 1;
-        v = beat(phase) * this.amp + 0.015 * Math.sin(this.t * 1.3);
+        v = beat(phase) * this.amp * this.damp + 0.015 * Math.sin(this.t * 1.3);
       }
-      this.ys[i] = v;
+      for (let k = this.events.length - 1; k >= 0; k--) {
+        const p = (this.t - this.events[k].t0) / BEAT_DURATION;
+        if (p >= 1) this.events.splice(k, 1);
+        else if (p >= 0) v += beat(p) * this.events[k].amp;
+      }
+      this.ys[i] = Math.max(-0.6, Math.min(v, 1.25)); // reste dans le cadre quand ça se superpose
       this.t += 1 / this.speed;
     }
 
     tick(now) {
       if (!this.visible || reduceMotion) return;
       if (!this.last) this.last = now;
-      const dt = Math.min(0.05, (now - this.last) / 1000);
+      const dt = Math.max(0, Math.min(0.05, (now - this.last) / 1000)); // jamais négatif ni énorme
       this.last = now;
       this.acc += this.speed * dt;
       while (this.acc >= 1) {
@@ -441,6 +459,7 @@
       pill(r.up ? "up" : "down", `${name}${r.up ? "en ligne" : "hors ligne"}${r.up ? ` · ${r.ms} ms` : ""}`);
     if (p.health) status(p.stats ? "site " : "", p.health);
     if (p.api) status(p.url ? "serveur " : "", p.api);
+    if (p.liveUp) pill("up", "en direct");
     if (d.deploy) {
       const bad = ["failure", "error"].includes(d.deploy.state);
       pill(bad ? "bad" : "neutral", `${bad ? "échec du déploiement" : "déployé"} ${ago(d.deploy.at)}`);
@@ -527,10 +546,76 @@
     refreshing = false;
   }
 
+  /* ------------------------------------------------------------------ */
+  /*  Temps réel : un battement par requête ou connexion réelle           */
+  /* ------------------------------------------------------------------ */
+
+  // Le serveur envoie { type: "requete" | "connexion", n } sur <stats>/stream (SSE)
+  function beats(p, type, n) {
+    const amp = type === "connexion" ? 1.25 : 1; // une connexion bat plus fort qu'une requête
+    for (let i = 0; i < Math.min(n, 3); i++) {
+      setTimeout(() => {
+        p.monitor.pulse(amp);
+        hero.pulse(amp);
+      }, i * 220);
+    }
+  }
+
+  // Avec le temps réel, le rythme de fond s'efface : les vrais événements dominent le tracé
+  function syncLive() {
+    projects.forEach((q) => (q.monitor.damp = q.liveUp ? 0.55 : 1));
+    hero.damp = projects.some((q) => q.liveUp) ? 0.55 : 1;
+  }
+
+  function connectLive(p) {
+    if (!p.stats || p.live || document.hidden || typeof EventSource === "undefined") return;
+    const es = new EventSource(`${p.stats.replace(/\/+$/, "")}/stream`);
+    p.live = es;
+    es.onopen = () => {
+      p.liveUp = true;
+      syncLive();
+      if (p.result) paintPills(p);
+    };
+    es.onmessage = (e) => {
+      try {
+        const { type, n } = JSON.parse(e.data);
+        beats(p, type, n);
+      } catch {
+        /* message illisible : on l'ignore */
+      }
+    };
+    es.onerror = () => {
+      p.liveUp = false;
+      syncLive();
+      if (p.result) paintPills(p);
+      // EventSource retente seul tant que la connexion est "en cours" ; s'il abandonne
+      // (réponse refusée, limite atteinte…), on retente nous-mêmes un peu plus tard
+      if (es.readyState === EventSource.CLOSED) {
+        p.live = null;
+        setTimeout(() => connectLive(p), 15000);
+      }
+    };
+  }
+
+  function disconnectLive(p) {
+    if (!p.live) return;
+    p.live.close();
+    p.live = null;
+    p.liveUp = false;
+    syncLive();
+  }
+
+  // Onglet en arrière-plan = on libère la connexion côté serveur
+  document.addEventListener("visibilitychange", () => {
+    projects.forEach(document.hidden ? disconnectLive : connectLive);
+  });
+  addEventListener("pagehide", () => projects.forEach(disconnectLive));
+
   projects.forEach(buildCard);
   $("#count").textContent = `${projects.length} dépôts`;
   $("#refresh").addEventListener("click", () => refresh(true));
   setInterval(stamp, 15000);
   setInterval(() => refresh(false), AUTO_REFRESH);
   refresh(false);
+  projects.forEach(connectLive);
 })();
