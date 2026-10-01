@@ -128,13 +128,10 @@
       if (gap) {
         const x = (cursor - 1 + W) % W;
         ctx.globalAlpha = 1;
-        ctx.fillStyle = "#fff";
-        ctx.shadowColor = this.color;
-        ctx.shadowBlur = 12;
+        ctx.fillStyle = this.color;
         ctx.beginPath();
-        ctx.arc(x, base - ys[x] * scale, 2.2, 0, Math.PI * 2);
+        ctx.arc(x, base - ys[x] * scale, 2.4, 0, Math.PI * 2);
         ctx.fill();
-        ctx.shadowBlur = 0;
       }
       ctx.globalAlpha = 1;
     }
@@ -170,16 +167,16 @@
 
   // Transforme l'activité d'un dépôt en rythme cardiaque
   function vitals(d) {
-    if (d.planned) return { key: "planned", label: "À venir", bpm: 0, amp: 0, color: "#6b6b6b" };
-    if (d.missing) return { key: "missing", label: "Introuvable", bpm: 0, amp: 0, color: "#6b6b6b" };
-    if (d.limit) return { key: "limit", label: "Limite API", bpm: 0, amp: 0, color: "#6b6b6b" };
-    if (d.unavailable) return { key: "limit", label: "Indisponible", bpm: 0, amp: 0, color: "#6b6b6b" };
+    if (d.planned) return { key: "planned", label: "à venir", bpm: 0, amp: 0, color: "#6b6b6b" };
+    if (d.missing) return { key: "missing", label: "introuvable", bpm: 0, amp: 0, color: "#6b6b6b" };
+    if (d.limit) return { key: "limit", label: "limite api", bpm: 0, amp: 0, color: "#6b6b6b" };
+    if (d.unavailable) return { key: "limit", label: "indisponible", bpm: 0, amp: 0, color: "#6b6b6b" };
     if (d.c7 > 0) {
-      return { key: "active", label: "Actif", bpm: Math.min(150, 46 + d.c7 * 5), amp: 1, color: "#3dff8b" };
+      return { key: "active", label: "actif", bpm: Math.min(150, 46 + d.c7 * 5), amp: 1, color: "#3dff8b" };
     }
-    if (d.c30 > 0) return { key: "calm", label: "Calme", bpm: 36, amp: 0.6, color: "#27c46a" };
-    if (daysSince(d.pushedAt) < 90) return { key: "sleep", label: "Endormi", bpm: 28, amp: 0.4, color: "#1c8a4d" };
-    return { key: "flat", label: "Ligne plate", bpm: 0, amp: 0, color: "#6b6b6b" };
+    if (d.c30 > 0) return { key: "calm", label: "calme", bpm: 36, amp: 0.6, color: "#27c46a" };
+    if (daysSince(d.pushedAt) < 90) return { key: "sleep", label: "endormi", bpm: 28, amp: 0.4, color: "#1c8a4d" };
+    return { key: "flat", label: "ligne plate", bpm: 0, amp: 0, color: "#6b6b6b" };
   }
 
   /* ------------------------------------------------------------------ */
@@ -218,6 +215,23 @@
       localStorage.setItem(cacheKey(p), JSON.stringify({ t: Date.now(), data }));
     } catch {
       /* stockage indisponible : on s'en passe */
+    }
+  };
+
+  // Quand GitHub dit "stop", on s'arrête jusqu'à l'heure de reprise (mémorisée entre deux visites)
+  const BLOCK_KEY = "pulse:v1:blocked-until";
+  const blockedUntil = () => {
+    try {
+      return Number(localStorage.getItem(BLOCK_KEY)) || 0;
+    } catch {
+      return 0;
+    }
+  };
+  const blockFor = (reset) => {
+    try {
+      localStorage.setItem(BLOCK_KEY, String(reset || Date.now() + CACHE_TTL));
+    } catch {
+      /* stockage indisponible */
     }
   };
 
@@ -265,14 +279,23 @@
     if (p.planned) return { data: { planned: true }, state: "ok" };
     const cached = readCache(p);
     if (cached && !force && Date.now() - cached.t < CACHE_TTL) return { data: cached.data, state: "ok" };
+
+    const until = blockedUntil();
+    if (until > Date.now()) {
+      return cached
+        ? { data: cached.data, state: "stale", reset: until }
+        : { data: { limit: true }, state: "error", reset: until };
+    }
+
     try {
       const data = await fetchRepo(p);
       writeCache(p, data);
       return { data, state: "ok" };
     } catch (err) {
-      if (cached) return { data: cached.data, state: "stale", reset: err.reset };
-      const data = err instanceof RateLimit ? { limit: true } : { unavailable: true };
-      return { data, state: "error", reset: err.reset };
+      const limited = err instanceof RateLimit;
+      if (limited) blockFor(err.reset);
+      if (cached) return { data: cached.data, state: "stale", reset: limited ? blockedUntil() : 0 };
+      return { data: limited ? { limit: true } : { unavailable: true }, state: "error", reset: limited ? blockedUntil() : 0 };
     }
   }
 
@@ -331,7 +354,6 @@
     a.target = "_blank";
     a.rel = "noopener";
     a.dataset.state = "loading";
-    a.style.setProperty("--i", p.index);
 
     const rate = el("div", "rate");
     rate.append(el("b", "", "--"), el("small", "", "BPM"));
@@ -346,7 +368,7 @@
     for (let i = 0; i < 30; i++) bars.append(el("i"));
 
     const stats = el("dl", "stats");
-    for (const label of ["7 jours", "30 jours", "Push", "Issues"]) {
+    for (const label of ["7 jours", "30 jours", "push", "issues"]) {
       const cell = el("div");
       cell.append(el("dt", "", label), el("dd", "", "–"));
       stats.append(cell);
@@ -399,11 +421,11 @@
     const pill = (cls, text) => box.append(el("span", `pill ${cls}`, text));
 
     if (p.health) {
-      pill(p.health.up ? "up" : "down", p.health.up ? `En ligne · ${p.health.ms} ms` : "Hors ligne");
+      pill(p.health.up ? "up" : "down", p.health.up ? `en ligne · ${p.health.ms} ms` : "hors ligne");
     }
     if (d.deploy) {
       const bad = ["failure", "error"].includes(d.deploy.state);
-      pill(bad ? "bad" : "neutral", `${bad ? "Échec du déploiement" : "Déployé"} ${ago(d.deploy.at)}`);
+      pill(bad ? "bad" : "neutral", `${bad ? "échec du déploiement" : "déployé"} ${ago(d.deploy.at)}`);
     }
     if (p.extra && typeof p.extra.requests === "number") {
       pill("neutral", `${nf.format(p.extra.requests)} requêtes`);
@@ -441,7 +463,7 @@
   let refreshing = false;
 
   function stamp() {
-    $("#stamp").textContent = updatedAt ? `Mis à jour ${ago(new Date(updatedAt).toISOString())}` : "Chargement…";
+    $("#stamp").textContent = updatedAt ? `mis à jour ${ago(new Date(updatedAt).toISOString())}` : "chargement…";
   }
 
   async function refresh(force = false) {
@@ -478,6 +500,7 @@
   }
 
   projects.forEach(buildCard);
+  $("#count").textContent = `${projects.length} dépôts`;
   $("#refresh").addEventListener("click", () => refresh(true));
   setInterval(stamp, 15000);
   setInterval(() => refresh(false), AUTO_REFRESH);

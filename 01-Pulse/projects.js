@@ -20,7 +20,7 @@ window.PULSE = {
     { repo: "Projet-Phaser-R312", name: "Phaser R312" },
     { repo: "ARAM-mayhem-indicator", name: "ARAM Mayhem" },
     { repo: "driftwm", name: "driftwm" },
-    { repo: "Musee-FABI", name: "Musée FABI" },
+    { repo: "Musee--FABI", name: "Musée FABI" },
     { repo: "interface", name: "Interface" },
     { repo: "devtober-2026", name: "Devtober 2026" },
   ],
