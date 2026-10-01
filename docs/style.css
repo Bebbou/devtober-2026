@@ -526,8 +526,21 @@ p strong {
         transparent 0
       )
       0 0 / 22px 22px,
+    radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.09) 1px, transparent 0) 0 0 / 22px 22px,
     #000;
   -webkit-mask-composite: source-over;
+  mask-composite: source-over;
+}
+.stage::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 35%, #0a0a0a 100%);
+}
+.stage > * {
+  position: relative;
+  z-index: 1;
 }
 .stage::after {
   content: "";
