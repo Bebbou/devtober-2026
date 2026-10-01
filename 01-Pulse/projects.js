@@ -6,7 +6,9 @@
     name     (optionnel)    nom affiché, sinon le nom du dépôt
     owner    (optionnel)    propriétaire du dépôt, sinon "owner" ci-dessous
     url      (optionnel)    site déployé : sert à savoir s'il est en ligne
-    stats    (optionnel)    URL d'un endpoint JSON { "requests": 1234 } (CORS requis)
+    stats    (optionnel)    URL du serveur qui expose /stats : { requests, errors, sockets, … }
+                            (voir MMI-ProNote : server/utils/stats.js). Active "serveur en ligne",
+                            les requêtes sur 24 h et le nombre de connectés.
     planned  (optionnel)    true = projet à venir, ligne plate grisée, aucun appel réseau
 
   Exemple de projet à venir :
@@ -15,7 +17,7 @@
 window.PULSE = {
   owner: "Bebbou",
   projects: [
-    { repo: "MMI-ProNote", name: "ProNote MMI" },
+    { repo: "MMI-ProNote", name: "ProNote MMI", url: "https://mmi2-pronote.netlify.app/" },
     { repo: "SAE-301", name: "SAE 301" },
     { repo: "Projet-Phaser-R312", name: "Phaser R312" },
     { repo: "ARAM-mayhem-indicator", name: "ARAM Mayhem" },

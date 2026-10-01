@@ -7,6 +7,18 @@
   const DAY = 86400000;
   const CACHE_TTL = 10 * 60 * 1000; // l'API GitHub n'est rappelée qu'après 10 min
   const AUTO_REFRESH = 60 * 1000; // les pings « en ligne » sont refaits chaque minute
+  // Les couleurs viennent du CSS (--life, --flat, --bg) : un seul endroit à modifier
+  const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  const mix = (a, b, t) => {
+    const hex = /^#[0-9a-f]{6}$/i;
+    if (!hex.test(a) || !hex.test(b)) return a;
+    const rgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+    const [x, y] = [rgb(a), rgb(b)];
+    return "#" + x.map((v, i) => Math.round(v * t + y[i] * (1 - t)).toString(16).padStart(2, "0")).join("");
+  };
+  const LIFE = css("--life") || "#ff0055";
+  const FLAT = css("--flat") || "#6b6b6b";
+  const BG = css("--bg") || "#0d0d0d";
   const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const rtf = new Intl.RelativeTimeFormat("fr", { numeric: "auto" });
   const nf = new Intl.NumberFormat("fr-FR");
@@ -34,7 +46,7 @@
       this.lineWidth = lineWidth;
       this.bpm = 0;
       this.amp = 0;
-      this.color = "#6b6b6b";
+      this.color = FLAT;
       this.visible = true;
       this.last = 0;
       this.acc = 0;
@@ -167,16 +179,16 @@
 
   // Transforme l'activité d'un dépôt en rythme cardiaque
   function vitals(d) {
-    if (d.planned) return { key: "planned", label: "à venir", bpm: 0, amp: 0, color: "#6b6b6b" };
-    if (d.missing) return { key: "missing", label: "introuvable", bpm: 0, amp: 0, color: "#6b6b6b" };
-    if (d.limit) return { key: "limit", label: "limite api", bpm: 0, amp: 0, color: "#6b6b6b" };
-    if (d.unavailable) return { key: "limit", label: "indisponible", bpm: 0, amp: 0, color: "#6b6b6b" };
+    if (d.planned) return { key: "planned", label: "à venir", bpm: 0, amp: 0, color: FLAT };
+    if (d.missing) return { key: "missing", label: "introuvable", bpm: 0, amp: 0, color: FLAT };
+    if (d.limit) return { key: "limit", label: "limite api", bpm: 0, amp: 0, color: FLAT };
+    if (d.unavailable) return { key: "limit", label: "indisponible", bpm: 0, amp: 0, color: FLAT };
     if (d.c7 > 0) {
-      return { key: "active", label: "actif", bpm: Math.min(150, 46 + d.c7 * 5), amp: 1, color: "#3dff8b" };
+      return { key: "active", label: "actif", bpm: Math.min(150, 46 + d.c7 * 5), amp: 1, color: LIFE };
     }
-    if (d.c30 > 0) return { key: "calm", label: "calme", bpm: 36, amp: 0.6, color: "#27c46a" };
-    if (daysSince(d.pushedAt) < 90) return { key: "sleep", label: "endormi", bpm: 28, amp: 0.4, color: "#1c8a4d" };
-    return { key: "flat", label: "ligne plate", bpm: 0, amp: 0, color: "#6b6b6b" };
+    if (d.c30 > 0) return { key: "calm", label: "calme", bpm: 36, amp: 0.6, color: mix(LIFE, BG, 0.72) };
+    if (daysSince(d.pushedAt) < 90) return { key: "sleep", label: "endormi", bpm: 28, amp: 0.4, color: mix(LIFE, BG, 0.45) };
+    return { key: "flat", label: "ligne plate", bpm: 0, amp: 0, color: FLAT };
   }
 
   /* ------------------------------------------------------------------ */
@@ -318,12 +330,16 @@
     }
   }
 
+  // Le serveur du projet répond-il vraiment ? Contrairement au ping du site, ici on lit
+  // la réponse (CORS ouvert côté serveur) : un serveur en erreur est bien détecté
   async function fetchStats(url) {
+    const start = performance.now();
     try {
       const res = await fetch(url, { cache: "no-store" });
-      return res.ok ? await res.json() : null;
+      if (!res.ok) return { up: false };
+      return { up: true, ms: Math.round(performance.now() - start), data: await res.json() };
     } catch {
-      return null;
+      return { up: false };
     }
   }
 
@@ -344,7 +360,7 @@
     label: p.name || p.repo,
     index: i,
     health: null,
-    extra: null,
+    api: null,
     result: null,
   }));
 
@@ -379,7 +395,7 @@
 
     p.card = a;
     p.monitor = new Ecg(canvas, { speed: 70, gap: 14, lineWidth: 1.4 });
-    p.monitor.set(0, 0, "#6b6b6b");
+    p.monitor.set(0, 0, FLAT);
     monitors.push(p.monitor);
   }
 
@@ -420,15 +436,19 @@
     const d = p.result.data;
     const pill = (cls, text) => box.append(el("span", `pill ${cls}`, text));
 
-    if (p.health) {
-      pill(p.health.up ? "up" : "down", p.health.up ? `en ligne · ${p.health.ms} ms` : "hors ligne");
-    }
+    // Quand un serveur est aussi surveillé, on précise : "site" (le front) et "serveur" (l'API)
+    const status = (name, r) =>
+      pill(r.up ? "up" : "down", `${name}${r.up ? "en ligne" : "hors ligne"}${r.up ? ` · ${r.ms} ms` : ""}`);
+    if (p.health) status(p.stats ? "site " : "", p.health);
+    if (p.api) status(p.url ? "serveur " : "", p.api);
     if (d.deploy) {
       const bad = ["failure", "error"].includes(d.deploy.state);
       pill(bad ? "bad" : "neutral", `${bad ? "échec du déploiement" : "déployé"} ${ago(d.deploy.at)}`);
     }
-    if (p.extra && typeof p.extra.requests === "number") {
-      pill("neutral", `${nf.format(p.extra.requests)} requêtes`);
+    const live = p.api && p.api.up ? p.api.data : null;
+    if (live && typeof live.requests === "number") pill("neutral", `${nf.format(live.requests)} requêtes / 24 h`);
+    if (live && typeof live.sockets === "number") {
+      pill("neutral", `${live.sockets} connecté${live.sockets > 1 ? "s" : ""}`);
     }
   }
 
@@ -445,14 +465,19 @@
     const live = vs.filter((v) => v.bpm > 0);
     const bpm = live.length ? Math.round(live.reduce((s, v) => s + v.bpm, 0) / live.length) : 0;
     const commits = ready.reduce((s, p) => s + (p.result.data.c7 || 0), 0);
-    const watched = projects.filter((p) => p.url);
-    const online = watched.filter((p) => p.health && p.health.up).length;
+    // "en ligne" = tous les contrôles configurés (site et/ou serveur) répondent
+    const watched = projects.filter((p) => p.url || p.stats);
+    const online = watched.filter((p) => (!p.url || p.health?.up) && (!p.stats || p.api?.up)).length;
+    const requests = projects.reduce((s, p) => s + (p.api?.up ? p.api.data.requests || 0 : 0), 0);
+    const hasStats = projects.some((p) => p.stats);
 
     $("#bpm").textContent = ready.length ? (bpm || "—") : "--";
     $("#kActive").textContent = ready.length ? `${vs.filter((v) => v.key === "active").length}/${projects.length}` : "–";
     $("#kCommits").textContent = ready.length ? commits : "–";
     $("#kOnline").textContent = watched.length ? `${online}/${watched.length}` : "—";
-    hero.set(bpm, bpm ? 1 : 0, bpm ? "#3dff8b" : "#6b6b6b");
+    $("#kReqBox").hidden = !hasStats;
+    $("#kReq").textContent = nf.format(requests);
+    hero.set(bpm, bpm ? 1 : 0, bpm ? LIFE : FLAT);
   }
 
   /* ------------------------------------------------------------------ */
@@ -476,7 +501,7 @@
         p.result = await loadProject(p, force);
         const extras = [];
         if (p.url) extras.push(ping(p.url).then((h) => (p.health = h)));
-        if (p.stats) extras.push(fetchStats(p.stats).then((s) => (p.extra = s)));
+        if (p.stats) extras.push(fetchStats(p.stats).then((s) => (p.api = s)));
         await Promise.all(extras);
         paint(p);
       })
