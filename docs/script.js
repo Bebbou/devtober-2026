@@ -4,6 +4,12 @@
   var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
   var esc = function (s) { return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); };
   var DOCS = window.DOCS || [];
+  var THEMES = window.THEMES || [];
+  var CFG = window.DEVTOBER || { year: 2026, month: 10 };
+  var pad = function (n) { return n < 10 ? "0" + n : "" + n; };
+  var now = new Date();
+  // Le jour du défi : seulement pendant le mois du Devtober, sinon 0
+  var today = now.getFullYear() === CFG.year && now.getMonth() + 1 === CFG.month ? now.getDate() : 0;
   var currentPage = location.pathname.split("/").pop() || "index.html";
 
   /* ---------- Coloration du code ---------- */
@@ -69,11 +75,42 @@
   });
 
   /* ---------- Liste des projets (accueil) et navigation entre documents ---------- */
-  var plist = $("#plist");
-  if (plist) {
-    plist.innerHTML = DOCS.map(function (d) {
-      return '<a href="' + d.href + '"><span class="d">' + d.day + '</span><span class="n">' + d.title + '</span><span class="s">' + d.status + "</span></a>";
+  /* ---------- Calendrier : une case par jour, avec son thème ---------- */
+  var dayDoc = function (n) { return DOCS.filter(function (d) { return +d.day === n; })[0]; };
+  var total = THEMES.length || 31;
+
+  var cal = $("#cal");
+  if (cal) {
+    cal.innerHTML = THEMES.map(function (theme, i) {
+      var n = i + 1, doc = dayDoc(n);
+      var state = doc ? "done" : n === today ? "today" : "todo";
+      var note = { done: "terminé", today: "aujourd'hui", todo: "" }[state];
+      var inner = "<b>" + pad(n) + '</b><span class="t">' + theme + "</span><small>" + note + "</small>";
+      return doc
+        ? '<a class="day done" href="' + doc.href + '">' + inner + "</a>"
+        : '<div class="day ' + state + '">' + inner + "</div>";
     }).join("");
+  }
+
+  /* ---------- Le pouls du défi : une ligne de vie à 31 emplacements ----------
+     un battement par jour terminé, un point pour aujourd'hui, du plat pour la suite */
+  var pulse = $("#pulse");
+  if (pulse) {
+    var SLOT = 20, BASE = 44, W = total * SLOT;
+    var beat = function (x) {
+      return "M" + (x - 9) + " " + BASE + "H" + (x - 4) + "L" + (x - 2) + " " + (BASE - 6) + "L" + x + " 8L" + (x + 2) + " 56L" + (x + 4) + " " + (BASE - 4) + "L" + (x + 6) + " " + BASE + "H" + (x + 9);
+    };
+    var parts = ['<path class="flat" d="M0 ' + BASE + "H" + W + '"/>'];
+    var doneCount = 0;
+    for (var n = 1; n <= total; n++) {
+      var x = (n - 0.5) * SLOT;
+      if (dayDoc(n)) { parts.push('<path class="beat" d="' + beat(x) + '"/>'); doneCount++; }
+      else if (n === today) parts.push('<circle class="now" cx="' + x + '" cy="' + BASE + '" r="3.5"/>');
+    }
+    var caption = doneCount + " jour" + (doneCount > 1 ? "s" : "") + " sur " + total + (today ? " · aujourd'hui : jour " + pad(today) + ", " + (THEMES[today - 1] || "").toLowerCase() : "");
+    pulse.innerHTML =
+      '<svg viewBox="0 0 ' + W + ' 64" preserveAspectRatio="none" role="img" aria-label="' + caption + '">' + parts.join("") + "</svg>" +
+      '<p class="pulse-cap">' + caption + "</p>";
   }
 
   var docNav = $("#docNav");
