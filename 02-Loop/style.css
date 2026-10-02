@@ -1,6 +1,10 @@
 /*
   Même direction artistique que Pulse : fond #0D0D0D, texte #E0E0E0, accent #FF0055.
-  Le rose n'apparaît que sur ce qui est actif : le conteneur survolé, sa porte qui s'ouvre.
+  Tout est dessiné en traits de 1px, sans lueur ni flou.
+
+  L'ambiance vient de Serial Experiments Lain : des fils électriques partout, des corbeaux,
+  des enseignes verticales, un passage à niveau. Le rose n'apparaît que sur ce qui est allumé
+  ou actif : un néon, un feu, la lampe de la locomotive, la porte qu'on survole.
 */
 :root {
   --bg: #0d0d0d;
@@ -13,15 +17,22 @@
   --pink: #ff0055;
   --font: "Courier New", Courier, monospace;
 
+  /* Ces variables changent au fil de la journée (voir script.js) : valeurs de nuit par défaut */
+  --far: #181818;
+  --near: #262626;
+  --dots: #1f1f1f;
+  --lit: 1;
+  --orb: #bdbdbd;
+
   /* Taille d'un conteneur et espace entre deux : à modifier ici */
   --box-w: 250px;
   --box-h: 112px;
   --gap: 16px;
   /* Hauteur du rail : le bas des roues touche cette ligne */
-  --ground: max(64px, calc(50% - 100px));
+  --ground: max(76px, calc(50% - 90px));
 
-  /* Tôle ondulée d'un conteneur : fines bandes verticales */
-  --tole: repeating-linear-gradient(90deg, #131313 0 5px, #0e0e0e 5px 10px);
+  /* Tôle ondulée : fines bandes verticales (la couleur est celle du conteneur, voir script.js) */
+  --tole: repeating-linear-gradient(90deg, #141414 0 4px, #0e0e0e 4px 8px);
 }
 
 * {
@@ -62,6 +73,7 @@ a {
   outline-offset: 3px;
 }
 
+/* ---------- En-tête ---------- */
 .top {
   display: flex;
   justify-content: space-between;
@@ -83,11 +95,50 @@ a {
   background: var(--pink);
 }
 
-.stamp {
-  min-width: 8ch;
-  text-align: right;
+.right {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+.snd {
+  padding: 2px 0;
+  border: 0;
+  background: none;
   font-size: 13px;
   color: var(--dim);
+}
+
+.snd:hover {
+  color: var(--text);
+}
+
+.snd[aria-pressed="true"] {
+  color: var(--pink);
+}
+
+/* Compteur de vitesse : sens de marche, vitesse, et une jauge d'un trait */
+.speed {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.speed b {
+  font-weight: 400;
+  color: var(--dim);
+}
+
+.speed b.go {
+  color: var(--pink);
+}
+
+#stamp {
+  min-width: 8ch;
+  text-align: right;
 }
 
 /* ---------- Scène ---------- */
@@ -98,41 +149,143 @@ a {
   cursor: grab;
   touch-action: none;
   user-select: none;
+  animation: entree 1.2s ease-out backwards;
 }
 
 #stage.drag {
   cursor: grabbing;
 }
 
-/* La ville : des immeubles en simples traits, posés sur le rail, derrière le train */
+@keyframes entree {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Le ciel : des corbeaux qui le traversent de temps en temps */
+.sky {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.orb {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--orb);
+  will-change: transform;
+}
+
+.crow {
+  position: absolute;
+  left: 0;
+  width: 22px;
+  height: 12px;
+  animation: vol linear forwards;
+}
+
+.crow svg {
+  display: block;
+  overflow: visible;
+}
+
+.crow path {
+  fill: none;
+  stroke: #4a4a4a;
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+}
+
+.crow .haut {
+  animation: ailes 0.55s steps(1) infinite;
+}
+
+.crow .bas {
+  animation: ailes 0.55s steps(1) infinite;
+  animation-delay: -0.275s;
+}
+
+@keyframes vol {
+  from {
+    transform: translate3d(var(--from), 0, 0);
+  }
+  to {
+    transform: translate3d(var(--to), var(--drop, 0px), 0);
+  }
+}
+
+@keyframes ailes {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+/* Les immeubles : de simples contours, posés sur le rail, derrière le train */
 .city {
   position: absolute;
   left: 0;
   bottom: var(--ground);
   width: 100%;
-  height: 300px;
   overflow: hidden;
 }
 
-#city {
-  position: absolute;
-  left: 0;
-  bottom: 0;
+.city.far {
+  height: 230px;
+}
+
+.city.near {
+  height: 300px;
+}
+
+.city > div {
   display: flex;
   align-items: flex-end;
   width: max-content;
+  will-change: transform;
 }
 
-#city i {
+.city i {
   position: relative;
   flex: none;
   margin-right: -1px;
-  border: 1px solid #262626;
+  border: 1px solid;
   border-bottom: 0;
 }
 
-/* un feu rouge au sommet de quelques immeubles */
-#city i.lit::after {
+.far i {
+  border-color: var(--far);
+}
+
+.near i {
+  border-color: var(--near);
+  /* des fenêtres : une trame de petits points */
+  background: radial-gradient(circle, var(--dots) 0.9px, transparent 1.3px) 5px 9px / 11px 15px;
+}
+
+/* une antenne sur quelques immeubles */
+.city i.ant::before {
+  content: "";
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  width: 1px;
+  height: 22px;
+  background: var(--near);
+}
+
+.far i.ant::before {
+  background: var(--far);
+}
+
+/* un feu rouge qui clignote au sommet de certains immeubles */
+.city i.lit::after {
   content: "";
   position: absolute;
   top: -4px;
@@ -141,21 +294,111 @@ a {
   height: 3px;
   margin-left: -1px;
   background: var(--pink);
+  opacity: var(--lit);
   animation: feu 2.6s steps(1) infinite;
+}
+
+.city i.ant.lit::after {
+  top: -26px;
 }
 
 @keyframes feu {
   50% {
-    opacity: 0.15;
+    opacity: calc(var(--lit) * 0.15);
   }
 }
 
-/* Le train : une suite de conteneurs, déplacée par script.js */
+/* des fenêtres allumées, qui s'éteignent et se rallument de temps en temps */
+.lw {
+  position: absolute;
+  width: 3px;
+  height: 4px;
+  background: #cfcfcf;
+  opacity: calc(var(--lit) * 0.5);
+  animation: allume var(--cycle, 14s) steps(1) infinite;
+  animation-delay: var(--d, 0s);
+}
+
+.lw.rose {
+  background: var(--pink);
+}
+
+@keyframes allume {
+  0%,
+  100%,
+  46%,
+  49% {
+    opacity: calc(var(--lit) * 0.5);
+  }
+  38%,
+  74% {
+    opacity: 0;
+  }
+  47% {
+    opacity: calc(var(--lit) * 0.1);
+  }
+}
+
+/* des enseignes verticales : éteintes, ou allumées en rose avec un petit scintillement */
+.sign {
+  position: absolute;
+  top: 16px;
+  right: 7px;
+  padding: 4px 2px;
+  border: 1px solid #2a2a2a;
+  font-size: 11px;
+  line-height: 1.15;
+  letter-spacing: 2px;
+  white-space: nowrap;
+  color: #3a3a3a;
+  writing-mode: vertical-rl;
+}
+
+.sign.on {
+  border-color: var(--pink);
+  color: var(--pink);
+  opacity: calc(0.35 + var(--lit) * 0.65);
+  animation: neon 7s steps(1) infinite;
+  animation-delay: var(--d, 0s);
+}
+
+@keyframes neon {
+  0%,
+  100%,
+  42%,
+  45%,
+  82% {
+    opacity: calc(0.35 + var(--lit) * 0.65);
+  }
+  41% {
+    opacity: calc(0.1 + var(--lit) * 0.15);
+  }
+  44% {
+    opacity: calc(0.15 + var(--lit) * 0.25);
+  }
+  81% {
+    opacity: calc(0.1 + var(--lit) * 0.2);
+  }
+}
+
+/* Les fils électriques : dessinés par script.js, répétés sur toute la largeur */
+.wires {
+  position: absolute;
+  left: 0;
+  bottom: var(--ground);
+  width: 100%;
+  height: 300px;
+  background-repeat: repeat-x;
+  background-position: 0 0;
+}
+
+/* Le train : des locomotives et des conteneurs, déplacés par script.js */
 .train {
   position: absolute;
   left: 0;
   bottom: var(--ground);
   display: flex;
+  align-items: flex-end;
   gap: var(--gap);
   width: max-content;
   will-change: transform;
@@ -169,6 +412,15 @@ a {
   border: 0;
   background: none;
   text-align: left;
+  /* le train tressaute un peu quand il va vite : chaque wagon avec son retard */
+  animation: tressaute 0.85s ease-in-out infinite;
+  animation-delay: calc(var(--i, 0) * -0.23s);
+}
+
+@keyframes tressaute {
+  50% {
+    translate: 0 calc(var(--amp, 0px) * -1);
+  }
 }
 
 .cont {
@@ -179,55 +431,128 @@ a {
   height: var(--box-h);
   padding: 10px 14px;
   border: 1px solid var(--line-strong);
-  background: var(--tole);
-  transition: border-color 0.2s;
+  background: repeating-linear-gradient(90deg, var(--liv, #141414) 0 4px, var(--liv2, #0e0e0e) 4px 8px);
+  transition: border-color 0.2s, transform 0.25s;
 }
 
-/* la porte : une fente au milieu, qui s'écarte et s'allume au survol */
+/* l'usure : la crasse en bas, quelques coulures de rouille */
+.wear {
+  position: absolute;
+  inset: 1px;
+  pointer-events: none;
+  background:
+    linear-gradient(rgba(0, 0, 0, 0) 50%, rgba(0, 0, 0, 0.4)),
+    linear-gradient(rgba(190, 120, 80, 0.28), transparent 75%) var(--s1, 20%) 0 / 2px 100% no-repeat,
+    linear-gradient(rgba(190, 120, 80, 0.2), transparent 60%) var(--s2, 55%) 0 / 3px 100% no-repeat,
+    linear-gradient(rgba(0, 0, 0, 0.3), transparent 80%) var(--s3, 85%) 0 / 4px 100% no-repeat;
+}
+
+/* les détails d'un vrai conteneur : coins renforcés, deux longerons, verrous de la porte */
+.cont::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(var(--line-strong), var(--line-strong)) 0 0 / 7px 7px no-repeat,
+    linear-gradient(var(--line-strong), var(--line-strong)) 100% 0 / 7px 7px no-repeat,
+    linear-gradient(var(--line-strong), var(--line-strong)) 0 100% / 7px 7px no-repeat,
+    linear-gradient(var(--line-strong), var(--line-strong)) 100% 100% / 7px 7px no-repeat,
+    linear-gradient(rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.35)) 0 6px / 100% 1px no-repeat,
+    linear-gradient(rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.35)) 0 calc(100% - 6px) / 100% 1px no-repeat,
+    linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)) 80% 0 / 1px 100% no-repeat,
+    linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)) 90% 0 / 1px 100% no-repeat;
+}
+
+/* la porte : une fente, qui s'écarte et s'allume au survol */
 .cont::after {
   content: "";
   position: absolute;
-  top: 6px;
-  bottom: 6px;
+  top: 7px;
+  bottom: 7px;
   left: 72%;
   width: 1px;
-  background: var(--line-strong);
+  background: rgba(0, 0, 0, 0.5);
   transition: width 0.25s, left 0.25s, background 0.2s;
 }
 
-.cont .id {
+.cont .id,
+.cont .go,
+.cont .stencil {
   position: absolute;
-  top: 8px;
-  left: 14px;
   font-size: 11px;
-  color: var(--dim);
 }
 
-.cont b {
-  position: relative;
-  z-index: 1;
-  display: inline-block;
-  align-self: flex-start;
-  padding-right: 6px;
-  background: #0f0f0f;
-  font-size: 16px;
-  line-height: 1.3;
+.cont .id {
+  color: rgba(224, 224, 224, 0.45);
 }
 
+.cont .id,
+.cont .go {
+  top: 14px;
+  left: 14px;
+  transition: opacity 0.2s;
+}
+
+/* le pictogramme du projet, au-dessus de son nom */
+.cont .pict {
+  position: absolute;
+  left: 14px;
+  top: 32px;
+  width: 28px;
+  height: 28px;
+  fill: none;
+  stroke: rgba(224, 224, 224, 0.62);
+  stroke-width: 1.2;
+  stroke-linejoin: round;
+  transition: stroke 0.2s;
+}
+
+.box:hover .pict,
+.box.kb .pict {
+  stroke: var(--pink);
+}
+
+.cont .go {
+  color: var(--pink);
+  opacity: 0;
+}
+
+/* le nom de la compagnie, peint au pochoir entre les deux verrous de la porte */
+.cont .stencil {
+  top: 24px;
+  left: 85%;
+  transform: translateX(-50%);
+  font-size: 9px;
+  letter-spacing: 0.25em;
+  color: rgba(224, 224, 224, 0.3);
+  writing-mode: vertical-rl;
+}
+
+.cont b,
 .cont small {
   position: relative;
   z-index: 1;
   display: inline-block;
   align-self: flex-start;
   padding-right: 6px;
-  background: #0f0f0f;
+  background: var(--liv, #0f0f0f);
+}
+
+.cont b {
+  font-size: 16px;
+  line-height: 1.3;
+}
+
+.cont small {
   font-size: 12px;
-  color: var(--muted);
+  color: #b4b4b4;
 }
 
 .box:hover .cont,
 .box.kb .cont {
   border-color: var(--pink);
+  transform: translateY(-3px);
 }
 
 .box:hover .cont::after,
@@ -237,18 +562,40 @@ a {
   background: var(--pink);
 }
 
+.box:hover .id,
+.box.kb .id {
+  opacity: 0;
+}
+
+.box:hover .go,
+.box.kb .go {
+  opacity: 1;
+}
+
 .box:focus-visible {
   outline: 0;
 }
 
-/* le châssis et ses roues */
+/* le châssis et ses roues (une marque tourne dans chaque roue), avec la barre d'attelage */
 .chassis {
   position: relative;
+  display: block;
   height: 16px;
   margin: 0 8px;
   border: 1px solid var(--line-strong);
   border-top: 0;
   background: var(--bg);
+}
+
+.chassis::after {
+  content: "";
+  position: absolute;
+  left: 100%;
+  top: 2px;
+  width: calc(var(--gap) + 16px);
+  height: 5px;
+  border-top: 1px solid var(--line-strong);
+  border-bottom: 1px solid var(--line-strong);
 }
 
 .chassis i {
@@ -259,6 +606,17 @@ a {
   border: 1px solid var(--line-strong);
   border-radius: 50%;
   background: var(--bg);
+  transform: rotate(var(--rot, 0deg));
+}
+
+.chassis i::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 1px;
+  height: 5px;
+  width: 1px;
+  background: var(--dim);
 }
 
 .chassis i:nth-child(1) {
@@ -277,14 +635,23 @@ a {
   right: 28px;
 }
 
-/* le rail : une ligne, et des traverses qui défilent à la vitesse du train */
+/* le rail : une ligne, des traverses qui défilent, et du ballast qui s'efface vers le bas */
 .rail {
   position: absolute;
   left: 0;
-  bottom: calc(var(--ground) - 16px);
+  bottom: calc(var(--ground) - 90px);
   width: 100%;
-  height: 16px;
+  height: 90px;
   border-top: 1px solid var(--line-strong);
+}
+
+.rail::after {
+  content: "";
+  position: absolute;
+  inset: 12px 0 0;
+  background: radial-gradient(circle, #1c1c1c 0.8px, transparent 1.2px) 0 0 / 9px 7px;
+  -webkit-mask-image: linear-gradient(#000, transparent);
+  mask-image: linear-gradient(#000, transparent);
 }
 
 .ties {
@@ -293,10 +660,560 @@ a {
   background: repeating-linear-gradient(90deg, var(--line-strong) 0 2px, transparent 2px 22px);
 }
 
-.hint {
+/* Le signal de passage à niveau : ses deux feux s'allument chacun leur tour */
+.fumi {
+  position: absolute;
+  left: 0;
+  bottom: calc(var(--ground) - 34px);
+  width: 90px;
+  height: 250px;
+  transform: translate3d(-400px, 0, 0);
+  will-change: transform;
+  pointer-events: none;
+}
+
+.fumi svg {
+  display: block;
+}
+
+.fumi rect,
+.fumi circle {
+  fill: var(--bg);
+}
+
+.fumi .lamp.a {
+  animation: feuA 1s steps(1) infinite;
+}
+
+.fumi .lamp.b {
+  animation: feuB 1s steps(1) infinite;
+}
+
+@keyframes feuA {
+  0% {
+    fill: var(--pink);
+    stroke: var(--pink);
+  }
+  50% {
+    fill: var(--bg);
+    stroke: #3a3a3a;
+  }
+}
+
+@keyframes feuB {
+  0% {
+    fill: var(--bg);
+    stroke: #3a3a3a;
+  }
+  50% {
+    fill: var(--pink);
+    stroke: var(--pink);
+  }
+}
+
+/* Des traînées qui apparaissent quand on va vite */
+.streaks {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.streaks i {
+  position: absolute;
+  left: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #6a6a6a);
+}
+
+/* ---------- Bas de page ---------- */
+.bar {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  width: 100%;
+  padding: 0 28px 18px;
+  font-size: 12px;
+  color: var(--dim);
+  pointer-events: none;
+}
+
+/* La manette : une glissière avec un curseur. Il montre la vitesse, et on peut le tirer. */
+.lever {
+  position: relative;
+  flex: none;
+  align-self: flex-end;
+  width: 210px;
+  height: 22px;
+  margin-bottom: -4px;
+  cursor: ew-resize;
+  pointer-events: auto;
+  touch-action: none;
+  background:
+    linear-gradient(var(--line-strong), var(--line-strong)) 0 50% / 100% 1px no-repeat,
+    linear-gradient(var(--dim), var(--dim)) 50% 50% / 1px 10px no-repeat,
+    linear-gradient(var(--line-strong), var(--line-strong)) 0 50% / 1px 8px no-repeat,
+    linear-gradient(var(--line-strong), var(--line-strong)) 100% 50% / 1px 8px no-repeat;
+}
+
+.lever::before,
+.lever::after {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 11px;
+  color: var(--dim);
+}
+
+.lever::before {
+  content: "<<";
+  right: calc(100% + 10px);
+}
+
+.lever::after {
+  content: ">>";
+  left: calc(100% + 10px);
+}
+
+.knob {
+  position: absolute;
+  top: 2px;
+  left: 50%;
+  width: 8px;
+  height: 18px;
+  margin-left: -4px;
+  border: 1px solid var(--dim);
+  background: var(--bg);
+}
+
+.lever.on .knob {
+  border-color: var(--pink);
+  background: var(--pink);
+}
+
+/* ---------- L'intérieur d'un conteneur ----------
+   Une pièce en 3D faite de cinq plans (fond, deux murs, sol, plafond) et de deux portes.
+   Les couleurs --liv et --liv2 sont celles du conteneur cliqué (voir script.js).
+   Mesures : --rw largeur, --rh hauteur, --len profondeur, --p distance de la caméra. */
+dialog {
+  --rw: min(720px, 92vw);
+  --rh: min(520px, 74vh);
+  --len: 520px;
+  --p: 1000px;
+  --dolly: 380px;
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  background: #070707;
+  color: var(--text);
+}
+
+dialog::backdrop {
+  background: #000;
+}
+
+.view {
+  position: absolute;
+  inset: 0;
+  perspective: var(--p);
+}
+
+/* le conteneur cliqué grossit jusqu'à remplir l'écran */
+dialog[open] .view {
+  transform-origin: var(--ox, 50%) var(--oy, 50%);
+  animation: grossit 0.55s cubic-bezier(0.3, 0, 0.2, 1) backwards;
+}
+
+@keyframes grossit {
+  from {
+    transform: scale(var(--s0, 0.35));
+    opacity: 0;
+  }
+}
+
+/* la caméra penche un peu quand on bouge la souris */
+.cam {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  transition: transform 0.5s ease-out;
+}
+
+.room {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  transform-style: preserve-3d;
+}
+
+/* après l'ouverture des portes, la caméra avance dans le conteneur */
+dialog[open] .room {
+  animation: avance 1s 0.95s cubic-bezier(0.45, 0, 0.2, 1) both;
+}
+
+@keyframes avance {
+  from {
+    transform: translateZ(0);
+  }
+  to {
+    transform: translateZ(var(--dolly));
+  }
+}
+
+.plane {
+  position: absolute;
+}
+
+.back {
+  width: var(--rw);
+  height: var(--rh);
+  left: calc(var(--rw) / -2);
+  top: calc(var(--rh) / -2);
+  transform: translateZ(calc(var(--len) * -1));
+  background: repeating-linear-gradient(90deg, var(--liv, #243240) 0 6px, var(--liv2, #1d2a36) 6px 12px);
+  overflow: hidden;
+}
+
+/* les murs : la tôle ondulée, plus sombre vers la porte (la lumière vient du fond) */
+.wl,
+.wr {
+  width: var(--len);
+  height: var(--rh);
+  left: calc(var(--len) / -2);
+  top: calc(var(--rh) / -2);
+  background:
+    linear-gradient(to right, rgba(0, 0, 0, 0.62), rgba(0, 0, 0, 0.05)),
+    repeating-linear-gradient(90deg, var(--liv, #243240) 0 6px, var(--liv2, #1d2a36) 6px 12px);
+}
+
+.wl {
+  transform: translate3d(calc(var(--rw) / -2), 0, calc(var(--len) / -2)) rotateY(90deg);
+}
+
+.wr {
+  transform: translate3d(calc(var(--rw) / 2), 0, calc(var(--len) / -2)) rotateY(-90deg);
+  background:
+    linear-gradient(to left, rgba(0, 0, 0, 0.62), rgba(0, 0, 0, 0.05)),
+    repeating-linear-gradient(90deg, var(--liv, #243240) 0 6px, var(--liv2, #1d2a36) 6px 12px);
+}
+
+/* le sol : des planches dans le sens de la longueur */
+.floor {
+  width: var(--rw);
+  height: var(--len);
+  left: calc(var(--rw) / -2);
+  top: calc(var(--len) / -2);
+  transform: translate3d(0, calc(var(--rh) / 2), calc(var(--len) / -2)) rotateX(90deg);
+  background:
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.7)),
+    repeating-linear-gradient(90deg, #2c231b 0 46px, #181310 46px 48px);
+}
+
+/* le plafond : des traverses, et deux tubes de lumière roses dans la longueur */
+.ceil {
+  width: var(--rw);
+  height: var(--len);
+  left: calc(var(--rw) / -2);
+  top: calc(var(--len) / -2);
+  transform: translate3d(0, calc(var(--rh) / -2), calc(var(--len) / -2)) rotateX(-90deg);
+  background:
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.62), rgba(0, 0, 0, 0.05)),
+    repeating-linear-gradient(180deg, rgba(0, 0, 0, 0.3) 0 3px, transparent 3px 64px),
+    var(--liv2, #1d2a36);
+}
+
+.tube {
+  position: absolute;
+  top: 12%;
+  height: 78%;
+  width: 4px;
+  background: var(--pink);
+}
+
+.tube.a {
+  left: 27%;
+}
+
+.tube.b {
+  left: 73%;
+}
+
+/* les portes : elles ferment l'entrée, puis tournent sur leurs gonds vers nous */
+.door {
+  width: calc(var(--rw) / 2);
+  height: var(--rh);
+  top: calc(var(--rh) / -2);
+  border: 2px solid var(--line-strong);
+  background:
+    linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)) 78% 0 / 3px 100% no-repeat,
+    linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)) 90% 0 / 3px 100% no-repeat,
+    repeating-linear-gradient(90deg, var(--liv, #243240) 0 6px, var(--liv2, #1d2a36) 6px 12px);
+}
+
+.door span {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  font-size: 11px;
+  letter-spacing: 0.25em;
+  color: rgba(224, 224, 224, 0.35);
+}
+
+.door.l {
+  left: calc(var(--rw) / -2);
+  transform-origin: left center;
+  border-right-color: rgba(0, 0, 0, 0.6);
+}
+
+.door.r {
+  left: 0;
+  transform-origin: right center;
+  border-left-color: rgba(0, 0, 0, 0.6);
+}
+
+dialog[open] .door.l {
+  animation: porte-g 0.8s 0.5s cubic-bezier(0.6, 0, 0.2, 1) forwards;
+}
+
+dialog[open] .door.r {
+  animation: porte-d 0.8s 0.5s cubic-bezier(0.6, 0, 0.2, 1) forwards;
+}
+
+@keyframes porte-g {
+  to {
+    transform: rotateY(-102deg);
+  }
+}
+
+@keyframes porte-d {
+  to {
+    transform: rotateY(102deg);
+  }
+}
+
+/* le projet, accroché au fond du conteneur */
+.content {
+  position: absolute;
+  inset: 0;
+  padding: 26px 28px;
+  font-size: 16px;
+}
+
+.top {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.top p {
+  margin: 0;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.mark::before {
+  content: ">> ";
+  color: var(--pink);
+}
+
+/* le numéro du conteneur, en bas à droite du mur */
+.top .plate {
+  position: absolute;
+  right: 28px;
+  bottom: 12px;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+/* le nom, peint sur le mur */
+.content h2 {
+  max-width: 64%;
+  margin: 12px 0 20px;
+  font-size: 46px;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  color: #f1f1f1;
+}
+
+.pict {
+  position: absolute;
+  right: 34px;
+  top: 118px;
+  width: 120px;
+  height: 120px;
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.16);
+  stroke-width: 0.9;
+  stroke-linejoin: round;
+}
+
+/* la description : un papier épinglé au mur */
+.note {
+  position: relative;
+  width: min(430px, 72%);
+  padding: 20px 22px 18px;
+  background: #d9d9d9;
+  color: #141414;
+  transform: rotate(-1.2deg);
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.4);
+}
+
+.note p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.note .slip {
+  margin-bottom: 8px;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: #666;
+}
+
+.pin {
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  margin-left: -6px;
+  border-radius: 50%;
+  background: var(--pink);
+  border: 2px solid #8a0030;
+}
+
+/* les liens : des étiquettes suspendues au plafond par un fil, qui se balancent doucement */
+.hang {
+  position: absolute;
+  top: 0;
+  right: 26px;
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.hang a {
+  position: relative;
+  display: block;
+  margin-top: var(--cord, 40px);
+  padding: 22px 14px 7px;
+  background: #d9d9d9;
+  color: #141414;
+  font-size: 13px;
+  transform-origin: 50% calc(var(--cord, 40px) * -1);
+  animation: balance 4.2s ease-in-out infinite alternate;
+  animation-delay: var(--d, 0s);
+}
+
+.hang a::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  width: 1px;
+  height: var(--cord, 40px);
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.hang a::after {
+  content: "";
+  position: absolute;
+  top: 7px;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  margin-left: -3px;
+  border-radius: 50%;
+  background: var(--liv2, #1d2a36);
+}
+
+.hang a:hover,
+.hang a:focus-visible {
+  background: var(--pink);
+  color: #fff;
+}
+
+@keyframes balance {
+  from {
+    transform: rotate(-1.8deg);
+  }
+  to {
+    transform: rotate(1.8deg);
+  }
+}
+
+/* les technos : des caisses en bois posées au sol, qui s'empilent s'il y en a beaucoup */
+.crates {
+  position: absolute;
+  left: 28px;
+  right: 28px;
+  bottom: 0;
+  display: flex;
+  flex-wrap: wrap-reverse;
+  align-items: flex-end;
+  gap: 0 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.crates li {
+  padding: 11px 15px;
+  border: 2px solid #2b2016;
+  background:
+    linear-gradient(to top right, transparent calc(50% - 1px), rgba(0, 0, 0, 0.3) 50%, transparent calc(50% + 1px)),
+    linear-gradient(to bottom right, transparent calc(50% - 1px), rgba(0, 0, 0, 0.3) 50%, transparent calc(50% + 1px)),
+    #4a3a2a;
+  color: #ecdfc8;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.crates li:nth-child(3n + 2) {
+  background-color: #3e3125;
+}
+
+.crates li:nth-child(3n) {
+  background-color: #54422f;
+}
+
+.close {
+  position: absolute;
+  top: 18px;
+  right: 24px;
+  z-index: 5;
+  padding: 4px 10px;
+  border: 1px solid var(--line-strong);
+  background: rgba(7, 7, 7, 0.8);
+  font-size: 13px;
+  color: var(--text);
+}
+
+.close:hover {
+  border-color: var(--pink);
+  color: var(--pink);
+}
+
+.exit {
   position: absolute;
   left: 0;
   bottom: 14px;
+  z-index: 5;
   width: 100%;
   margin: 0;
   text-align: center;
@@ -305,145 +1222,24 @@ a {
   pointer-events: none;
 }
 
-/* ---------- La fiche : les portes d'un conteneur qui s'ouvrent ---------- */
-dialog {
-  width: min(560px, calc(100% - 32px));
-  padding: 0;
-  border: 1px solid var(--pink);
-  background: var(--surface);
-  color: var(--text);
+/* la fiche se referme en fondu */
+dialog.sort .view {
+  opacity: 0;
+  transform: scale(1.04);
+  transition: opacity 0.22s, transform 0.22s;
 }
 
-dialog::backdrop {
-  background: rgba(0, 0, 0, 0.72);
+/* le contenu apparaît ligne par ligne quand la caméra arrive au fond */
+dialog[open] .content > * {
+  animation: apparait 0.5s backwards;
 }
 
-.panel {
-  position: relative;
-  overflow: hidden;
-}
-
-.cargo {
-  min-height: 280px;
-  padding: 32px 28px 28px;
-}
-
-.mark {
-  margin: 0 0 6px;
-  font-size: 13px;
-  color: var(--muted);
-}
-
-.mark::before {
-  content: ">> ";
-  color: var(--pink);
-}
-
-dialog h2 {
-  margin: 0 0 14px;
-  font-size: 1.6rem;
-  line-height: 1.25;
-}
-
-dialog p {
-  margin: 0 0 14px;
-  color: var(--muted);
-}
-
-.tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 0 0 18px;
-  padding: 0;
-  list-style: none;
-}
-
-.tags li {
-  padding: 1px 8px;
-  border: 1px solid var(--line-strong);
-  font-size: 12px;
-  color: var(--text);
-}
-
-.links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 24px;
-}
-
-.links a {
-  color: var(--text);
-}
-
-.links a::after {
-  content: " →";
-  color: var(--pink);
-}
-
-.links a:hover {
-  color: var(--pink);
-}
-
-.close {
-  position: absolute;
-  top: 12px;
-  right: 14px;
-  z-index: 3;
-  padding: 2px 8px;
-  border: 0;
-  background: var(--surface);
-  font-size: 13px;
-  color: var(--dim);
-}
-
-.close:hover {
-  color: var(--pink);
-}
-
-.door {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  z-index: 2;
-  width: 50.5%;
-  background: var(--tole);
-  border: 1px solid var(--line-strong);
-}
-
-.door.l {
-  left: 0;
-  border-right-color: var(--pink);
-}
-
-.door.r {
-  right: 0;
-  border-left-color: var(--pink);
-}
-
-dialog[open] .door.l {
-  animation: porte-g 0.85s 0.15s cubic-bezier(0.7, 0, 0.2, 1) forwards;
-}
-
-dialog[open] .door.r {
-  animation: porte-d 0.85s 0.15s cubic-bezier(0.7, 0, 0.2, 1) forwards;
-}
-
-dialog[open] .cargo {
-  animation: apparait 0.5s 0.55s backwards;
-}
-
-@keyframes porte-g {
-  to {
-    transform: translateX(-101%);
-  }
-}
-
-@keyframes porte-d {
-  to {
-    transform: translateX(101%);
-  }
-}
+dialog[open] .content > :nth-child(1) { animation-delay: 1.55s; }
+dialog[open] .content > :nth-child(2) { animation-delay: 1.65s; }
+dialog[open] .content > :nth-child(3) { animation-delay: 1.75s; }
+dialog[open] .content > :nth-child(4) { animation-delay: 1.85s; }
+dialog[open] .content > :nth-child(5) { animation-delay: 2s; }
+dialog[open] .content > :nth-child(6) { animation-delay: 2.1s; }
 
 @keyframes apparait {
   from {
@@ -453,25 +1249,63 @@ dialog[open] .cargo {
 }
 
 @media (max-width: 640px) {
-  .top {
-    padding: 0 18px;
-  }
   :root {
     --box-w: 210px;
     --box-h: 100px;
   }
+  .top,
+  .bar {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+  .right {
+    gap: 16px;
+  }
   .hint {
-    padding: 0 18px;
+    display: none;
+  }
+  .lever {
+    width: 150px;
+    margin-right: 22px;
+  }
+  .content {
+    padding: 112px 20px 22px;
+  }
+  .top .plate {
+    display: none;
+  }
+  .content h2 {
+    max-width: 100%;
+    font-size: 32px;
+  }
+  .pict {
+    display: none;
+  }
+  .note {
+    width: 100%;
+  }
+  .hang {
+    right: 14px;
+  }
+  .hang a {
+    padding: 22px 10px 6px;
+    font-size: 12px;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  dialog[open] .door,
-  dialog[open] .cargo,
-  #city i.lit::after {
+  #stage,
+  dialog[open] .view,
+  dialog[open] .room,
+  dialog[open] .content > *,
+  .hang a,
+  .box,
+  .city i.lit::after,
+  .lw,
+  .sign.on {
     animation: none;
   }
-  dialog[open] .door {
+  .door {
     display: none;
   }
 }
