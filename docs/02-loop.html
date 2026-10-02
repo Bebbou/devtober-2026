@@ -60,7 +60,6 @@
             <tr><td>flèches gauche et droite</td><td>Poussent le train.</td></tr>
             <tr><td>Tab, puis Entrée</td><td>Choisit un conteneur au clavier, le centre à l'écran et l'ouvre.</td></tr>
             <tr><td>Échap</td><td>Sort de l'intérieur.</td></tr>
-            <tr><td>son : off</td><td>Allume le son (éteint au départ).</td></tr>
           </tbody>
         </table>
       </div>
@@ -222,21 +221,6 @@ dlg.style.setProperty("--s1", (P / (P + len - dolly)).toFixed(4));
       </ul>
     </section>
 
-    <section id="son" data-name="le son">
-      <h2>le son</h2>
-      <p>Le son est éteint au départ. Il n'y a aucun fichier audio : tout est fabriqué par le navigateur avec l'API Web Audio.</p>
-      <div class="tblwrap">
-        <table class="tbl">
-          <thead><tr><th>son</th><th>comment</th></tr></thead>
-          <tbody>
-            <tr><td>ronflement des fils</td><td>Trois sons purs à 50, 100 et 150 Hz, à très bas volume.</td></tr>
-            <tr><td>tchac-tchac des roues</td><td>Deux petits claquements de bruit filtré à chaque joint du rail (tous les 260 pixels), plus forts quand on va vite.</td></tr>
-            <tr><td>cloche du passage à niveau</td><td>Trois sons purs qui ne sont pas des multiples l'un de l'autre, deux hauteurs en alternance, placés à gauche ou à droite selon la position du signal.</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-
     <section id="acces" data-name="accessibilité">
       <h2>accessibilité et petits écrans</h2>
       <ul class="bul">
@@ -262,6 +246,8 @@ dlg.style.setProperty("--s1", (P / (P + len - dolly)).toFixed(4));
         <li>Une visionneuse plein écran pour les œuvres, avec zoom.</li>
         <li>Remplir une partie de la fiche (dernier commit, site en ligne) avec les données de Pulse.</li>
       </ul>
+    </section>
+
     <footer class="foot">
       <span>devtober 2026 · jour 02 · par Lino Volle</span>
       <a href="index.html">retour à l'accueil</a>

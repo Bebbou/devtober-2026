@@ -17,7 +17,6 @@
   var orb = $("#orb");
   var odo = $("#odo");
   var dlg = $("#dlg");
-  var sndBtn = $("#snd");
 
   // Vitesse de croisière en pixels par seconde (0 si la personne préfère éviter les animations)
   var reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -251,106 +250,6 @@
     streaks.innerHTML = html;
   }
 
-  /* ---------- Le son (éteint au départ) ----------
-     Tout est fabriqué par le navigateur, aucun fichier : le ronflement des fils électriques,
-     le "tchac-tchac" des roues sur les joints du rail, et la cloche du passage à niveau. */
-  var actx = null;
-  var master = null;
-  var humGain = null;
-  var noiseBuf = null;
-  var soundOn = false;
-  var bellHigh = false;
-  var nextBell = 0;
-  var lastJoint = 0;
-
-  function startAudio() {
-    var AC = window.AudioContext || window.webkitAudioContext;
-    if (!AC) return false;
-    if (!actx) {
-      actx = new AC();
-      master = actx.createGain();
-      master.gain.value = 0.8;
-      master.connect(actx.destination);
-      humGain = actx.createGain();
-      humGain.gain.value = 0;
-      humGain.connect(master);
-      [[50, 0.5], [100, 0.35], [150, 0.12]].forEach(function (p) {
-        var o = actx.createOscillator();
-        o.frequency.value = p[0];
-        var g = actx.createGain();
-        g.gain.value = p[1];
-        o.connect(g);
-        g.connect(humGain);
-        o.start();
-      });
-      noiseBuf = actx.createBuffer(1, Math.floor(actx.sampleRate * 0.15), actx.sampleRate);
-      var data = noiseBuf.getChannelData(0);
-      for (var i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
-    }
-    if (actx.state === "suspended") actx.resume();
-    return true;
-  }
-
-  function clack(vol) {
-    var t = actx.currentTime;
-    var src = actx.createBufferSource();
-    src.buffer = noiseBuf;
-    var f = actx.createBiquadFilter();
-    f.type = "bandpass";
-    f.frequency.value = 800 + Math.random() * 500;
-    f.Q.value = 1.1;
-    var g = actx.createGain();
-    g.gain.setValueAtTime(vol, t);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.07);
-    src.connect(f);
-    f.connect(g);
-    g.connect(master);
-    src.start(t);
-    src.stop(t + 0.1);
-  }
-
-  // Une cloche : trois sons purs qui ne sont pas des multiples l'un de l'autre, qui s'éteignent
-  function bell(pan) {
-    var t = actx.currentTime;
-    var base = bellHigh ? 1850 : 1700;
-    bellHigh = !bellHigh;
-    var g = actx.createGain();
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(0.07, t + 0.005);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.55);
-    if (actx.createStereoPanner) {
-      var p = actx.createStereoPanner();
-      p.pan.value = pan;
-      g.connect(p);
-      p.connect(master);
-    } else {
-      g.connect(master);
-    }
-    [[1, 1], [2.76, 0.35], [5.4, 0.12]].forEach(function (partial) {
-      var o = actx.createOscillator();
-      o.frequency.value = base * partial[0];
-      var og = actx.createGain();
-      og.gain.value = partial[1];
-      o.connect(og);
-      og.connect(g);
-      o.start(t);
-      o.stop(t + 0.6);
-    });
-  }
-
-  sndBtn.addEventListener("click", function () {
-    soundOn = !soundOn;
-    if (soundOn && !startAudio()) soundOn = false;
-    if (actx) humGain.gain.setTargetAtTime(soundOn ? 0.022 : 0, actx.currentTime, 0.4);
-    sndBtn.setAttribute("aria-pressed", String(soundOn));
-    sndBtn.textContent = soundOn ? "son : on" : "son : off";
-  });
-
-  document.addEventListener("visibilitychange", function () {
-    if (!actx || !soundOn) return;
-    if (document.hidden) actx.suspend(); else actx.resume();
-  });
-
   /* ---------- Le cycle du jour ----------
      Le temps ne passe que quand le train avance : il faut DAY pixels pour faire un jour complet,
      et il recule si le train recule. On démarre en pleine nuit (phase 0.78).
@@ -440,7 +339,7 @@
   var leverOn = false; // la manette est tenue
   var leverSpeed = 0;
   // Quand on regarde un projet, le train continue de rouler derrière : le temps passe (le jour, la nuit,
-  // les kilomètres, le son). Seuls le survol d'un conteneur et le focus clavier arrêtent le train.
+  // les kilomètres). Seuls le survol d'un conteneur et le focus clavier arrêtent le train.
   var wanted = function () { return leverOn ? leverSpeed : hover || focused ? 0 : dir * CRUISE; };
 
   var last = 0;
@@ -488,7 +387,6 @@
     // le signal de passage à niveau : il arrive par la droite, traverse l'écran, et revient bien plus tard
     var fx = width + 60 - mod(x * 1.12, width + FUMI_EXTRA);
     fumi.style.transform = "translate3d(" + fx.toFixed(1) + "px,0,0)";
-    var fumiOn = fx > -90 && fx < width;
 
     // les traînées : de plus en plus visibles quand le train va vite
     var level = Math.min(1, Math.max(0, (speed - 380) / 700));
@@ -499,23 +397,6 @@
         var st = STREAKS[s];
         var px = width - mod(x * st.f + st.off, width + st.len);
         all[s].style.transform = "translate3d(" + px + "px,0,0)";
-      }
-    }
-
-    // le son : un "tchac-tchac" à chaque joint du rail, la cloche quand le signal est à l'écran
-    if (soundOn && actx) {
-      var joint = Math.floor(Math.abs(x) / 260);
-      if (joint !== lastJoint) {
-        lastJoint = joint;
-        if (speed > 25) {
-          var vol = 0.05 + Math.min(1, speed / 500) * 0.12;
-          clack(vol);
-          setTimeout(function () { clack(vol * 0.7); }, 85);
-        }
-      }
-      if (fumiOn && now > nextBell) {
-        bell(Math.max(-1, Math.min(1, ((fx + 45) / width) * 2 - 1)) * 0.7);
-        nextBell = now + 620;
       }
     }
 

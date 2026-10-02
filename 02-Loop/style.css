@@ -103,22 +103,6 @@ a {
   gap: 28px;
 }
 
-.snd {
-  padding: 2px 0;
-  border: 0;
-  background: none;
-  font-size: 13px;
-  color: var(--dim);
-}
-
-.snd:hover {
-  color: var(--text);
-}
-
-.snd[aria-pressed="true"] {
-  color: var(--pink);
-}
-
 /* Compteur de vitesse : sens de marche, vitesse, et une jauge d'un trait */
 .speed {
   display: flex;
