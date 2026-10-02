@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0d0d0d">
+<title>Loop · Jour 02 · Devtober 2026</title>
+<meta name="description" content="Jour 02 du Devtober 2026 : Loop, mes projets dans un train de marchandises qui tourne sans fin.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="top">
+  <a class="logo" href="index.html"><i></i>devtober 2026</a>
+</header>
+
+<div class="shell">
+  <aside class="side">
+    <nav id="docNav">
+      <p class="mark">documents</p>
+      <a href="index.html">accueil</a>
+    </nav>
+    <nav id="secNav">
+      <p class="mark">sur cette page</p>
+    </nav>
+  </aside>
+
+  <main>
+    <header>
+      <h1>Loop</h1>
+      <p class="lead">Jour 02. Un portfolio sous forme de train de marchandises qui défile sans fin. Chaque projet est un conteneur : on le survole pour arrêter le train, on clique pour entrer dedans.</p>
+      <p class="links">
+        <a href="../02-Loop/">ouvrir le train</a>
+        <a href="https://github.com/Bebbou/devtober-2026/tree/main/02-Loop">code source</a>
+      </p>
+    </header>
+
+    <section id="apercu" data-name="aperçu">
+      <h2>aperçu</h2>
+      <p>Le train roule tout seul devant une ville dessinée en traits. Cliquer sur un conteneur ouvre ses portes et fait entrer la caméra à l'intérieur.</p>
+      <div class="frame">
+        <iframe src="../02-Loop/index.html" title="Le train Loop, en direct" loading="lazy"></iframe>
+      </div>
+      <p class="cap">Version en direct. <a href="../02-Loop/">L'ouvrir en plein écran</a></p>
+    </section>
+
+    <section id="commandes" data-name="commandes">
+      <h2>commandes</h2>
+      <p>Tout se fait à la souris, au doigt ou au clavier.</p>
+      <div class="tblwrap">
+        <table class="tbl">
+          <thead><tr><th>geste</th><th>effet</th></tr></thead>
+          <tbody>
+            <tr><td>survoler un conteneur</td><td>Le train ralentit jusqu'à s'arrêter, et la porte du conteneur s'allume en rose.</td></tr>
+            <tr><td>cliquer</td><td>Ouvre l'intérieur du conteneur.</td></tr>
+            <tr><td>molette</td><td>Pousse le train : il accélère, freine, ou recule.</td></tr>
+            <tr><td>glisser</td><td>Déplace le train directement. À la fin du geste, il garde la vitesse du geste.</td></tr>
+            <tr><td>manette (en bas)</td><td>À droite le train avance, à gauche il recule, au milieu il s'arrête. Quand on la lâche, il reprend sa croisière.</td></tr>
+            <tr><td>flèches gauche et droite</td><td>Poussent le train.</td></tr>
+            <tr><td>Tab, puis Entrée</td><td>Choisit un conteneur au clavier, le centre à l'écran et l'ouvre.</td></tr>
+            <tr><td>Échap</td><td>Sort de l'intérieur.</td></tr>
+            <tr><td>son : off</td><td>Allume le son (éteint au départ).</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="boucle" data-name="la boucle">
+      <h2>la boucle</h2>
+      <p>Le thème du jour est « Loop » : ici, c'est le train lui-même qui boucle. On construit un tour (tous les conteneurs, une fois), on le répète assez de fois pour remplir l'écran, puis on déplace le train d'un tour exactement avant de recommencer. La couture ne se voit jamais.</p>
+      <div class="code" data-label-js="script.js">
+<script type="text/plain" data-lang="js">
+// x : distance parcourue, sans limite. period : la largeur d'un tour.
+var mod = function (a, n) { return ((a % n) + n) % n; };
+
+// Un tour = les conteneurs une fois. On le répète pour remplir l'écran, plus un.
+var tours = Math.ceil(stage.clientWidth / period) + 1;
+
+// À chaque image, le train n'avance que du reste de la division par un tour.
+train.style.transform = "translate3d(" + -mod(x, period) + "px,0,0)";
+</script>
+      </div>
+      <p>La vitesse ne change pas brutalement : elle glisse vers la vitesse voulue (zéro à l'arrêt, sinon la croisière de 46 pixels par seconde). C'est ce qui donne l'inertie quand on pousse le train à la molette.</p>
+    </section>
+
+    <section id="scene" data-name="la scène">
+      <h2>la scène</h2>
+      <p>La scène est faite de plans empilés, et chacun avance à sa propre vitesse. Plus un plan est loin, plus il est lent : c'est ce qui donne la profondeur.</p>
+      <div class="tblwrap">
+        <table class="tbl">
+          <thead><tr><th>plan</th><th>vitesse (train = 100 %)</th></tr></thead>
+          <tbody>
+            <tr><td>ville au loin</td><td>10 %</td></tr>
+            <tr><td>ville proche, avec ses fenêtres et ses enseignes</td><td>22 %</td></tr>
+            <tr><td>poteaux et fils électriques</td><td>55 %</td></tr>
+            <tr><td>train, rail et traverses</td><td>100 %</td></tr>
+            <tr><td>signal de passage à niveau</td><td>112 %</td></tr>
+            <tr><td>traînées de vitesse (visibles seulement quand on va vite)</td><td>de 170 % à 330 %</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <ul class="bul">
+        <li>Les immeubles sont tirés au hasard avec une graine fixe : ils sont toujours les mêmes, donc la ville boucle aussi.</li>
+        <li>Les fils sont un dessin SVG de 1440 pixels de large, répété : quatre poteaux inclinés, un fil par isolateur qui s'affaisse, et un hauban.</li>
+        <li>Les roues tournent vraiment, et les wagons tressautent d'autant plus que le train va vite.</li>
+        <li>Un compteur affiche la vitesse, le nombre de tours et la distance totale, gardée dans le navigateur d'une visite à l'autre.</li>
+      </ul>
+    </section>
+
+    <section id="temps" data-name="le temps">
+      <h2>le temps</h2>
+      <p>Le jour et la nuit ne dépendent pas de l'horloge mais de la distance parcourue : un jour complet demande 14 000 pixels, soit environ cinq minutes à vitesse de croisière. Si le train s'arrête, le temps s'arrête ; s'il recule, le temps recule. On démarre en pleine nuit.</p>
+      <div class="tblwrap">
+        <table class="tbl">
+          <thead><tr><th>moment</th><th>ciel</th><th>lumières</th></tr></thead>
+          <tbody>
+            <tr><td>aube</td><td>rose très sombre, soleil rose au ras de l'horizon</td><td>s'éteignent</td></tr>
+            <tr><td>jour</td><td>gris sombre, soleil blanc en haut</td><td>éteintes</td></tr>
+            <tr><td>crépuscule</td><td>rose très sombre, soleil qui descend</td><td>s'allument</td></tr>
+            <tr><td>nuit</td><td>noir, lune grise</td><td>fenêtres, néons et feux rouges allumés</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Un seul astre traverse le ciel : le soleil dans la première partie du cycle, la lune ensuite. Le temps continue de passer quand on regarde un projet, car le train roule derrière la fiche.</p>
+    </section>
+
+    <section id="interieur" data-name="l'intérieur">
+      <h2>l'intérieur d'un conteneur</h2>
+      <p>L'intérieur est une vraie pièce en 3D, faite en CSS : cinq plans (fond, deux murs, sol, plafond) et deux portes. Les murs ont la couleur du conteneur cliqué.</p>
+      <div class="tblwrap">
+        <table class="tbl">
+          <thead><tr><th>étape</th><th>ce qui se passe</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>Le conteneur cliqué grossit depuis sa place jusqu'à remplir l'écran, portes fermées.</td></tr>
+            <tr><td>2</td><td>Les deux portes tournent sur leurs gonds.</td></tr>
+            <tr><td>3</td><td>Les tubes du plafond s'allument en clignotant.</td></tr>
+            <tr><td>4</td><td>La caméra avance de 380 pixels dans la pièce.</td></tr>
+            <tr><td>5</td><td>Le contenu du projet apparaît, ligne par ligne.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="code" data-label-css="style.css">
+<script type="text/plain" data-lang="css">
+/* La pièce : un plan par face, placé dans l'espace */
+.wl {
+  transform: translate3d(calc(var(--rw) / -2), 0, calc(var(--len) / -2)) rotateY(90deg);
+}
+
+/* La caméra avance : on rapproche toute la pièce */
+@keyframes avance {
+  from { transform: translateZ(0); }
+  to   { transform: translateZ(var(--dolly)); }
+}
+</script>
+      </div>
+      <h3>le contenu, accroché aux murs</h3>
+      <ul class="bul">
+        <li><strong>Le nom</strong> est peint en grand sur le mur du fond.</li>
+        <li><strong>La description</strong> est sur un papier épinglé de travers.</li>
+        <li><strong>Les liens</strong> sont des étiquettes suspendues au plafond par un fil, qui se balancent. Au-delà de quatre, une deuxième rangée apparaît avec des fils plus longs.</li>
+        <li><strong>Les outils</strong> sont des caisses en bois, de vrais cubes en 3D, posées au sol en pyramide : un rang en bas, puis un de moins à chaque étage. Le logo est peint sur la face avant.</li>
+        <li><strong>L'affiche</strong> (facultative) est une image épinglée au mur, en paysage ou en portrait. Un clic l'ouvre en grand dans un nouvel onglet.</li>
+      </ul>
+      <h3>la lumière</h3>
+      <p>Les deux tubes roses éclairent vraiment la pièce : sur chaque surface, une bande de lumière rose est mélangée à la couleur de la matière (mode <code>screen</code>, qui éclaircit), plus forte sous les tubes. Le dessus des caisses rosit aussi. En plein jour, la lumière qui entre par la porte rend l'entrée du conteneur moins sombre.</p>
+      <h3>pourquoi le texte est à plat</h3>
+      <p>Le texte et les liens ne sont pas dans la scène 3D mais dans une couche 2D posée par-dessus, alignée sur le mur du fond. Raison : dans une scène 3D, le navigateur ne donne pas toujours le clic aux éléments qui s'y trouvent, et les liens ne répondaient pas. La couche est agrandie en même temps que le mur pendant l'avance de la caméra, d'après la formule de la perspective :</p>
+      <div class="code" data-label-js="script.js">
+<script type="text/plain" data-lang="js">
+// À une distance d de la caméra (perspective P), un objet paraît P / (P + d) fois sa taille.
+// Au départ le mur est à "len" de la caméra, à l'arrivée à "len - dolly".
+dlg.style.setProperty("--s0", (P / (P + len)).toFixed(4));
+dlg.style.setProperty("--s1", (P / (P + len - dolly)).toFixed(4));
+</script>
+      </div>
+    </section>
+
+    <section id="projets" data-name="ajouter un projet">
+      <h2>ajouter un projet</h2>
+      <p>Un conteneur est un objet dans <code>02-Loop/projects.js</code>. Pour en ajouter un, on copie un bloc et on change les textes. Les conteneurs se colorent à tour de rôle dans six teintes.</p>
+      <div class="code" data-label-js="projects.js">
+<script type="text/plain" data-lang="js">
+{
+  name: "Mon projet",
+  icon: "pen",
+  kind: "digital painting",
+  text: "Une phrase ou deux sur le projet.",
+  tags: [
+    { name: "Photoshop", logo: "photoshop" },  // une caisse avec son logo
+    "Tablette",                                // une caisse avec le nom seul
+  ],
+  links: [
+    { label: "voir en grand", url: "img/mon-projet.jpg" },
+    { label: "discord", copy: "mon-pseudo" },   // copie un texte au lieu d'ouvrir un lien
+  ],
+  image: "img/mon-projet-small.jpg",            // l'affiche épinglée au mur
+  imageLarge: "img/mon-projet.jpg",             // ouverte au clic sur l'affiche
+  imageAlt: "Ce qu'on voit sur l'image",
+  imageCaption: "LÉGENDE",
+},
+</script>
+      </div>
+      <div class="tblwrap">
+        <table class="tbl">
+          <thead><tr><th>champ</th><th>rôle</th></tr></thead>
+          <tbody>
+            <tr><td>name, kind, text</td><td>Le nom et le type sur le conteneur, la description sur le papier de l'intérieur.</td></tr>
+            <tr><td>icon</td><td>Le pictogramme : chart, pad, sprite, target, columns, user, pen, layers, code, globe. Un dessin <code>box</code> sinon.</td></tr>
+            <tr><td>tone</td><td>La couleur, de 0 à 5. Sans ce champ, elle suit l'ordre.</td></tr>
+            <tr><td>tags</td><td>Les outils. Un nom seul, ou <code>{ name, logo }</code> pour un logo.</td></tr>
+            <tr><td>links</td><td>Les étiquettes suspendues : <code>{ label, url }</code> ou <code>{ label, copy }</code>.</td></tr>
+            <tr><td>image, imageLarge</td><td>L'affiche et sa version en grand (facultatives).</td></tr>
+            <tr><td>imageAlt, imageCaption</td><td>La description de l'image pour les lecteurs d'écran, et la légende.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <ul class="bul">
+        <li>Les logos viennent de <code>02-Loop/logos.js</code>. Pour en ajouter un, on copie son tracé depuis simpleicons.org.</li>
+        <li>Les pictogrammes sont dans <code>ICONS</code>, au début de <code>script.js</code> : une ligne par dessin.</li>
+        <li>Une image pèse de préférence moins de 400 Ko : on garde une petite version pour l'affiche.</li>
+      </ul>
+    </section>
+
+    <section id="son" data-name="le son">
+      <h2>le son</h2>
+      <p>Le son est éteint au départ. Il n'y a aucun fichier audio : tout est fabriqué par le navigateur avec l'API Web Audio.</p>
+      <div class="tblwrap">
+        <table class="tbl">
+          <thead><tr><th>son</th><th>comment</th></tr></thead>
+          <tbody>
+            <tr><td>ronflement des fils</td><td>Trois sons purs à 50, 100 et 150 Hz, à très bas volume.</td></tr>
+            <tr><td>tchac-tchac des roues</td><td>Deux petits claquements de bruit filtré à chaque joint du rail (tous les 260 pixels), plus forts quand on va vite.</td></tr>
+            <tr><td>cloche du passage à niveau</td><td>Trois sons purs qui ne sont pas des multiples l'un de l'autre, deux hauteurs en alternance, placés à gauche ou à droite selon la position du signal.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="acces" data-name="accessibilité">
+      <h2>accessibilité et petits écrans</h2>
+      <ul class="bul">
+        <li>Si le navigateur demande de réduire les animations, le train reste à l'arrêt (on le conduit à la main), les portes ne s'animent pas et les corbeaux ne passent pas.</li>
+        <li>Tout est utilisable au clavier : Tab choisit un conteneur, Entrée l'ouvre, Échap en sort.</li>
+        <li>Le nom d'un outil reste lu par les lecteurs d'écran même quand la caisse n'affiche que son logo.</li>
+        <li>Sur téléphone : les caisses sont plus petites et n'affichent que leur logo, la manette est plus courte, et l'affiche est masquée (il reste l'étiquette « voir en grand »).</li>
+      </ul>
+    </section>
+
+    <section id="limites" data-name="limites">
+      <h2>limites</h2>
+      <p>Ce que Loop ne fait pas encore, et ce qui pourrait venir ensuite.</p>
+      <ul class="bul">
+        <li><strong>La liste des projets est écrite à la main.</strong> Contrairement à Pulse, rien n'est lu automatiquement sur GitHub.</li>
+        <li><strong>Les caisses ne sont pas cliquables</strong> : elles n'affichent que les outils.</li>
+        <li><strong>Le temps dépend du train</strong> : à l'arrêt, le soleil ne bouge plus.</li>
+        <li><strong>Les affiches de projets sont des images fixes</strong>, faites à la main. Si un projet change, il faut refaire l'image.</li>
+      </ul>
+      <h3>Pistes</h3>
+      <ul class="bul">
+        <li>Un filtre par catégorie (développement, infographie…) qui ne garde que certains conteneurs.</li>
+        <li>Une visionneuse plein écran pour les œuvres, avec zoom.</li>
+        <li>Remplir une partie de la fiche (dernier commit, site en ligne) avec les données de Pulse.</li>
+      </ul>
+    <footer class="foot">
+      <span>devtober 2026 · jour 02 · par Lino Volle</span>
+      <a href="index.html">retour à l'accueil</a>
+    </footer>
+  </main>
+</div>
+
+<script src="pages.js"></script>
+<script src="script.js"></script>
+</body>
+</html>

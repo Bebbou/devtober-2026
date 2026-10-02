@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#0d0d0d" />
+    <title>Loop · un train sans fin</title>
+    <meta name="description" content="Mes projets, dans un train de marchandises qui ne s'arrête jamais." />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="top">
+      <a class="logo" href="#"><i></i>loop</a>
+      <div class="right">
+        <button class="snd" id="snd" type="button" aria-pressed="false">son : off</button>
+        <div class="speed" aria-hidden="true">
+          <b id="arrow">··</b>
+          <span id="stamp">0 km/h</span>
+        </div>
+      </div>
+    </header>
+
+    <main id="stage">
+      <!-- Du plus loin au plus proche : le ciel, deux rangées d'immeubles, les fils électriques,
+           le train, le rail, le signal de passage à niveau, puis les traînées de vitesse.
+           Chaque plan défile à sa vitesse. -->
+      <div class="sky" id="sky" aria-hidden="true"><i class="orb" id="orb"></i></div>
+      <div class="city far" aria-hidden="true"><div id="cityFar"></div></div>
+      <div class="city near" aria-hidden="true"><div id="cityNear"></div></div>
+      <div class="wires" id="wires" aria-hidden="true"></div>
+
+      <!-- Le train : les conteneurs sont ajoutés par script.js -->
+      <div class="train" id="train" aria-label="Mes projets"></div>
+
+      <div class="rail" aria-hidden="true"><div class="ties" id="ties"></div></div>
+
+      <!-- Un signal de passage à niveau, qui défile devant le train de temps en temps -->
+      <div class="fumi" id="fumi" aria-hidden="true">
+        <svg viewBox="0 0 90 250" width="90" height="250" fill="none" stroke="#3a3a3a" stroke-width="1.5">
+          <path d="M45 56V250" stroke-width="3" />
+          <rect x="8" y="14" width="74" height="7" transform="rotate(20 45 17)" />
+          <rect x="8" y="14" width="74" height="7" transform="rotate(-20 45 17)" />
+          <path d="M14 46h62" />
+          <circle class="lamp a" cx="26" cy="68" r="8" />
+          <circle class="lamp b" cx="64" cy="68" r="8" />
+          <path d="M16 56a10 10 0 0 1 20 0M54 56a10 10 0 0 1 20 0" />
+          <rect x="36" y="150" width="18" height="24" />
+          <path d="M40 160h10M40 166h10" />
+        </svg>
+      </div>
+
+      <div class="streaks" id="streaks" aria-hidden="true"></div>
+
+      <footer class="bar">
+        <span id="odo">tour 1</span>
+        <!-- La manette : on la tire vers la droite pour avancer, vers la gauche pour reculer -->
+        <div class="lever" id="lever" aria-hidden="true"><i class="knob" id="knob"></i></div>
+        <span class="hint">molette ou glisser pour conduire · cliquer pour ouvrir</span>
+      </footer>
+    </main>
+
+    <!-- Les crédits : la même idée que sur Pulse, en une seule ligne -->
+    <footer class="foot">
+      <p>
+        <span class="mark">crédits</span>
+        Conçu par <a href="https://github.com/Bebbou">Lino Volle</a>
+        · logos <a href="https://simpleicons.org">simple-icons</a>
+      </p>
+      <nav aria-label="Liens">
+        <a href="../docs/02-loop.html">doc</a>
+        <a href="https://github.com/Bebbou/devtober-2026/tree/main/02-Loop">code</a>
+        <a href="https://github.com/Bebbou">github</a>
+      </nav>
+    </footer>
+
+    <!-- L'intérieur d'un conteneur : une vraie pièce en 3D. La caméra entre par la porte,
+         le projet est accroché au fond. -->
+    <dialog id="dlg" aria-labelledby="dName">
+      <button class="close" id="dClose" type="button">fermer</button>
+      <div class="view" id="view">
+        <div class="cam">
+          <div class="room">
+            <div class="plane back"></div>
+            <div class="plane wl"></div>
+            <div class="plane wr"></div>
+            <div class="plane floor"></div>
+            <!-- les caisses des outils, posées au sol devant le mur du fond (remplies par script.js) -->
+            <div class="cargo3d" id="dTags"></div>
+            <div class="plane ceil"><i class="tube a"></i><i class="tube b"></i></div>
+            <div class="plane door l"><span id="dDoorL"></span></div>
+            <div class="plane door r"><span>LINO·LINES</span></div>
+          </div>
+        </div>
+      </div>
+      <!-- Le projet, accroché au fond. C'est une couche 2D alignée sur le mur du fond : les liens
+           restent ainsi cliquables (les clics ne passent pas toujours dans une scène 3D). -->
+      <div class="hud" id="hud">
+        <div class="content">
+          <div class="head">
+            <p class="mark" id="dKind"></p>
+            <p class="plate" id="dPlate"></p>
+          </div>
+          <h2 id="dName"></h2>
+          <svg class="pict" id="dIcon" viewBox="0 0 24 24" aria-hidden="true"></svg>
+          <div class="note">
+            <i class="pin"></i>
+            <p class="slip">BON DE TRANSPORT</p>
+            <p id="dText"></p>
+          </div>
+          <div class="hang" id="dLinks"></div>
+          <!-- l'affiche du projet (facultative) : une image épinglée au mur -->
+          <figure class="poster" id="dPoster" hidden>
+            <i class="pin"></i>
+            <a id="dPosterLink" class="zoom" target="_blank" rel="noopener"><img id="dPosterImg" alt="" decoding="async" /></a>
+            <figcaption id="dPosterCap"></figcaption>
+          </figure>
+        </div>
+      </div>
+      <p class="exit">échap pour sortir</p>
+    </dialog>
+
+    <script src="logos.js"></script>
+    <script src="projects.js"></script>
+    <script src="script.js"></script>
+  </body>
+</html>
