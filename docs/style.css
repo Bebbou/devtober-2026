@@ -330,6 +330,38 @@ a.day:hover .t {
   color: var(--pink);
 }
 
+/* ---------- Portrait (accueil) ---------- */
+.id {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 28px;
+}
+
+.id .who {
+  flex: 1;
+  min-width: 0;
+}
+
+.portrait {
+  flex: none;
+  width: 270px;
+  margin: 0;
+}
+
+.portrait canvas {
+  display: block;
+  width: 270px;
+  height: 270px;
+}
+
+.portrait figcaption {
+  margin-top: 2px;
+  font-size: 12px;
+  text-align: right;
+  color: var(--dim);
+}
+
 /* ---------- Tableaux et listes ---------- */
 .tblwrap {
   margin: 14px 0 16px;
@@ -543,6 +575,18 @@ a.day:hover .t {
   }
   h1 {
     font-size: 1.4rem;
+  }
+  .id {
+    flex-direction: column-reverse;
+    gap: 8px;
+  }
+  .portrait,
+  .portrait canvas {
+    width: 170px;
+    height: 170px;
+  }
+  .portrait figcaption {
+    text-align: left;
   }
   .cal {
     grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
