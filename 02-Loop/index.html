@@ -60,6 +60,20 @@
       </footer>
     </main>
 
+    <!-- Les crédits : la même idée que sur Pulse, en une seule ligne -->
+    <footer class="foot">
+      <p>
+        <span class="mark">crédits</span>
+        Conçu par <a href="https://github.com/Bebbou">Lino Volle</a>
+        · logos <a href="https://simpleicons.org">simple-icons</a>
+      </p>
+      <nav aria-label="Liens">
+        <a href="../docs/02-loop.html">doc</a>
+        <a href="https://github.com/Bebbou/devtober-2026/tree/main/02-Loop">code</a>
+        <a href="https://github.com/Bebbou">github</a>
+      </nav>
+    </footer>
+
     <!-- L'intérieur d'un conteneur : une vraie pièce en 3D. La caméra entre par la porte,
          le projet est accroché au fond. -->
     <dialog id="dlg" aria-labelledby="dName">
@@ -98,7 +112,7 @@
           <!-- l'affiche du projet (facultative) : une image épinglée au mur -->
           <figure class="poster" id="dPoster" hidden>
             <i class="pin"></i>
-            <img id="dPosterImg" alt="" width="640" height="360" />
+            <a id="dPosterLink" class="zoom" target="_blank" rel="noopener"><img id="dPosterImg" alt="" decoding="async" /></a>
             <figcaption id="dPosterCap"></figcaption>
           </figure>
         </div>

@@ -10,8 +10,10 @@
     text   la description, visible quand on ouvre le conteneur
     tags   les outils, en caisses de bois (optionnel) : { name: "React", logo: "react" } pour une caisse
            avec son logo (voir logos.js), ou juste "Illustrator" pour une caisse avec le nom seul
-    links  boutons de la fiche : { label, url } (optionnel)
-    image  une affiche épinglée au mur de l'intérieur, ex. "img/mon-projet.jpg" (optionnel, 16/9 de préférence)
+    links  boutons de la fiche : { label, url } (optionnel). Quatre par rangée, une rangée de plus au-delà.
+           Un bouton peut aussi copier un texte : { label: "discord", copy: "mon-pseudo" }
+    image  une affiche épinglée au mur de l'intérieur, ex. "img/mon-projet.jpg" (optionnel, en paysage ou en portrait)
+    imageLarge  la version en grand, ouverte quand on clique sur l'affiche (optionnel)
            avec imageAlt (description pour les lecteurs d'écran) et imageCaption (légende sous l'affiche)
 
   Les descriptions viennent de la description de chaque dépôt GitHub : corrige-les à ta façon.
@@ -97,13 +99,42 @@ window.LOOP_PROJECTS = [
     links: [{ label: "code", url: "https://github.com/Bebbou/Projet-Phaser-R312" }],
   },
   {
+    name: "Chicken Teriyaki",
+    icon: "pen",
+    kind: "digital painting",
+    text: "Un digital painting : le chicken teriyaki du fast-food Wok To Walk, peint vu de dessus avec ses ingrédients autour : sésame, ciboulette, shichimi, sauce teriyaki, concombre et poulet marinés.",
+    image: "img/chicken-teriyaki-small.jpg",
+    imageLarge: "img/chicken-teriyaki.jpg",
+    imageAlt: "Un plat de poulet teriyaki, du riz et du concombre dans une poêle vue de dessus, entouré de cuillères de sésame et de ciboulette, d'épices et d'une bouteille de sauce, peint à la main sur un fond de papier",
+    imageCaption: "WOK TO WALK · A4",
+    tags: [{ name: "Photoshop", logo: "photoshop" }],
+    links: [{ label: "voir en grand", url: "img/chicken-teriyaki.jpg" }],
+  },
+  {
     name: "Lino",
     icon: "user",
     kind: "à propos",
-    text: "Étudiant en MMI. Je code pour le plaisir, et en ce moment pour le Devtober : un projet par jour pendant un mois.",
+    text: "Étudiant en BUT MMI à l'IUT de Béziers, parcours développement web et dispositifs interactifs. Passionné d'UI/UX et de front-end : des interfaces fluides, soignées, rapides. Ce train fait partie du Devtober : un projet par jour pendant un mois.",
+    image: "img/interface.jpg",
+    imageAlt: "Mon interface : une page sombre et rouge avec mon avatar et la liste de mes liens",
+    imageCaption: "MON INTERFACE",
+    tags: [
+      { name: "HTML", logo: "html" },
+      { name: "CSS", logo: "css" },
+      { name: "JavaScript", logo: "javascript" },
+      { name: "PHP", logo: "php" },
+      { name: "Figma", logo: "figma" },
+      { name: "Adobe CC", logo: "adobecc" },
+    ],
     links: [
-      { label: "GitHub", url: "https://github.com/Bebbou" },
-      { label: "le Devtober", url: "../docs/" },
+      { label: "portfolio", url: "https://bebbou.github.io/portfolio/" },
+      { label: "github", url: "https://github.com/Bebbou" },
+      { label: "linkedin", url: "https://www.linkedin.com/in/lino-volle/" },
+      { label: "instagram", url: "https://www.instagram.com/lino.volle/" },
+      { label: "discord", copy: "bebou.png" },
+      { label: "e-mail", url: "mailto:lino.volle.dev@gmail.com" },
+      { label: "cv", url: "https://bebbou.github.io/interface/cv.html" },
+      { label: "mon interface", url: "https://bebbou.github.io/interface/" },
     ],
   },
 ];

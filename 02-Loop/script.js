@@ -662,7 +662,7 @@
     var pitch = c + 12;
     var cap = Math.max(1, Math.floor((wall - 56) / pitch));
     var n = tags.length;
-    var base = Math.min(cap, Math.max(Math.ceil(n / 2), Math.min(n, 3)));
+    var base = Math.min(cap, Math.ceil((n + 1) / 2)); // le plus petit rang du bas qui tient en deux étages
     var slots = [];
     for (var layer = 0, left = n; left > 0; layer++) {
       var count = Math.min(Math.max(1, base - layer), left);
@@ -703,6 +703,13 @@
     poster.hidden = !p.image;
     if (p.image) {
       $("#dPosterImg").src = p.image;
+      if (p.imageLarge) {
+        $("#dPosterLink").href = p.imageLarge;
+        $("#dPosterLink").title = "voir en grand";
+      } else {
+        $("#dPosterLink").removeAttribute("href");
+        $("#dPosterLink").removeAttribute("title");
+      }
       $("#dPosterImg").alt = p.imageAlt || "";
       $("#dPosterCap").textContent = p.imageCaption || "";
     } else {
@@ -710,12 +717,21 @@
     }
     $("#dPoster").parentElement.classList.toggle("has-poster", !!p.image);
 
-    // les liens deviennent des étiquettes suspendues, chacune avec un fil de longueur différente
-    $("#dLinks").innerHTML = (p.links || []).map(function (l, k) {
-      var ext = /^https?:/.test(l.url);
-      return '<a href="' + esc(l.url) + '"' + (ext ? ' target="_blank" rel="noopener"' : "") +
-        ' style="--cord:' + (34 + (k * 31) % 56) + "px;--d:-" + (k * 1.4).toFixed(1) + 's">' + esc(l.label) + "</a>";
+    // les liens deviennent des étiquettes suspendues, chacune avec un fil de longueur différente.
+    // Quatre par rangée : une rangée de plus (fils plus longs) quand il y en a davantage.
+    var links = p.links || [];
+    var rows = [];
+    for (var r = 0; r < links.length; r += 4) rows.push(links.slice(r, r + 4));
+    $("#dLinks").innerHTML = rows.map(function (row, ri) {
+      return '<div class="hang-row">' + row.map(function (l, k) {
+        var cord = rows.length > 1 ? (ri === 0 ? 30 + (k * 13) % 26 : 100 + (k * 19) % 30) : 34 + (k * 31) % 56;
+        var style = ' style="--cord:' + cord + "px;--d:-" + ((ri * 4 + k) * 1.4).toFixed(1) + 's"';
+        if (l.copy) return '<a href="#" data-copy="' + esc(l.copy) + '"' + style + ">" + esc(l.label) + "</a>";
+        var ext = /^https?:/.test(l.url);
+        return '<a href="' + esc(l.url) + '"' + (ext ? ' target="_blank" rel="noopener"' : "") + style + ">" + esc(l.label) + "</a>";
+      }).join("") + "</div>";
     }).join("");
+    $("#dLinks").parentElement.classList.toggle("many-links", rows.length > 1);
 
     // l'intérieur prend la couleur du conteneur
     var liv = livery(p, i);
@@ -756,6 +772,38 @@
       leaving = false;
     }, reduced ? 0 : 230);
   }
+
+  // Clic sur un lien "copier" : le texte va dans le presse-papiers et l'étiquette le confirme un instant.
+  // Si le navigateur refuse de copier, l'étiquette affiche le texte lui-même pour qu'on puisse le recopier.
+  $("#dLinks").addEventListener("click", function (e) {
+    var a = e.target.closest("a[data-copy]");
+    if (!a) return;
+    e.preventDefault();
+    var text = a.getAttribute("data-copy");
+    var label = a.getAttribute("data-label") || a.textContent;
+    a.setAttribute("data-label", label);
+    var show = function (msg) {
+      a.textContent = msg;
+      clearTimeout(a._t);
+      a._t = setTimeout(function () { a.textContent = label; }, 2200);
+    };
+    var fallback = function () {
+      var ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.cssText = "position:fixed;opacity:0";
+      dlg.appendChild(ta);
+      ta.select();
+      var ok = false;
+      try { ok = document.execCommand("copy"); } catch (err) {}
+      ta.remove();
+      show(ok ? "copié !" : text);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { show("copié !"); }, fallback);
+    } else {
+      fallback();
+    }
+  });
 
   dlg.addEventListener("close", function () { opened = false; });
   dlg.addEventListener("cancel", function (e) { e.preventDefault(); closeFiche(); });
