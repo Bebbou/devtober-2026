@@ -171,7 +171,7 @@ io.on("connection", () => signalerConnexion());
     <section id="collecte" data-name="collecte des données">
       <h2>collecte des données</h2>
       <p>Les chiffres GitHub ne sont pas demandés par chaque visiteur : une GitHub Action les récupère toutes les 15 minutes et les écrit dans un fichier <code>status.json</code>, que le dashboard lit.</p>
-      <p>La raison : l'API GitHub limite à 60 appels par heure et par adresse IP, et un chargement du dashboard en consomme environ 20. Sur un réseau partagé, la limite était vite atteinte pour tout le monde.</p>
+      <p>L'API GitHub limite à 60 appels par heure et par adresse IP, et un chargement du dashboard en consomme environ 20. Sur un réseau partagé, la limite était vite atteinte pour tout le monde.</p>
       <div class="tblwrap">
         <table class="tbl">
           <thead><tr><th>élément</th><th>rôle</th></tr></thead>
@@ -184,7 +184,7 @@ io.on("connection", () => signalerConnexion());
       </div>
       <ul class="bul">
         <li>Le dashboard utilise <code>status.json</code> s'il a moins de 3 heures. Sinon, ou s'il est absent, il interroge l'API directement.</li>
-        <li>Un projet que le robot n'a pas pu lire est simplement omis du fichier : le dashboard le demande lui-même.</li>
+        <li>Un projet que le robot n'a pas pu lire est omis du fichier : le dashboard le demande lui-même.</li>
         <li>Si tous les projets échouent, rien n'est publié et l'Action passe en rouge.</li>
         <li>Les parties en direct (site, serveur, requêtes, battements) ne passent pas par ce fichier.</li>
       </ul>
@@ -192,12 +192,11 @@ io.on("connection", () => signalerConnexion());
 
     <section id="limites" data-name="limites">
       <h2>limites</h2>
-      <p>Ce que Pulse ne fait pas encore, et ce qui pourrait venir ensuite.</p>
       <ul class="bul">
-        <li><strong>Les données GitHub ont jusqu'à 15 minutes de retard</strong>, puisqu'elles passent par <code>status.json</code>. Si ce fichier manque ou a plus de 3 heures, le dashboard retombe sur l'API directe : limitée à 60 appels par heure et par adresse IP, avec 30 minutes de cache et une pause jusqu'à l'heure de reprise donnée par GitHub.</li>
-        <li><strong>« Site en ligne » veut dire que le site répond</strong>, pas qu'il répond correctement : un navigateur ne peut pas lire le code HTTP d'un autre site. La lecture de <code>/stats</code> règle ça pour les projets qui ont un serveur.</li>
-        <li><strong>Le compteur est en mémoire</strong> : il repart de zéro à chaque redémarrage du serveur, déploiement compris.</li>
-        <li><strong>Seul ProNote est branché en temps réel</strong>, car c'est le seul projet qui a un serveur à moi. Les autres cartes battent selon leurs commits.</li>
+        <li>Les données GitHub ont jusqu'à 15 minutes de retard, puisqu'elles passent par <code>status.json</code>. Si ce fichier manque ou a plus de 3 heures, le dashboard retombe sur l'API directe : limitée à 60 appels par heure et par adresse IP, avec 30 minutes de cache et une pause jusqu'à l'heure de reprise donnée par GitHub.</li>
+        <li>« Site en ligne » veut dire que le site répond, pas qu'il répond correctement : un navigateur ne peut pas lire le code HTTP d'un autre site. La lecture de <code>/stats</code> règle ça pour les projets qui ont un serveur.</li>
+        <li>Le compteur est en mémoire : il repart de zéro à chaque redémarrage du serveur, déploiement compris.</li>
+        <li>Seul ProNote est branché en temps réel, car c'est le seul projet qui a un serveur à moi. Les autres cartes battent selon leurs commits.</li>
       </ul>
       <h3>Pistes</h3>
       <ul class="bul">

@@ -67,7 +67,7 @@
 
     <section id="boucle" data-name="la boucle">
       <h2>la boucle</h2>
-      <p>Le thème du jour est « Loop » : ici, c'est le train lui-même qui boucle. On construit un tour (tous les conteneurs, une fois), on le répète assez de fois pour remplir l'écran, puis on déplace le train d'un tour exactement avant de recommencer. La couture ne se voit jamais.</p>
+      <p>Le thème du jour est « Loop » : ici, c'est le train lui-même qui boucle. On construit un tour (tous les conteneurs, une fois), on le répète assez de fois pour remplir l'écran, puis on déplace le train d'un tour exactement avant de recommencer.</p>
       <div class="code" data-label-js="script.js">
 <script type="text/plain" data-lang="js">
 // x : distance parcourue, sans limite. period : la largeur d'un tour.
@@ -80,12 +80,12 @@ var tours = Math.ceil(stage.clientWidth / period) + 1;
 train.style.transform = "translate3d(" + -mod(x, period) + "px,0,0)";
 </script>
       </div>
-      <p>La vitesse ne change pas brutalement : elle glisse vers la vitesse voulue (zéro à l'arrêt, sinon la croisière de 46 pixels par seconde). C'est ce qui donne l'inertie quand on pousse le train à la molette.</p>
+      <p>La vitesse ne change pas brutalement : elle glisse vers la vitesse voulue (zéro à l'arrêt, sinon la croisière de 46 pixels par seconde). Ça donne de l'inertie quand on pousse le train à la molette.</p>
     </section>
 
     <section id="scene" data-name="la scène">
       <h2>la scène</h2>
-      <p>La scène est faite de plans empilés, et chacun avance à sa propre vitesse. Plus un plan est loin, plus il est lent : c'est ce qui donne la profondeur.</p>
+      <p>La scène est faite de plans empilés, et chacun avance à sa propre vitesse. Plus un plan est loin, plus il est lent (c'est la parallaxe).</p>
       <div class="tblwrap">
         <table class="tbl">
           <thead><tr><th>plan</th><th>vitesse (train = 100 %)</th></tr></thead>
@@ -102,14 +102,14 @@ train.style.transform = "translate3d(" + -mod(x, period) + "px,0,0)";
       <ul class="bul">
         <li>Les immeubles sont tirés au hasard avec une graine fixe : ils sont toujours les mêmes, donc la ville boucle aussi.</li>
         <li>Les fils sont un dessin SVG de 1440 pixels de large, répété : quatre poteaux inclinés, un fil par isolateur qui s'affaisse, et un hauban.</li>
-        <li>Les roues tournent vraiment, et les wagons tressautent d'autant plus que le train va vite.</li>
+        <li>Les roues tournent, et les wagons tressautent d'autant plus que le train va vite.</li>
         <li>Un compteur affiche la vitesse, le nombre de tours et la distance totale, gardée dans le navigateur d'une visite à l'autre.</li>
       </ul>
     </section>
 
     <section id="temps" data-name="le temps">
       <h2>le temps</h2>
-      <p>Le jour et la nuit ne dépendent pas de l'horloge mais de la distance parcourue : un jour complet demande 14 000 pixels, soit environ cinq minutes à vitesse de croisière. Si le train s'arrête, le temps s'arrête ; s'il recule, le temps recule. On démarre en pleine nuit.</p>
+      <p>Le jour et la nuit dépendent de la distance parcourue : un jour complet demande 14 000 pixels, soit environ cinq minutes à vitesse de croisière. Si le train s'arrête, le temps s'arrête ; s'il recule, le temps recule. On démarre en pleine nuit.</p>
       <div class="tblwrap">
         <table class="tbl">
           <thead><tr><th>moment</th><th>ciel</th><th>lumières</th></tr></thead>
@@ -126,7 +126,7 @@ train.style.transform = "translate3d(" + -mod(x, period) + "px,0,0)";
 
     <section id="interieur" data-name="l'intérieur">
       <h2>l'intérieur d'un conteneur</h2>
-      <p>L'intérieur est une vraie pièce en 3D, faite en CSS : cinq plans (fond, deux murs, sol, plafond) et deux portes. Les murs ont la couleur du conteneur cliqué.</p>
+      <p>L'intérieur est une pièce en 3D faite en CSS : cinq plans (fond, deux murs, sol, plafond) et deux portes. Les murs ont la couleur du conteneur cliqué.</p>
       <div class="tblwrap">
         <table class="tbl">
           <thead><tr><th>étape</th><th>ce qui se passe</th></tr></thead>
@@ -155,16 +155,16 @@ train.style.transform = "translate3d(" + -mod(x, period) + "px,0,0)";
       </div>
       <h3>le contenu, accroché aux murs</h3>
       <ul class="bul">
-        <li><strong>Le nom</strong> est peint en grand sur le mur du fond.</li>
-        <li><strong>La description</strong> est sur un papier épinglé de travers.</li>
-        <li><strong>Les liens</strong> sont des étiquettes suspendues au plafond par un fil, qui se balancent. Au-delà de quatre, une deuxième rangée apparaît avec des fils plus longs.</li>
-        <li><strong>Les outils</strong> sont des caisses en bois, de vrais cubes en 3D, posées au sol en pyramide : un rang en bas, puis un de moins à chaque étage. Le logo est peint sur la face avant.</li>
-        <li><strong>L'affiche</strong> (facultative) est une image épinglée au mur, en paysage ou en portrait. Un clic l'ouvre en grand dans un nouvel onglet.</li>
+        <li>Le nom est peint en grand sur le mur du fond.</li>
+        <li>La description est sur un papier épinglé de travers.</li>
+        <li>Les liens sont des étiquettes suspendues au plafond par un fil, qui se balancent. Au-delà de quatre, une deuxième rangée apparaît avec des fils plus longs.</li>
+        <li>Les outils sont des caisses en bois, des cubes en 3D, posées au sol en pyramide : un rang en bas, puis un de moins à chaque étage. Le logo est peint sur la face avant.</li>
+        <li>L'affiche (facultative) est une image épinglée au mur, en paysage ou en portrait. Un clic l'ouvre en grand dans un nouvel onglet.</li>
       </ul>
       <h3>la lumière</h3>
-      <p>Les deux tubes roses éclairent vraiment la pièce : sur chaque surface, une bande de lumière rose est mélangée à la couleur de la matière (mode <code>screen</code>, qui éclaircit), plus forte sous les tubes. Le dessus des caisses rosit aussi. En plein jour, la lumière qui entre par la porte rend l'entrée du conteneur moins sombre.</p>
+      <p>Les deux tubes roses éclairent la pièce : sur chaque surface, une bande de lumière rose est mélangée à la couleur de la matière (mode <code>screen</code>, qui éclaircit), plus forte sous les tubes. Le dessus des caisses rosit aussi. En plein jour, la lumière qui entre par la porte rend l'entrée du conteneur moins sombre.</p>
       <h3>pourquoi le texte est à plat</h3>
-      <p>Le texte et les liens ne sont pas dans la scène 3D mais dans une couche 2D posée par-dessus, alignée sur le mur du fond. Raison : dans une scène 3D, le navigateur ne donne pas toujours le clic aux éléments qui s'y trouvent, et les liens ne répondaient pas. La couche est agrandie en même temps que le mur pendant l'avance de la caméra, d'après la formule de la perspective :</p>
+      <p>Le texte et les liens sont dans une couche 2D posée par-dessus la scène, alignée sur le mur du fond. Dans la scène 3D, le navigateur ne donne pas toujours le clic aux éléments qui s'y trouvent, et les liens ne répondaient pas. La couche est agrandie en même temps que le mur pendant l'avance de la caméra, d'après la formule de la perspective :</p>
       <div class="code" data-label-js="script.js">
 <script type="text/plain" data-lang="js">
 // À une distance d de la caméra (perspective P), un objet paraît P / (P + d) fois sa taille.
@@ -233,12 +233,11 @@ dlg.style.setProperty("--s1", (P / (P + len - dolly)).toFixed(4));
 
     <section id="limites" data-name="limites">
       <h2>limites</h2>
-      <p>Ce que Loop ne fait pas encore, et ce qui pourrait venir ensuite.</p>
       <ul class="bul">
-        <li><strong>La liste des projets est écrite à la main.</strong> Contrairement à Pulse, rien n'est lu automatiquement sur GitHub.</li>
-        <li><strong>Les caisses ne sont pas cliquables</strong> : elles n'affichent que les outils.</li>
-        <li><strong>Le temps dépend du train</strong> : à l'arrêt, le soleil ne bouge plus.</li>
-        <li><strong>Les affiches de projets sont des images fixes</strong>, faites à la main. Si un projet change, il faut refaire l'image.</li>
+        <li>La liste des projets est écrite à la main : contrairement à Pulse, rien n'est lu automatiquement sur GitHub.</li>
+        <li>Les caisses ne sont pas cliquables : elles n'affichent que les outils.</li>
+        <li>Le temps dépend du train : à l'arrêt, le soleil ne bouge plus.</li>
+        <li>Les affiches sont des images fixes : si un projet change, il faut refaire l'image.</li>
       </ul>
       <h3>Pistes</h3>
       <ul class="bul">

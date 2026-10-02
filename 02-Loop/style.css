@@ -4,7 +4,7 @@
 
   L'ambiance vient de Serial Experiments Lain : des fils électriques partout, des corbeaux,
   des enseignes verticales, un passage à niveau. Le rose n'apparaît que sur ce qui est allumé
-  ou actif : un néon, un feu, la lampe de la locomotive, la porte qu'on survole.
+  ou actif : un néon, un feu, la porte qu'on survole.
 */
 :root {
   --bg: #0d0d0d;
@@ -379,7 +379,7 @@ a {
   background-position: 0 0;
 }
 
-/* Le train : des locomotives et des conteneurs, déplacés par script.js */
+/* Le train : des conteneurs, déplacés par script.js */
 .train {
   position: absolute;
   left: 0;
@@ -434,7 +434,7 @@ a {
     linear-gradient(rgba(0, 0, 0, 0.3), transparent 80%) var(--s3, 85%) 0 / 4px 100% no-repeat;
 }
 
-/* les détails d'un vrai conteneur : coins renforcés, deux longerons, verrous de la porte */
+/* les détails d'un conteneur : coins renforcés, deux longerons, verrous de la porte */
 .cont::before {
   content: "";
   position: absolute;
@@ -898,7 +898,7 @@ dialog[open] .room {
     allume-tubes 1.3s 0.75s steps(1, end) both;
 }
 
-/* les tubes s'allument en clignotant, comme de vrais néons, puis restent allumés */
+/* les tubes s'allument en clignotant, comme des néons, puis restent allumés */
 @keyframes allume-tubes {
   0%,
   100% {
@@ -1357,7 +1357,7 @@ dialog[open] .hud {
   }
 }
 
-/* Les technos : de vraies caisses en bois, des cubes en 3D posés sur le sol devant le mur du fond.
+/* Les technos : des caisses en bois, des cubes en 3D posés sur le sol devant le mur du fond.
    Leur origine est au pied du mur, au milieu ; script.js place chaque caisse (--x, --y, --z, --yaw). */
 .cargo3d {
   position: absolute;

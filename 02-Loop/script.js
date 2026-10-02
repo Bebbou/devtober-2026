@@ -32,10 +32,10 @@
 
   /* ---------- Le train ----------
      Un "tour" = la liste des conteneurs, une fois. On le répète assez de fois pour remplir
-     l'écran, et on déplace le train d'un tour exactement : la couture ne se voit jamais. */
+     l'écran, et on déplace le train d'un tour exactement : on ne voit pas la couture. */
   var period = 0; // largeur d'un tour, en pixels
 
-  // La couleur de chaque conteneur : des teintes de vrais conteneurs, passées et sombres
+  // La couleur de chaque conteneur : des teintes de conteneurs, passées et sombres
   var LIVERIES = [
     ["#243240", "#1d2a36"], // acier
     ["#3d1c22", "#33171c"], // lie-de-vin
