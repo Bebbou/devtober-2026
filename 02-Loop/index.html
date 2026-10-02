@@ -67,35 +67,46 @@
       <div class="view" id="view">
         <div class="cam">
           <div class="room">
-            <div class="plane back">
-              <div class="content">
-                <div class="top">
-                  <p class="mark" id="dKind"></p>
-                  <p class="plate" id="dPlate"></p>
-                </div>
-                <h2 id="dName"></h2>
-                <svg class="pict" id="dIcon" viewBox="0 0 24 24" aria-hidden="true"></svg>
-                <div class="note">
-                  <i class="pin"></i>
-                  <p class="slip">BON DE TRANSPORT</p>
-                  <p id="dText"></p>
-                </div>
-                <div class="hang" id="dLinks"></div>
-                <ul class="crates" id="dTags"></ul>
-              </div>
-            </div>
+            <div class="plane back"></div>
             <div class="plane wl"></div>
             <div class="plane wr"></div>
             <div class="plane floor"></div>
+            <!-- les caisses des outils, posées au sol devant le mur du fond (remplies par script.js) -->
+            <div class="cargo3d" id="dTags"></div>
             <div class="plane ceil"><i class="tube a"></i><i class="tube b"></i></div>
             <div class="plane door l"><span id="dDoorL"></span></div>
             <div class="plane door r"><span>LINO·LINES</span></div>
           </div>
         </div>
       </div>
+      <!-- Le projet, accroché au fond. C'est une couche 2D alignée sur le mur du fond : les liens
+           restent ainsi cliquables (les clics ne passent pas toujours dans une scène 3D). -->
+      <div class="hud" id="hud">
+        <div class="content">
+          <div class="head">
+            <p class="mark" id="dKind"></p>
+            <p class="plate" id="dPlate"></p>
+          </div>
+          <h2 id="dName"></h2>
+          <svg class="pict" id="dIcon" viewBox="0 0 24 24" aria-hidden="true"></svg>
+          <div class="note">
+            <i class="pin"></i>
+            <p class="slip">BON DE TRANSPORT</p>
+            <p id="dText"></p>
+          </div>
+          <div class="hang" id="dLinks"></div>
+          <!-- l'affiche du projet (facultative) : une image épinglée au mur -->
+          <figure class="poster" id="dPoster" hidden>
+            <i class="pin"></i>
+            <img id="dPosterImg" alt="" width="640" height="360" />
+            <figcaption id="dPosterCap"></figcaption>
+          </figure>
+        </div>
+      </div>
       <p class="exit">échap pour sortir</p>
     </dialog>
 
+    <script src="logos.js"></script>
     <script src="projects.js"></script>
     <script src="script.js"></script>
   </body>

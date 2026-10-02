@@ -392,6 +392,7 @@
     root.setProperty("--near", rgb(mix(bg, white, 0.1)));
     root.setProperty("--dots", rgb(mix(bg, white, 0.075)));
     root.setProperty("--lit", lit.toFixed(2));
+    root.setProperty("--day", (1 - lit).toFixed(2)); // 1 en plein jour : la lumière entre par la porte du conteneur
 
     // l'astre : un arc d'un bord à l'autre, rose près de l'horizon quand c'est le soleil
     var sun = p < 0.62;
@@ -438,7 +439,9 @@
 
   var leverOn = false; // la manette est tenue
   var leverSpeed = 0;
-  var wanted = function () { return leverOn ? leverSpeed : hover || focused || opened ? 0 : dir * CRUISE; };
+  // Quand on regarde un projet, le train continue de rouler derrière : le temps passe (le jour, la nuit,
+  // les kilomètres, le son). Seuls le survol d'un conteneur et le focus clavier arrêtent le train.
+  var wanted = function () { return leverOn ? leverSpeed : hover || focused ? 0 : dir * CRUISE; };
 
   var last = 0;
   var shown = {}; // dernières valeurs écrites dans la page, pour ne rien réécrire pour rien
@@ -460,7 +463,7 @@
 
     if (!dragging) {
       // freine vite quand on survole, reprend doucement ensuite
-      var k = leverOn ? 3 : hover || focused || opened ? 5 : 1.4;
+      var k = leverOn ? 3 : hover || focused ? 5 : 1.4;
       v += (wanted() - v) * (1 - Math.exp(-dt * k));
       x += v * dt;
     }
@@ -648,6 +651,41 @@
     if (e.key === "ArrowLeft") push(-500);
   });
 
+  /* ---------- Les caisses ----------
+     Les outils d'un projet : un simple nom, ou { name, logo } pour peindre le logo sur la caisse.
+     On les empile en pyramide devant le mur du fond : un rang en bas, puis un rang de moins à chaque
+     étage, chaque caisse centrée sur celles du dessous. Chaque caisse est un cube en 3D. */
+  function crates(tags) {
+    if (!tags.length) return "";
+    var wall = $(".back").offsetWidth; // largeur du mur du fond, en pixels
+    var c = parseFloat(getComputedStyle(dlg).getPropertyValue("--c")) || 74;
+    var pitch = c + 12;
+    var cap = Math.max(1, Math.floor((wall - 56) / pitch));
+    var n = tags.length;
+    var base = Math.min(cap, Math.max(Math.ceil(n / 2), Math.min(n, 3)));
+    var slots = [];
+    for (var layer = 0, left = n; left > 0; layer++) {
+      var count = Math.min(Math.max(1, base - layer), left);
+      for (var m = 0; m < count; m++) slots.push({ x: (m - (count - 1) / 2) * pitch, layer: layer });
+      left -= count;
+    }
+    return tags.map(function (t, i) {
+      var slot = slots[i];
+      var name = typeof t === "string" ? t : t.name;
+      var path = typeof t === "string" ? "" : (window.LOOP_LOGOS || {})[t.logo];
+      var logo = path ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="' + path + '"/></svg>' : "";
+      var yaw = (i * 53) % 17 - 8; // chaque caisse est posée un peu de travers, toujours de la même façon
+      var style =
+        "--x:" + slot.x.toFixed(1) + "px;--y:" + -slot.layer * c + "px;--z:" + (c / 2 + 16 + ((i * 7) % 5) * 3) + "px;--yaw:" + yaw + "deg";
+      return (
+        '<div class="crate" style="' + style + '">' +
+          '<i class="f front' + (logo ? " logo" : "") + '">' + logo + "<span>" + esc(name) + "</span></i>" +
+          '<i class="f left"></i><i class="f right"></i><i class="f top"></i>' +
+        "</div>"
+      );
+    }).join("");
+  }
+
   /* ---------- L'intérieur du conteneur ---------- */
   function open(i, from) {
     var p = PROJECTS[i];
@@ -660,7 +698,17 @@
     $("#dIcon").innerHTML = '<path d="' + icon(p.icon) + '"/>';
 
     // les technos deviennent des caisses
-    $("#dTags").innerHTML = (p.tags || []).map(function (t) { return "<li>" + esc(t) + "</li>"; }).join("");
+    // l'affiche : une image épinglée au mur, si le projet en a une (champ "image", et "imageCaption" pour la légende)
+    var poster = $("#dPoster");
+    poster.hidden = !p.image;
+    if (p.image) {
+      $("#dPosterImg").src = p.image;
+      $("#dPosterImg").alt = p.imageAlt || "";
+      $("#dPosterCap").textContent = p.imageCaption || "";
+    } else {
+      $("#dPosterImg").removeAttribute("src");
+    }
+    $("#dPoster").parentElement.classList.toggle("has-poster", !!p.image);
 
     // les liens deviennent des étiquettes suspendues, chacune avec un fil de longueur différente
     $("#dLinks").innerHTML = (p.links || []).map(function (l, k) {
@@ -681,10 +729,19 @@
       dlg.style.setProperty("--oy", r.top + r.height / 2 + "px");
       dlg.style.setProperty("--s0", Math.max(0.2, Math.min(0.6, r.width / Math.min(720, window.innerWidth * 0.92))).toFixed(2));
     }
-    dlg.style.setProperty("--rx", "0deg");
-    dlg.style.setProperty("--ry", "0deg");
+    // la couche du projet grossit comme le mur du fond : à une distance d de la caméra, un objet
+    // paraît P / (P + d) fois sa taille. Au départ le mur est à "len", à l'arrivée à "len - dolly".
+    var css = getComputedStyle(dlg);
+    var P = parseFloat(css.getPropertyValue("--p"));
+    var len = parseFloat(css.getPropertyValue("--len"));
+    var dolly = parseFloat(css.getPropertyValue("--dolly"));
+    dlg.style.setProperty("--s0", (P / (P + len)).toFixed(4));
+    dlg.style.setProperty("--s1", (P / (P + len - dolly)).toFixed(4));
     opened = true;
     dlg.showModal();
+
+    // les outils deviennent des caisses en bois posées au sol (après l'ouverture : on a besoin de la largeur du mur)
+    $("#dTags").innerHTML = crates(p.tags || []);
   }
 
   // on sort en fondu
@@ -703,13 +760,6 @@
   dlg.addEventListener("close", function () { opened = false; });
   dlg.addEventListener("cancel", function (e) { e.preventDefault(); closeFiche(); });
   $("#dClose").addEventListener("click", closeFiche);
-
-  // la caméra penche légèrement du côté de la souris
-  dlg.addEventListener("pointermove", function (e) {
-    if (reduced || e.pointerType !== "mouse") return;
-    dlg.style.setProperty("--ry", ((e.clientX / window.innerWidth - 0.5) * 5).toFixed(2) + "deg");
-    dlg.style.setProperty("--rx", (-(e.clientY / window.innerHeight - 0.5) * 4).toFixed(2) + "deg");
-  });
 
   /* ---------- Démarrage ---------- */
   function buildAll() {
