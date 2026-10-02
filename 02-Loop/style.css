@@ -1,0 +1,144 @@
+/*
+  Même direction artistique que Pulse : fond #0D0D0D, texte #E0E0E0, accent #FF0055.
+  Ici le rose est la lumière des fenêtres du train.
+*/
+:root {
+  --bg: #0d0d0d;
+  --text: #e0e0e0;
+  --muted: #8c8c8c;
+  --dim: #5a5a5a;
+  --line: #1f1f1f;
+  --line-strong: #333333;
+  --pink: #ff0055;
+  --font: "Courier New", Courier, monospace;
+
+  /* Réglages du train : à modifier ici */
+  --wagon-w: 220px;
+  --wagon-h: 90px;
+  --gap: 14px;
+  /* Durée d'un tour complet : plus c'est grand, plus le train est lent */
+  --speed: 24s;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.6 var(--font);
+  overflow: hidden;
+}
+
+.top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 28px;
+}
+
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.logo i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--pink);
+}
+
+.stamp {
+  color: var(--dim);
+  font-size: 13px;
+}
+
+/* ---------- Scène ---------- */
+main {
+  height: calc(100% - 70px);
+  display: grid;
+  place-items: center;
+}
+
+.scene {
+  width: 100%;
+  overflow: hidden;
+}
+
+/* Le train est deux fois la même suite de wagons : quand la première moitié sort de l'écran,
+   la seconde est exactement à sa place, et l'animation repart sans qu'on voie la couture. */
+.train {
+  display: flex;
+  width: max-content;
+  gap: var(--gap);
+  padding-right: var(--gap);
+  animation: roule var(--speed) linear infinite;
+}
+
+@keyframes roule {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.wagon {
+  position: relative;
+  flex: none;
+  width: var(--wagon-w);
+  height: var(--wagon-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-evenly;
+  padding: 0 12px;
+  border: 1px solid var(--line-strong);
+  background: #111;
+}
+
+/* attelage entre deux wagons */
+.wagon::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 100%;
+  width: var(--gap);
+  height: 1px;
+  background: var(--line-strong);
+}
+
+.window {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--pink);
+  background: rgba(255, 0, 85, 0.12);
+}
+
+.wagon small {
+  position: absolute;
+  left: 10px;
+  bottom: 6px;
+  font-size: 11px;
+  color: var(--dim);
+}
+
+.rail {
+  height: 1px;
+  margin-top: 12px;
+  background: var(--line-strong);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .train {
+    animation-duration: calc(var(--speed) * 4);
+  }
+}
