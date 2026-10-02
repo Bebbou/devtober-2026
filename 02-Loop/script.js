@@ -76,7 +76,7 @@
       '<button class="box" type="button" data-i="' + i + '" style="' + vars + '"' + (real ? "" : ' tabindex="-1" aria-hidden="true"') + ">" +
         '<span class="cont"><span class="wear"></span><span class="id">' + plate(i) + "</span>" +
         '<span class="stencil">LINO·LINES</span>' +
-        "<b>" + esc(p.name) + "</b><small>" + esc(p.kind) + "</small>" +
+        "<b" + (p.name.length > 18 ? ' class="long"' : "") + ">" + esc(p.name) + "</b><small>" + esc(p.kind) + "</small>" +
         '<svg class="pict" viewBox="0 0 24 24" aria-hidden="true"><path d="' + icon(p.icon) + '"/></svg><span class="go">ouvrir →</span></span>' +
         '<span class="chassis"><i></i><i></i><i></i><i></i></span>' +
       "</button>"

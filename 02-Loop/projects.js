@@ -111,6 +111,22 @@ window.LOOP_PROJECTS = [
     links: [{ label: "voir en grand", url: "img/chicken-teriyaki.jpg" }],
   },
   {
+    name: "Printemps de la Culture",
+    icon: "layers",
+    kind: "affiche · exercice",
+    text: "Une affiche A3 pour le Printemps de la Culture de Brignoles, édition 2026 : un tournesol dont le cœur est La Nuit étoilée, du papier déchiré, les icônes des arts. Un exercice de cours pour travailler avec une IA : j'ai préparé les deux parties de la fleur, elle les a assemblées.",
+    image: "img/printemps-culture-small.jpg",
+    imageLarge: "img/printemps-culture.jpg",
+    imageAlt: "L'affiche du Printemps de la Culture 2026 : un grand tournesol dont le cœur reproduit La Nuit étoilée, sur des bandes de papier déchiré bleues et vertes, avec le titre en haut, les dates en bas et les logos des partenaires",
+    imageCaption: "AFFICHE A3 · 2026",
+    tags: [
+      { name: "Photoshop", logo: "photoshop" },
+      { name: "InDesign", logo: "indesign" },
+      { name: "Gemini", logo: "gemini" },
+    ],
+    links: [{ label: "voir en grand", url: "img/printemps-culture.jpg" }],
+  },
+  {
     name: "Lino",
     icon: "user",
     kind: "à propos",
