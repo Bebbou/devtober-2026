@@ -1,0 +1,362 @@
+/*
+  Direction artistique du Devtober : fond #0D0D0D, texte #E0E0E0, accent #FF0055.
+  Le rose n'apparaît que sur ce qui est vivant : ici, ce qui a refleuri. Traits de 1px, pas de lueur.
+  Police : Courier New (comme Loop).
+*/
+:root {
+  --bg: #0d0d0d;
+  --surface: #111111;
+  --text: #e0e0e0;
+  --muted: #8c8c8c;
+  --dim: #5a5a5a;
+  --line: #1f1f1f;
+  --line-strong: #333333;
+  --pink: #ff0055;
+  --font: "Courier New", Courier, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+html {
+  background: var(--bg);
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.6 var(--font);
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+::selection {
+  background: var(--pink);
+  color: #fff;
+}
+
+:focus-visible {
+  outline: 2px solid var(--pink);
+  outline-offset: 3px;
+}
+
+/* Marqueur de section : ">> titre" */
+.mark {
+  margin: 0;
+  color: var(--muted);
+}
+
+.mark::before {
+  content: ">> ";
+  color: var(--pink);
+}
+
+/* ---------- En-tête ---------- */
+.top {
+  flex: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 70px;
+  padding: 0 28px;
+}
+
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--pink);
+}
+
+.right {
+  display: flex;
+  align-items: baseline;
+  gap: 8px 24px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.count b {
+  display: inline-block;
+  min-width: 5ch;
+  font-weight: 400;
+  text-align: right;
+  color: var(--text);
+}
+
+.top.done .count b {
+  color: var(--pink);
+}
+
+.btn {
+  padding: 0;
+  white-space: nowrap;
+  border: 0;
+  border-bottom: 1px solid var(--line-strong);
+  background: none;
+  color: var(--muted);
+}
+
+.btn:hover {
+  color: var(--pink);
+  border-color: var(--pink);
+}
+
+/* ---------- Scène ---------- */
+#stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  animation: entree 1.2s ease-out backwards;
+}
+
+@keyframes entree {
+  from {
+    opacity: 0;
+  }
+}
+
+#cv {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  /* le pointeur est un petit rond : le pinceau, avant qu'il se pose */
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18'%3E%3Ccircle cx='9' cy='9' r='4' fill='none' stroke='%238c8c8c'/%3E%3C/svg%3E") 9 9, crosshair;
+}
+
+/* les corbeaux, perchés sur les arbres morts : ils partent quand l'arbre refleurit */
+.crows {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.crow {
+  position: absolute;
+  left: 0;
+  top: 0;
+  will-change: transform;
+}
+
+.crow svg {
+  display: block;
+  overflow: visible;
+}
+
+.crow .sit path {
+  fill: #3c3c3c;
+}
+
+.crow .sit .pattes {
+  fill: none;
+  stroke: #3c3c3c;
+}
+
+.crow .fly,
+.crow.flying .sit {
+  display: none;
+}
+
+.crow.flying .fly {
+  display: block;
+}
+
+.crow .fly path {
+  fill: none;
+  stroke: #8c8c8c;
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+}
+
+.crow .fly .haut {
+  animation: ailes 0.4s steps(1) infinite;
+}
+
+.crow .fly .bas {
+  animation: ailes 0.4s steps(1) infinite;
+  animation-delay: -0.2s;
+}
+
+@keyframes ailes {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+/* l'anneau qui dit que le cercle a été reconnu : rose s'il a fait fleurir quelque chose */
+.ring {
+  position: absolute;
+  border: 1px solid var(--muted);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.ring.hit {
+  border-color: var(--pink);
+}
+
+/* le sceau, tamponné quand tout a refleuri */
+.hanko {
+  position: absolute;
+  right: 28px;
+  bottom: 44px;
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  background: var(--pink);
+  color: var(--bg);
+  font: 600 36px/1 "Yu Gothic", "Hiragino Sans", "Noto Sans JP", "Meiryo", sans-serif;
+  clip-path: polygon(1% 4%, 22% 0, 51% 2%, 79% 0, 99% 3%, 100% 31%, 98% 62%, 100% 97%, 71% 100%, 46% 98%, 20% 100%, 0 96%, 2% 66%, 0 35%);
+  opacity: 0;
+  transform: scale(1.5) rotate(-6deg);
+  transition: opacity 0.12s, transform 0.28s cubic-bezier(0.2, 1.5, 0.4, 1);
+  pointer-events: none;
+}
+
+.hanko.show {
+  opacity: 0.95;
+  transform: scale(1) rotate(-6deg);
+}
+
+.hanko.now {
+  transition: none;
+}
+
+.hint {
+  position: absolute;
+  left: 28px;
+  bottom: 14px;
+  margin: 0;
+  font-size: 12px;
+  color: var(--dim);
+  pointer-events: none;
+  transition: opacity 1.2s;
+}
+
+.hint.off {
+  opacity: 0;
+}
+
+/* lu par les lecteurs d'écran seulement */
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ---------- Pied de page : les crédits ---------- */
+.foot {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px 28px;
+  padding: 12px 28px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+  color: var(--dim);
+}
+
+.foot p {
+  margin: 0;
+}
+
+.foot .mark {
+  display: inline;
+  margin-right: 8px;
+}
+
+.foot nav {
+  display: flex;
+  gap: 6px 16px;
+}
+
+.foot a {
+  color: var(--muted);
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.foot a:hover {
+  color: var(--pink);
+  border-color: var(--pink);
+}
+
+@media (max-width: 560px) {
+  .top {
+    padding: 0 16px;
+  }
+
+  .right {
+    font-size: 12px;
+    gap: 4px 14px;
+  }
+
+  .lbl {
+    display: none;
+  }
+
+  .hint {
+    left: 16px;
+    right: 16px;
+  }
+
+  .hanko {
+    right: 16px;
+    bottom: 40px;
+    width: 46px;
+    height: 46px;
+    font-size: 28px;
+  }
+
+  .foot {
+    padding: 10px 16px;
+  }
+}
+
+/* Les animations CSS s'arrêtent si le navigateur le demande (script.js tient compte de `calm`) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

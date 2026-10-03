@@ -16,8 +16,10 @@ Site statique sur GitHub Pages : `https://bebbou.github.io/devtober-2026/`. La r
 
 ## Code
 
-- HTML, CSS et JavaScript écrits à la main. Pas de framework, pas de build, pas de dépendance. Les logos et images sont des fichiers du dépôt.
-- Suivre le style du fichier qu'on modifie : Loop et `docs/` sont en ES5 (`var`, `function`), Pulse en ES2015+.
+- Le choix de la techno est libre : frameworks et bibliothèques sont bienvenus quand ils servent le projet (Three.js, React, Vite, etc.). Pulse et Loop sont écrits à la main, Bloom utilise Three.js. On choisit l'outil le mieux adapté à l'idée du jour.
+- Le site est publié tel quel sur GitHub Pages (pas d'étape de build côté serveur). Un projet qui a besoin d'un build (Vite, par exemple) livre le dossier compilé, ou une copie locale de la bibliothèque, et pas seulement le code source.
+- Bloom : Three.js est copié en un seul fichier dans `03-Bloom/vendor/`, et son script est un module : il faut un serveur pour l'ouvrir, pas un double-clic.
+- Suivre le style du fichier qu'on modifie : Loop et `docs/` sont en ES5 (`var`, `function`), Pulse et Bloom en ES2015+.
 - Prettier : 2 espaces, guillemets doubles, point-virgule, 100 colonnes, fin de ligne LF.
 - Les copies de travail sont en CRLF (`core.autocrlf`) : faire les remplacements de texte en acceptant les deux fins de ligne.
 - Accessibilité : respecter `prefers-reduced-motion`, tout utilisable au clavier, vérifier à 375 px de large.
@@ -56,6 +58,7 @@ Lino commite et pousse lui-même. Ne pas faire de commit, de push ni de branche 
 ## Loop (jour 2)
 
 - Les conteneurs sont dans `02-Loop/projects.js` (le format est décrit en tête du fichier). Logos en CC0 dans `logos.js` (simple-icons), pictogrammes dans `ICONS` de `script.js`.
+- Le CSS est en deux fichiers : `style.css` (en-tête, scène, train, pied de page) et `interieur.css` (l'intérieur d'un conteneur, puis les règles pour petits écrans et animations réduites). `interieur.css` se charge après : ne pas changer cet ordre.
 - Images dans `02-Loop/img/`, moins de 400 Ko : une petite version pour l'affiche (`-small`) et une grande pour le clic.
 - Descriptions courtes, environ 250 caractères : au-delà, le papier cache les caisses du dessus.
 - Le texte et les liens de l'intérieur sont dans une couche 2D, car les clics ne passent pas dans la scène 3D.

@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0d0d0d">
+<title>Bloom · Jour 03 · Devtober 2026</title>
+<meta name="description" content="Jour 03 du Devtober 2026 : Bloom, un monde mort qu'on fait refleurir en dessinant des cercles au pinceau.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="top">
+  <a class="logo" href="index.html"><i></i>devtober 2026</a>
+</header>
+
+<div class="shell">
+  <aside class="side">
+    <nav id="docNav">
+      <p class="mark">documents</p>
+      <a href="index.html">accueil</a>
+    </nav>
+    <nav id="secNav">
+      <p class="mark">sur cette page</p>
+    </nav>
+  </aside>
+
+  <main>
+    <header>
+      <h1>Bloom</h1>
+      <p class="lead">Jour 03. Un paysage de nuit, des arbres morts, un torii éteint. On dessine un cercle au pinceau autour de ce qu'on veut faire revivre, et ça refleurit en rose. Quand tout a refleuri, le jour se lève.</p>
+      <p class="links">
+        <a href="../03-Bloom/">ouvrir le projet</a>
+        <a href="https://github.com/Bebbou/devtober-2026/tree/main/03-Bloom">code source</a>
+      </p>
+    </header>
+
+    <section id="apercu" data-name="aperçu">
+      <h2>aperçu</h2>
+      <p>L'idée vient du pinceau « Fleurissement » d'Ōkami : on trace un cercle autour d'un arbre mort, et il fleurit. Ici, le rose n'apparaît que sur ce qui revit, comme sur les autres jours.</p>
+      <div class="frame">
+        <iframe src="../03-Bloom/index.html" title="Bloom, en direct" loading="lazy"></iframe>
+      </div>
+      <p class="cap">Version en direct. <a href="../03-Bloom/">L'ouvrir en plein écran</a></p>
+    </section>
+
+    <section id="commandes" data-name="commandes">
+      <h2>commandes</h2>
+      <div class="tblwrap">
+        <table class="tbl">
+          <thead><tr><th>geste</th><th>effet</th></tr></thead>
+          <tbody>
+            <tr><td>dessiner un cercle (souris ou doigt)</td><td>Fait revivre ce qui est dans le cercle : arbres, herbe, tournesols, torii, lanternes. Un anneau rose confirme, un anneau gris dit que le cercle ne contenait rien de mort.</td></tr>
+            <tr><td>faire fleurir</td><td>Fait revivre l'élément suivant : les arbres de gauche à droite, puis le sol, puis le torii et les lanternes. C'est la version clavier.</td></tr>
+            <tr><td>recommencer</td><td>Tout meurt à nouveau, et la sauvegarde est effacée.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="monde" data-name="le monde">
+      <h2>le monde</h2>
+      <p>Le paysage est généré avec une graine fixe : pour une taille d'écran donnée, c'est toujours le même. Il y a entre 3 et 7 arbres selon la largeur, sur deux rangées (une grande devant, une plus petite derrière).</p>
+      <div class="tblwrap">
+        <table class="tbl">
+          <thead><tr><th>port de l'arbre</th><th>ce qui le distingue</th></tr></thead>
+          <tbody>
+            <tr><td>ouvert</td><td>Branches très écartées, couronne large.</td></tr>
+            <tr><td>élancé</td><td>Plus haut, branches serrées vers le haut.</td></tr>
+            <tr><td>noueux</td><td>Tronc épais, très penché et tordu, un étage de branches en moins.</td></tr>
+            <tr><td>pin</td><td>Chaque branche se couche vers l'horizontale, en étages.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Chaque arbre est une récursion : une branche donne deux ou trois branches plus courtes et plus fines, sur sept étages au plus. Le port ne change que quelques paramètres de cette fonction.</p>
+      <div class="code" data-label-js="script.js">
+<script type="text/plain" data-lang="js">
+const KINDS = [
+  { spread: 0.95, lf: 0.74, bend: 0.4, maxD: 7, horiz: 0,   thick: 1,   tall: 1,    lean: 0.2 },  // ouvert
+  { spread: 0.55, lf: 0.8,  bend: 0.4, maxD: 7, horiz: 0,   thick: 1,   tall: 1.25, lean: 0.2 },  // élancé
+  { spread: 0.9,  lf: 0.78, bend: 1.0, maxD: 6, horiz: 0,   thick: 1.5, tall: 0.9,  lean: 0.55 }, // noueux
+  { spread: 0.8,  lf: 0.76, bend: 0.5, maxD: 7, horiz: 0.3, thick: 1.15, tall: 0.95, lean: 0.25 }, // pin
+];
+</script>
+      </div>
+      <p>Le torii (derrière les arbres) et les deux lanternes (devant) sont placés là où les troncs sont les plus éloignés. Ce sont des traits épais : de la pierre grise éteinte, qui devient rose pour le torii et claire avec une flamme rose pour les lanternes.</p>
+      <p>La progression affichée en haut se calcule ainsi.</p>
+      <div class="tblwrap">
+        <table class="tbl">
+          <thead><tr><th>élément</th><th>part</th></tr></thead>
+          <tbody>
+            <tr><td>branches des arbres (à partir du 4e étage)</td><td>55 %</td></tr>
+            <tr><td>plantes du sol</td><td>30 %</td></tr>
+            <tr><td>torii et lanternes</td><td>15 %</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="rendu" data-name="le rendu">
+      <h2>le rendu</h2>
+      <p>Tout est dessiné en WebGL avec Three.js, copié dans <code>03-Bloom/vendor/</code>. La première version était en canvas 2D et ramait : elle repeignait toute la scène à chaque image. Ici, les arbres, les fleurs et les tournesols sont construits une seule fois, et le temps fait le reste.</p>
+      <ul class="bul">
+        <li>Les branches sont des rubans (une courbe de Bézier épaissie, découpée en tronçons) dans un seul maillage. Chaque sommet porte l'heure à laquelle sa branche devient vivante.</li>
+        <li>Les fleurs sont des quads instanciés. Elles existent toutes dès le départ, cachées, avec une heure d'ouverture infinie.</li>
+        <li>Le fond (papier, étoiles, lune, soleil, relief) est un seul shader.</li>
+        <li>Le tournesol est dessiné pixel par pixel dans un shader : tige, feuilles, treize pétales au trait et trente graines sur la spirale d'or.</li>
+        <li>Les pétales qui tombent et les gouttes d'encre sont des points mis à jour par le processeur, au plus 260 pétales en l'air.</li>
+      </ul>
+      <p>Pour faire revivre quelque chose, il suffit d'écrire l'heure dans le tampon, sans rien redessiner :</p>
+      <div class="code" data-label-js="script.js">
+<script type="text/plain" data-lang="js">
+// une branche dans l'ellipse reçoit une heure de naissance : la vie monte du centre vers les bouts
+b.alive = t0 + (Math.sqrt(e) * 0.8 + b.d * 0.045);
+alive.fill(b.alive, s.v0, s.v1);                    // les sommets de la branche
+bloomT0.array[i] = b.alive + (phase / TAU) * 0.4;   // et ceux de ses fleurs
+// puis un seul envoi au GPU
+geometry.attributes.aAlive.needsUpdate = true;
+</script>
+      </div>
+      <p>Sur un monde entièrement fleuri, à 1920×907 sur un Intel Arc, une image prend environ 3 ms (le GPU attendu à chaque image, mesuré hors de l'affichage). Il reste de la marge sur les 16 ms d'une image à 60 par seconde.</p>
+    </section>
+
+    <section id="encre" data-name="l'encre">
+      <h2>l'encre</h2>
+      <p>Le trait du pinceau est un ruban reconstruit à chaque image à partir des derniers points, et dessiné par un shader.</p>
+      <ul class="bul">
+        <li>La largeur dépend de la vitesse : de 5 px quand on va vite à 20 px quand on va doucement.</li>
+        <li>Plus le trait est fin, plus des poils sans encre apparaissent le long du trait.</li>
+        <li>Un halo clair déborde du trait, comme de l'encre qui bave dans le papier, et les bords sont un peu plus sombres.</li>
+        <li>Au départ, le trait est plus épais et cinq gouttes sont projetées.</li>
+        <li>Le trait s'efface en 1,7 seconde, par plaques.</li>
+      </ul>
+      <p>Le fond a du grain de papier. Les branches et l'herbe tremblent de moins de 2 px, sept fois par seconde, ce qui donne l'impression d'un dessin refait à la main.</p>
+      <h3>reconnaître un cercle</h3>
+      <p>Un trait est un cercle s'il remplit toutes les conditions suivantes. Il peut être ouvert ou écrasé.</p>
+      <div class="tblwrap">
+        <table class="tbl">
+          <thead><tr><th>condition</th><th>valeur</th></tr></thead>
+          <tbody>
+            <tr><td>nombre de points</td><td>au moins 14</td></tr>
+            <tr><td>taille de la boîte englobante</td><td>plus de 48 px de large et 36 px de haut</td></tr>
+            <tr><td>écart entre le début et la fin</td><td>moins de 34 % de la longueur du trait</td></tr>
+            <tr><td>longueur divisée par (largeur + hauteur)</td><td>entre 1,2 et 2,7</td></tr>
+            <tr><td>angle parcouru autour du centre</td><td>plus de 5,2 radians, soit environ 300°</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="floraison" data-name="la floraison">
+      <h2>la floraison</h2>
+      <p>Le cercle devient une ellipse (son centre et ses deux rayons). Tout ce dont le centre est à l'intérieur, avec 10 % de marge, est allumé : branches, herbe, plantes, torii, lanternes.</p>
+      <ul class="bul">
+        <li>Une branche passe du gris foncé au gris clair en une demi-seconde, avec un éclair rose.</li>
+        <li>Une fleur apparaît d'abord comme un bourgeon rose sombre, puis s'ouvre en une seconde. Ses pétales sont échancrés au bout, comme ceux d'un cerisier.</li>
+        <li>Les fleurs respirent un peu : leur taille et leur angle varient doucement.</li>
+        <li>Les tournesols poussent en deux secondes : d'abord la tige, puis la tête.</li>
+        <li>Des pétales se détachent des fleurs et se posent au sol, où ils restent.</li>
+        <li>La flamme des lanternes vacille.</li>
+      </ul>
+      <p>Deux corbeaux sont perchés dès le départ, sur le torii et sur un arbre (un seul sur un écran de moins de 500 px). Ils s'envolent quand le torii s'allume, ou quand le tiers des branches de leur arbre a refleuri.</p>
+    </section>
+
+    <section id="fin" data-name="la fin">
+      <h2>la fin</h2>
+      <p>Quand la progression dépasse 98,5 %, le jour se lève en 22 secondes : le ciel passe au rose près de l'horizon, les étoiles et la lune s'éteignent, un soleil rose monte derrière le relief. Des pétales tombent aussi du ciel. À 60 % de l'aube, un sceau rose avec le caractère 咲 (fleurir) est tamponné en bas à droite. Le compteur devient rose.</p>
+    </section>
+
+    <section id="sauvegarde" data-name="sauvegarde">
+      <h2>sauvegarde</h2>
+      <p>Chaque cercle qui a fait fleurir quelque chose est gardé dans le navigateur (<code>localStorage</code>) avec des coordonnées relatives à la taille de la scène : le centre en fraction de la largeur et de la hauteur, les rayons en fraction de la hauteur. Au chargement, les cercles sont rejoués d'un coup, sans animation. Le monde reste donc fleuri d'une visite à l'autre, et se reconstruit aussi quand la fenêtre change de taille ou qu'on tourne le téléphone.</p>
+    </section>
+
+    <section id="acces" data-name="accessibilité">
+      <h2>accessibilité et petits écrans</h2>
+      <ul class="bul">
+        <li>Le bouton « faire fleurir » donne tout le jeu au clavier : Tab puis Entrée.</li>
+        <li>Un message annonce la progression aux lecteurs d'écran.</li>
+        <li>Si le navigateur demande de réduire les animations, les fleurs s'ouvrent d'un coup, rien ne tremble, ne tombe ni ne vole, les corbeaux disparaissent, et l'aube arrive sans transition.</li>
+        <li>Sur un petit écran, les arbres sont plus petits pour tenir dans la largeur, et un seul corbeau reste.</li>
+        <li>Si WebGL n'est pas disponible, la page l'écrit à la place de l'indice.</li>
+      </ul>
+    </section>
+
+    <section id="limites" data-name="limites">
+      <h2>limites</h2>
+      <ul class="bul">
+        <li>J'ai testé le geste avec des cercles tracés par programme, parfaits. Un tracé à la main très irrégulier peut être refusé sans message.</li>
+        <li>Le rendu a été mesuré sur un seul GPU (Intel Arc) dans le panneau intégré de l'application. Je n'ai pas testé Firefox, Safari ni un téléphone physique.</li>
+        <li>Le script est un module : la page ne s'ouvre pas par un double-clic sur le fichier, il faut un serveur.</li>
+        <li>Three.js pèse 690 Ko non compressé (environ 170 Ko une fois compressé par GitHub Pages) pour un usage limité à l'affichage.</li>
+        <li>Le sceau utilise une police japonaise du système. Sans elle, le caractère s'affiche mal.</li>
+        <li>Pour que le monde soit complet, il faut avoir entouré le torii et les deux lanternes, pas seulement les arbres et le sol.</li>
+      </ul>
+      <h3>Pistes</h3>
+      <ul class="bul">
+        <li>D'autres pinceaux, comme dans Ōkami (un trait pour couper, un point pour faire lever le soleil).</li>
+        <li>Des animaux qui apparaissent sur ce qui a refleuri.</li>
+        <li>Une saison différente à chaque visite.</li>
+      </ul>
+    </section>
+
+    <section id="credits" data-name="crédits">
+      <h2>crédits</h2>
+      <ul class="bul">
+        <li>Rendu : <a href="https://threejs.org">Three.js</a>, licence MIT (copie dans <code>03-Bloom/vendor/</code>).</li>
+        <li>L'idée du pinceau « Fleurissement » vient du jeu <a href="https://fr.wikipedia.org/wiki/%C5%8Ckami">Ōkami</a> (Clover Studio, Capcom). Aucun élément du jeu n'est repris : le code, le dessin et les formes sont à moi.</li>
+        <li>Les corbeaux en V viennent de Loop, le jour 02.</li>
+      </ul>
+    </section>
+
+    <footer class="foot">
+      <span>devtober 2026 · jour 03 · par Lino Volle</span>
+      <a href="index.html">retour à l'accueil</a>
+    </footer>
+  </main>
+</div>
+
+<script src="pages.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
