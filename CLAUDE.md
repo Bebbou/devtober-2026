@@ -58,6 +58,7 @@ Lino commite et pousse lui-même. Ne pas faire de commit, de push ni de branche 
 ## Loop (jour 2)
 
 - Les conteneurs sont dans `02-Loop/projects.js` (le format est décrit en tête du fichier). Logos en CC0 dans `logos.js` (simple-icons), pictogrammes dans `ICONS` de `script.js`.
+- Le CSS est en deux fichiers : `style.css` (en-tête, scène, train, pied de page) et `interieur.css` (l'intérieur d'un conteneur, puis les règles pour petits écrans et animations réduites). `interieur.css` se charge après : ne pas changer cet ordre.
 - Images dans `02-Loop/img/`, moins de 400 Ko : une petite version pour l'affiche (`-small`) et une grande pour le clic.
 - Descriptions courtes, environ 250 caractères : au-delà, le papier cache les caisses du dessus.
 - Le texte et les liens de l'intérieur sont dans une couche 2D, car les clics ne passent pas dans la scène 3D.

@@ -74,6 +74,7 @@ const U = {
   uGround: { value: 0 },
   uMoon: { value: [0, 0, 1] },
   uPR: { value: 1 },
+  uDawn: { value: 0 },
 };
 
 const material = (vertexShader, fragmentShader, uniforms) =>
@@ -88,7 +89,7 @@ const bgMat = material(`
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
   }`, `
   uniform vec2 uRes;
-  uniform float uTime, uProg, uGround, uCalm;
+  uniform float uTime, uProg, uGround, uCalm, uDawn;
   uniform vec3 uMoon;
   varying vec2 vPx;
   ${NOISE}
@@ -101,14 +102,16 @@ const bgMat = material(`
     float tq = uCalm > 0.5 ? 0.0 : floor(uTime * 12.0);
     // le papier : de longues fibres et un grain fin
     vec3 paper = vec3(0.051) + (vnoise(p * vec2(0.8, 0.035)) - 0.5) * 0.02 + (hash(p + tq) - 0.5) * 0.016;
-    vec3 col = paper;
+    // l'aube : un lavis rose à l'horizon, qui monte
+    float hz = clamp(p.y / uGround, 0.0, 1.0);
+    vec3 col = paper + vec3(0.34, 0.02, 0.14) * pow(hz, 1.8) * uDawn;
     if (p.y < uGround * 0.72) {
       vec2 cell = floor(p / 26.0);
       float hs = hash(cell);
       if (hs > 0.9) {
         vec2 sp = (cell + vec2(hash(cell + 1.7), hash(cell + 3.1))) * 26.0;
         float tw = uCalm > 0.5 ? 1.0 : 0.7 + 0.3 * sin(uTime * 0.6 + hs * 50.0);
-        col += (1.0 - smoothstep(0.2, 1.4, length(p - sp))) * (0.25 + 0.25 * hash(cell + 9.0)) * tw;
+        col += (1.0 - smoothstep(0.2, 1.4, length(p - sp))) * (0.25 + 0.25 * hash(cell + 9.0)) * tw * (1.0 - uDawn);
       }
     }
     // la lune : un cercle d'encre, plus épais par endroits, qui rosit avec le monde
@@ -117,8 +120,15 @@ const bgMat = material(`
     float rr = uMoon.z * (1.0 + 0.03 * (vnoise(vec2(ang * 2.0, 4.0)) - 0.5));
     float lw = 0.7 + 1.6 * vnoise(vec2(ang * 1.5 + 7.0, 1.0));
     vec3 pink = vec3(1.0, 0.0, 0.333);
-    col = mix(col, pink, step(d, rr) * clamp(uProg, 0.0, 1.0) * 0.16);
-    col = mix(col, mix(vec3(0.23), pink, clamp(uProg, 0.0, 1.0)), edge(abs(d - rr), lw));
+    float moon = 1.0 - uDawn;
+    col = mix(col, pink, step(d, rr) * clamp(uProg, 0.0, 1.0) * 0.16 * moon);
+    col = mix(col, mix(vec3(0.23), pink, clamp(uProg, 0.0, 1.0)), edge(abs(d - rr), lw) * moon);
+    // le soleil se lève derrière le relief
+    vec2 sc = vec2(uRes.x * 0.5, uGround - uRes.y * 0.36 + (1.0 - uDawn) * uRes.y * 0.55);
+    float sr = min(uRes.x, uRes.y) * 0.1;
+    float sa = atan(p.y - sc.y, p.x - sc.x);
+    float sd = length(p - sc) - sr * (1.0 + 0.03 * (vnoise(vec2(sa * 2.0, 9.0)) - 0.5));
+    col = mix(col, pink * 0.9, step(sd, 0.0) * uDawn);
     // le relief : il cache ce qui est derrière lui
     float y1 = ridgeY(p.x, uGround - uRes.y * 0.16, uRes.y * 0.12, 2.0);
     float y2 = ridgeY(p.x, uGround - uRes.y * 0.05, uRes.y * 0.07, 5.0);
@@ -144,15 +154,32 @@ const strokeMat = material(`
     // le tracé tremble un peu, comme un dessin refait à la main plusieurs fois par seconde
     float q = uCalm > 0.5 ? 0.0 : floor(uTime * 7.0);
     vec2 n = vec2(vnoise(p.xy * 0.035 + q * 3.17), vnoise(p.xy * 0.035 + 41.0 + q * 5.31)) - 0.5;
-    p.xy += n * 1.8 * (aRow < 2.5 ? 1.0 : 0.0);
+    p.xy += n * 1.8 * (abs(aRow - 3.0) > 0.5 ? 1.0 : 0.0);
     vSide = aSide; vAlong = aAlong; vHW = aHW; vAlive = aAlive; vSeed = aSeed; vRow = aRow;
     gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
   }`, `
   uniform float uTime, uCalm;
   varying float vSide, vAlong, vHW, vAlive, vSeed, vRow;
   ${NOISE}
-  vec3 deadCol(float r) { return r < 0.5 ? vec3(0.263) : r < 1.5 ? vec3(0.169) : r < 2.5 ? vec3(0.165) : vec3(0.1); }
-  vec3 litCol(float r) { return r < 0.5 ? vec3(0.77) : r < 1.5 ? vec3(0.5) : r < 2.5 ? vec3(0.478) : vec3(0.1); }
+  // rangées : 0 arbre devant, 1 arbre derrière, 2 herbe, 3 encre du sol (ne change pas), 4 torii, 5 pierre des lanternes, 6 flamme
+  vec3 deadCol(float r) {
+    if (r < 0.5) return vec3(0.263);
+    if (r < 1.5) return vec3(0.169);
+    if (r < 2.5) return vec3(0.165);
+    if (r < 3.5) return vec3(0.1);
+    if (r < 4.5) return vec3(0.22);
+    if (r < 5.5) return vec3(0.23);
+    return vec3(0.07);
+  }
+  vec3 litCol(float r) {
+    if (r < 0.5) return vec3(0.77);
+    if (r < 1.5) return vec3(0.5);
+    if (r < 2.5) return vec3(0.478);
+    if (r < 3.5) return vec3(0.1);
+    if (r < 4.5) return vec3(0.92, 0.0, 0.31);
+    if (r < 5.5) return vec3(0.6);
+    return vec3(1.0, 0.0, 0.333);
+  }
   void main() {
     // des bords irréguliers, et des poils de pinceau dans les grosses branches
     float e = (1.0 - abs(vSide)) * vHW;
@@ -163,8 +190,10 @@ const strokeMat = material(`
     float dt = uTime - vAlive;
     vec3 col = mix(deadCol(vRow), litCol(vRow), clamp(dt / 0.5, 0.0, 1.0));
     // un éclair rose passe quand la vie arrive
-    float flash = (dt > 0.0 && dt < 1.4 && vRow < 1.5 && uCalm < 0.5) ? 1.0 - dt / 1.4 : 0.0;
+    float flash = (dt > 0.0 && dt < 1.4 && (vRow < 1.5 || abs(vRow - 4.0) < 0.5) && uCalm < 0.5) ? 1.0 - dt / 1.4 : 0.0;
     col = mix(col, vec3(1.0, 0.0, 0.333), flash * 0.75);
+    // la flamme des lanternes vacille
+    if (vRow > 5.5 && dt > 0.5 && uCalm < 0.5) col *= 0.82 + 0.18 * sin(uTime * 6.0 + vSeed * 50.0);
     gl_FragColor = vec4(col, a);
   }`, U);
 
@@ -174,26 +203,31 @@ const bloomMat = material(`
   attribute vec2 aPos;
   attribute float aSize, aRot, aPh, aT0, aA;
   varying vec2 vUv;
-  varying float vRot, vA, vR;
+  varying float vRot, vA, vR, vOpen;
   void main() {
-    float g = uCalm > 0.5 ? step(aT0, uTime) : clamp((uTime - aT0) / 0.7, 0.0, 1.0);
-    g = 1.0 - pow(1.0 - g, 3.0);
+    // d'abord un bourgeon qui apparaît, puis la fleur qui s'ouvre
+    float t = uCalm > 0.5 ? step(aT0, uTime) : clamp((uTime - aT0) / 1.1, 0.0, 1.0);
+    float pop = smoothstep(0.0, 0.25, t);
+    float open = 1.0 - pow(1.0 - clamp((t - 0.3) / 0.7, 0.0, 1.0), 3.0);
     float live = uCalm > 0.5 ? 0.0 : 1.0;
-    float r = aSize * g * (1.0 + live * 0.07 * sin(uTime * 1.5 + aPh));
+    float r = aSize * pop * (0.4 + 0.6 * open) * (1.0 + live * 0.07 * sin(uTime * 1.5 + aPh));
     vUv = position.xy * 2.0 * 1.3;
     vRot = aRot + live * sin(uTime * 0.6 + aPh) * 0.1;
-    vA = aA; vR = r;
+    vA = aA; vR = r; vOpen = open;
     gl_Position = projectionMatrix * modelViewMatrix * vec4(aPos + position.xy * r * 2.6, 0.0, 1.0);
   }`, `
   varying vec2 vUv;
-  varying float vRot, vA, vR;
+  varying float vRot, vA, vR, vOpen;
   ${SAKURA}
   void main() {
     float c = cos(vRot), s = sin(vRot);
     vec2 p = vec2(c * vUv.x + s * vUv.y, -s * vUv.x + c * vUv.y);
-    vec4 f = sakuraPaint(p, vR);
-    if (f.a * vA < 0.01) discard;
-    gl_FragColor = vec4(f.rgb, f.a * vA);
+    vec4 f = sakuraPaint(p / mix(0.55, 1.0, vOpen), vR);
+    float bud = 1.0 - smoothstep(0.38, 0.5, length(p * vec2(0.9, 1.5)));
+    vec3 col = mix(vec3(0.6, 0.0, 0.2), f.rgb, smoothstep(0.1, 0.5, vOpen));
+    float a = max(f.a * smoothstep(0.0, 0.3, vOpen), bud * (1.0 - smoothstep(0.15, 0.5, vOpen))) * vA;
+    if (a < 0.01) discard;
+    gl_FragColor = vec4(col, a);
   }`, U);
 
 // les plantes du sol : tige, feuilles et tête de tournesol (ou petite fleur), dessinées en pixels
@@ -303,7 +337,7 @@ const petalMat = material(`
     gl_FragColor = vec4(1.0, 0.0, 0.333, a * vA);
   }`, U);
 
-// le pollen rose et les gouttes d'encre blanche
+// les gouttes d'encre blanche, quand le pinceau se pose
 const dotMat = material(`
   uniform float uPR;
   attribute float aSize, aA;
@@ -418,13 +452,14 @@ scene.add(brushMesh);
 
 let W = 0, H = 0, U0 = 0, ground = 0;
 let world = []; // les maillages reconstruits à chaque taille d'écran
-let trees = [], branches = [], tufts = [], plants = [], strokes = [], crows = [];
+let trees = [], branches = [], tufts = [], plants = [], props = [], strokes = [], crows = [];
+let dawn = 0, stamped = false; // le lever du jour après la dernière fleur, puis le sceau
 let alive = null, bloomT0 = null, plantT0 = null; // les tampons que region() modifie
 let bloomPos = [], active = []; // les fleurs : toutes, et celles qui sont déjà allumées
 let petals = [], motes = [];
 let circles = []; // en coordonnées relatives, pour recharger et pour redimensionner
 let pts = [], drawing = false;
-let progress = 0, shown = 0, wTree = 0, wPlant = 0, finished = false;
+let progress = 0, shown = 0, wTree = 0, wPlant = 0, wProp = 0, finished = false;
 
 const quad = (w, h) => {
   const g = new BufferGeometry();
@@ -453,9 +488,18 @@ const addWorld = (geo, mat, order) => {
   return m;
 };
 
-const grow = (tree, kind, rand, x, y, a, len, w, d) => {
+// quatre ports d'arbre : ouvert, élancé, noueux et penché, pin aux branches presque horizontales
+const KINDS = [
+  { spread: 0.95, lf: 0.74, bend: 0.4, maxD: 7, horiz: 0, thick: 1, tall: 1, lean: 0.2 },
+  { spread: 0.55, lf: 0.8, bend: 0.4, maxD: 7, horiz: 0, thick: 1, tall: 1.25, lean: 0.2 },
+  { spread: 0.9, lf: 0.78, bend: 1.0, maxD: 6, horiz: 0, thick: 1.5, tall: 0.9, lean: 0.55 },
+  { spread: 0.8, lf: 0.76, bend: 0.5, maxD: 7, horiz: 0.3, thick: 1.15, tall: 0.95, lean: 0.25 },
+];
+const KIND_ORDER = [0, 3, 1, 2, 0, 2, 3]; // l'ordre où les arbres reçoivent leur forme, de gauche à droite
+
+const grow = (tree, k, rand, x, y, a, len, w, d) => {
   const x2 = x + Math.cos(a) * len, y2 = y + Math.sin(a) * len;
-  const bend = (rand() - 0.5) * len * 0.4;
+  const bend = (rand() - 0.5) * len * k.bend;
   const b = {
     t: tree.i, row: tree.row, d, w, alive: FAR,
     x1: x, y1: y, x2, y2,
@@ -464,13 +508,15 @@ const grow = (tree, kind, rand, x, y, a, len, w, d) => {
   branches.push(b);
   tree.minx = Math.min(tree.minx, x2); tree.maxx = Math.max(tree.maxx, x2);
   tree.miny = Math.min(tree.miny, y2); tree.maxy = Math.max(tree.maxy, y);
-  if (d >= 7) return;
-  const spread = kind === 1 ? 0.55 : 0.95;
+  if (d >= k.maxD) return;
   const n = d < 1 || rand() > 0.2 ? 2 : 3;
   for (let i = 0; i < n; i++) {
-    let da = (rand() - 0.5) * spread * 0.8 + (n === 2 ? (i ? 1 : -1) * spread * 0.42 : (i - 1) * spread * 0.5);
-    if (kind === 2 && d >= 2) da += 0.3 * Math.cos(a); // l'arbre pleureur : les branches retombent
-    grow(tree, kind, rand, x2, y2, a + da, len * ((kind === 1 ? 0.8 : 0.74) + rand() * 0.1), w * 0.7, d + 1);
+    let da = (rand() - 0.5) * k.spread * 0.8 + (n === 2 ? (i ? 1 : -1) * k.spread * 0.42 : (i - 1) * k.spread * 0.5);
+    if (k.horiz && d >= 1) { // le pin : la branche se couche vers l'horizontale
+      const target = Math.cos(a) >= 0 ? 0 : Math.PI;
+      da += k.horiz * Math.atan2(Math.sin(target - a), Math.cos(target - a));
+    }
+    grow(tree, k, rand, x2, y2, a + da, len * (k.lf + rand() * 0.1), w * 0.7, d + 1);
   }
 };
 
@@ -574,8 +620,19 @@ const FLY = '<svg class="fly" width="22" height="12" viewBox="0 0 22 12"><path c
 const buildCrows = (rand) => {
   crows = [];
   const near = trees.filter((t) => !t.row).sort((a, b) => (b.maxy - b.miny) - (a.maxy - a.miny));
+  // un corbeau sur le torii, un autre sur un arbre (pas sur un petit écran)
+  const torii = props.find((p) => p.kind === "torii");
+  if (torii) {
+    const el = document.createElement("div");
+    el.className = "crow";
+    el.innerHTML = SIT + FLY;
+    const x = torii.x + torii.w * 0.2 - 13, y = torii.topY - 13;
+    el.style.transform = "translate(" + x + "px," + y + "px)";
+    crowsEl.appendChild(el);
+    crows.push({ el, prop: torii, x, y, gone: false });
+  }
   const pick = [];
-  while (pick.length < (W < 500 ? 1 : 2) && near.length) pick.push(near.splice(Math.floor(rand() * near.length), 1)[0]);
+  while (pick.length < (W < 500 ? 0 : 1) && near.length) pick.push(near.splice(Math.floor(rand() * near.length), 1)[0]);
   pick.forEach((tr) => {
     let perch = null;
     // le bout de branche le plus haut, mais assez bas pour que le corbeau reste dans l'écran
@@ -624,8 +681,9 @@ const build = () => {
   U.uMoon.value = [W * 0.78, H * 0.2, Math.min(W, H) * 0.07];
 
   clearWorld();
-  trees = []; branches = []; tufts = []; plants = []; strokes = [];
+  trees = []; branches = []; tufts = []; plants = []; props = []; strokes = [];
   petals = []; motes = []; active = [];
+  dawn = 0; stamped = false;
   fallingP.n = 0; landedP.n = 0; dotsP.n = 0;
   fallingP.flush(); landedP.flush(); dotsP.flush();
   progress = 0; shown = 0; finished = false;
@@ -656,18 +714,57 @@ const build = () => {
   const specs = [];
   for (let i = 0; i < count; i++) {
     const row = i % 2;
-    specs.push({ fx: (i + 0.5) / count + (rand() - 0.5) * 0.5 / count, row, sc: row ? 0.58 + rand() * 0.14 : 0.95 + rand() * 0.3, kind: Math.floor(rand() * 3) });
+    specs.push({ fx: (i + 0.5) / count + (rand() - 0.5) * 0.5 / count, row, sc: row ? 0.58 + rand() * 0.14 : 0.95 + rand() * 0.3, kind: KINDS[KIND_ORDER[i % KIND_ORDER.length]] });
   }
   specs.sort((a, b) => b.row - a.row); // le fond d'abord
   specs.forEach((s, ti) => {
-    const tree = { i: ti, row: s.row, minx: 1e9, maxx: -1e9, miny: 1e9, maxy: -1e9 };
+    const tree = { i: ti, row: s.row, x: s.fx * W, minx: 1e9, maxx: -1e9, miny: 1e9, maxy: -1e9 };
     trees.push(tree);
-    const len = U0 * 0.13 * s.sc * (s.kind === 1 ? 1.25 : 1);
-    grow(tree, s.kind, rand, s.fx * W, ground - (s.row ? 14 : 0), -Math.PI / 2 + (rand() - 0.5) * 0.2, len, 13 * s.sc, 0);
+    const lean = (rand() < 0.5 ? -1 : 1) * s.kind.lean * (0.4 + rand() * 0.6);
+    grow(tree, s.kind, rand, tree.x, ground - (s.row ? 14 : 0), -Math.PI / 2 + lean * 0.5, U0 * 0.13 * s.sc * s.kind.tall, 13 * s.sc * s.kind.thick, 0);
   });
+
+  // le torii au loin, derrière les arbres, et deux lanternes devant : de la pierre éteinte, qui revit en rose
+  const line = (x1, y1, x2, y2, w0, w1, row) => { strokes.push({ x1, y1, cx: (x1 + x2) / 2, cy: (y1 + y2) / 2, x2, y2, w0, w1, row }); return strokes.length - 1; };
+  const gap = (taken, margin) => { // l'endroit le plus loin des troncs et des autres éléments, sans sortir de l'écran
+    let best = W / 2, score = -1;
+    for (let x = margin; x < W - margin; x += W * 0.02) {
+      const sc = Math.min(...trees.map((t) => Math.abs(t.x - x)), ...taken.map((t) => Math.abs(t - x) * 0.8));
+      if (sc > score) { score = sc; best = x; }
+    }
+    return best;
+  };
+  const th = U0 * 0.24, tw = th * 0.9, tx = gap([], tw * 0.7 + 8), gy = ground - 10, tt = gy - th;
+  const torii = { kind: "torii", x: tx, cy: gy - th / 2, w: tw, topY: tt - th * 0.03, alive: FAR, s: [] };
+  torii.s.push(
+    line(tx - tw / 2, gy, tx - tw * 0.48, tt, th * 0.055, th * 0.045, 4),
+    line(tx + tw / 2, gy, tx + tw * 0.48, tt, th * 0.055, th * 0.045, 4),
+    line(tx - tw * 0.56, gy - th * 0.74, tx + tw * 0.56, gy - th * 0.74, th * 0.04, th * 0.04, 4)
+  );
+  // le chapeau du torii : une courbe dont les bouts se relèvent
+  strokes.push({ x1: tx - tw * 0.64, y1: tt - th * 0.02, cx: tx, cy: tt + th * 0.1, x2: tx + tw * 0.64, y2: tt - th * 0.02, w0: th * 0.07, w1: th * 0.07, row: 4 });
+  torii.s.push(strokes.length - 1);
+  props.push(torii);
+
   branches.forEach((b) => {
     b.si = strokes.length;
     strokes.push({ x1: b.x1, y1: b.y1, cx: b.cx, cy: b.cy, x2: b.x2, y2: b.y2, w0: Math.max(1, b.w), w1: Math.max(1, b.w * 0.7), row: b.row });
+  });
+
+  [0, 1].forEach((i) => {
+    const ls = U0 * 0.1, lx = gap(props.map((p) => p.x), ls * 0.8 + 8), g = ground;
+    const lamp = { kind: "lanterne", x: lx, cy: g - ls * 0.5, alive: FAR, s: [] };
+    lamp.s.push(
+      line(lx - ls * 0.3, g - ls * 0.03, lx + ls * 0.3, g - ls * 0.03, ls * 0.1, ls * 0.1, 5), // le socle
+      line(lx, g, lx, g - ls * 0.42, ls * 0.14, ls * 0.14, 5), // le pied
+      line(lx - ls * 0.34, g - ls * 0.44, lx + ls * 0.34, g - ls * 0.44, ls * 0.1, ls * 0.1, 5),
+      line(lx, g - ls * 0.46, lx, g - ls * 0.8, ls * 0.4, ls * 0.4, 5), // la loge de la flamme
+      line(lx, g - ls * 0.54, lx, g - ls * 0.72, ls * 0.18, ls * 0.18, 6), // la flamme
+      line(lx, g - ls * 0.98, lx, g - ls * 1.08, ls * 0.1, ls * 0.1, 5) // le joyau
+    );
+    strokes.push({ x1: lx - ls * 0.52, y1: g - ls * 0.82, cx: lx, cy: g - ls * 1.02, x2: lx + ls * 0.52, y2: g - ls * 0.82, w0: ls * 0.14, w1: ls * 0.14, row: 5 }); // le toit
+    lamp.s.push(strokes.length - 1);
+    props.push(lamp);
   });
 
   // les plantes du sol, invisibles tant que rien n'a fleuri
@@ -687,9 +784,10 @@ const build = () => {
 
   trees.forEach((tr) => { tr.lit = 0; tr.total = branches.filter((b) => b.t === tr.i && b.d >= 4).length; });
 
-  // les arbres pèsent 65 % de la progression, le sol 35 %
-  wTree = 0.65 / Math.max(1, branches.filter((b) => b.d >= 4).length);
-  wPlant = 0.35 / Math.max(1, plants.length);
+  // la progression : 55 % les arbres, 30 % le sol, 15 % le torii et les lanternes
+  wTree = 0.55 / Math.max(1, branches.filter((b) => b.d >= 4).length);
+  wPlant = 0.3 / Math.max(1, plants.length);
+  wProp = 0.15 / Math.max(1, props.length);
 };
 
 /* ---------- Faire fleurir ---------- */
@@ -718,8 +816,19 @@ const region = (cx, cy, rx, ry, instant) => {
     }
     if (b.d >= 4) { progress += wTree; hit++; trees[b.t].lit++; }
   });
-  // un corbeau part quand le tiers de son arbre a refleuri
-  crows.forEach((c) => { if (trees[c.tree].lit > trees[c.tree].total / 3) flyAway(c, 0.2, instant); });
+  props.forEach((pr) => {
+    if (pr.alive !== FAR) return;
+    const e = norm(pr.x, pr.cy);
+    if (e > 1) return;
+    pr.alive = t0 + slow * Math.sqrt(e) * 0.6;
+    pr.s.forEach((si) => setAlive(si, pr.alive));
+    progress += wProp; hit++;
+  });
+  // un corbeau part quand son torii s'allume, ou quand le tiers de son arbre a refleuri
+  crows.forEach((c) => {
+    const lit = c.prop ? c.prop.alive !== FAR : trees[c.tree].lit > trees[c.tree].total / 3;
+    if (lit) flyAway(c, 0.2, instant);
+  });
   plants.forEach((p, i) => {
     if (p.alive !== FAR) return;
     const e = norm(p.x, ground - 4);
@@ -769,9 +878,8 @@ const report = (instant) => {
   if (!finished && progress > 0.985) {
     finished = true;
     top.classList.add("done");
-    hint.textContent = "tout a refleuri";
-    hint.classList.remove("off");
-    if (instant) hanko.classList.add("show", "now"); else setTimeout(() => hanko.classList.add("show"), calm ? 0 : 1400);
+    if (instant || calm) dawn = 1; // sinon, frame() lève le jour peu à peu
+    if (instant) { stamped = true; hanko.classList.add("show", "now"); }
   }
 };
 
@@ -803,7 +911,9 @@ const bloomNext = () => {
     return;
   }
   const p = plants.find((q) => q.alive === FAR);
-  if (p) bloomAt(p.x, ground - H * 0.03, W / 6, H * 0.1);
+  if (p) { bloomAt(p.x, ground - H * 0.03, W / 6, H * 0.1); return; }
+  const pr = props.find((q) => q.alive === FAR);
+  if (pr) bloomAt(pr.x, pr.cy, U0 * 0.2, U0 * 0.2);
 };
 
 const reset = () => {
@@ -901,11 +1011,11 @@ const updateBrush = (t) => {
 
 /* ---------- Ce qui tombe et ce qui flotte ---------- */
 
-let accPetal = 0, accMote = 0, last = now();
+let accPetal = 0, last = now();
 
 const simulate = (t, dt) => {
   if (!calm && active.length) {
-    // des pétales tombent des fleurs (et du ciel quand tout a refleuri), du pollen monte
+    // des pétales tombent des fleurs (et du ciel quand tout a refleuri)
     accPetal += (Math.min(14, active.length * 0.006) + (finished ? 6 : 0)) * dt;
     while (accPetal >= 1) {
       accPetal--;
@@ -917,12 +1027,6 @@ const simulate = (t, dt) => {
         x = src.x; y = src.y;
       }
       petals.push({ x, y, vy: 16 + Math.random() * 18, ph: Math.random() * TAU, rot: Math.random() * TAU, size: 7 + Math.random() * 3 });
-    }
-    accMote += Math.min(5, active.length * 0.002) * dt;
-    while (accMote >= 1) {
-      accMote--;
-      const src = active[(Math.random() * active.length) | 0];
-      if (motes.length < 100 && t - src.t0 > 1) motes.push({ x: src.x, y: src.y, vx: 0, vy: -(6 + Math.random() * 8), size: 2.5, col: [1, 0, 0.333], t0: t, life: 3 + Math.random() * 2, ph: Math.random() * TAU });
     }
   }
 
@@ -968,6 +1072,10 @@ const frame = () => {
   U.uTime.value = t;
   shown += (progress - shown) * Math.min(1, dt * 1.6);
   U.uProg.value = Math.min(1, shown * 1.05);
+  // quand tout a refleuri, le jour se lève en 22 secondes, puis le sceau est tamponné
+  if (finished) dawn = calm ? 1 : Math.min(1, dawn + dt / 22);
+  U.uDawn.value = dawn * dawn * (3 - 2 * dawn);
+  if (finished && !stamped && dawn >= 0.6) { stamped = true; hanko.classList.add("show"); }
   const pct = Math.round(shown * 100) + " %";
   if (pctEl.textContent !== pct) pctEl.textContent = pct;
   simulate(t, dt);

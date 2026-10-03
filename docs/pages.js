@@ -20,4 +20,5 @@ window.THEMES = [
 window.DOCS = [
   { day: "01", title: "Pulse", href: "01-pulse.html", status: "Terminé" },
   { day: "02", title: "Loop", href: "02-loop.html", status: "Terminé" },
+  { day: "03", title: "Bloom", href: "03-bloom.html", status: "Terminé" },
 ];
