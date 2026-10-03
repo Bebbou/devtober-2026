@@ -29,4 +29,4 @@ Trois valeurs servent partout :
 - Ne pas créer de branche ni de commit : Lino s'en occupe (branche `NN/Nom`).
 - Si l'idée du jour n'est pas choisie, s'arrêter après la copie et proposer des pistes. Ne pas partir sur un projet sans son accord.
 
-Le code et l'écriture suivent `CLAUDE.md` (direction artistique, pas de framework, pas de tournures « IA »).
+Le code et l'écriture suivent `CLAUDE.md` (direction artistique, techno libre, pas de tournures « IA »).

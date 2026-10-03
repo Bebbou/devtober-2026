@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#0d0d0d" />
+    <title>Bloom · jour 03</title>
+    <meta name="description" content="Un monde mort qu'on fait refleurir en dessinant des cercles au pinceau." />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="top">
+      <a class="logo" href="#"><i></i>bloom</a>
+      <div class="right">
+        <span class="count"><span class="lbl">fleuri </span><b id="pct">0 %</b></span>
+        <button class="btn" id="next" type="button">faire fleurir</button>
+        <button class="btn" id="reset" type="button">recommencer</button>
+      </div>
+    </header>
+
+    <main id="stage">
+      <canvas
+        id="cv"
+        role="img"
+        aria-label="Un paysage de nuit, avec des arbres morts. On les fait refleurir en dessinant un cercle autour d'eux. Le bouton « faire fleurir » fait la même chose au clavier."
+      ></canvas>
+      <div class="crows" id="crows" aria-hidden="true"></div>
+      <p class="hint" id="hint">dessine un cercle autour d'un arbre, ou autour du sol</p>
+      <div class="hanko" id="hanko" aria-hidden="true">咲</div>
+      <p class="sr" id="status" aria-live="polite"></p>
+    </main>
+
+    <footer class="foot">
+      <p>
+        <span class="mark">crédits</span>
+        Conçu par <a href="https://github.com/Bebbou">Lino Volle</a>
+        · le pinceau vient d'<a href="https://fr.wikipedia.org/wiki/%C5%8Ckami">Ōkami</a>
+        · rendu avec <a href="https://threejs.org">Three.js</a>
+      </p>
+      <nav aria-label="Liens">
+        <a href="../docs/03-bloom.html">doc</a>
+        <a href="https://github.com/Bebbou/devtober-2026/tree/main/03-Bloom">code</a>
+        <a href="https://github.com/Bebbou">github</a>
+      </nav>
+    </footer>
+
+    <script type="module" src="script.js"></script>
+  </body>
+</html>
