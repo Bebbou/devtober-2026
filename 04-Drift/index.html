@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#0d0d0d" />
+    <title>Drift · jour 04</title>
+    <meta name="description" content="Une eau noire, de l'encre qui dérive, et des bouteilles avec des messages à lire ou à écrire." />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Devtober 2026" />
+    <meta property="og:title" content="Drift · jour 04" />
+    <meta property="og:description" content="Une eau noire, de l'encre qui dérive, et des bouteilles avec des messages à lire ou à écrire." />
+    <meta property="og:image" content="https://bebbou.github.io/devtober-2026/docs/og/drift.jpg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="top">
+      <a class="logo" href="#"><i></i>drift</a>
+      <div class="right">
+        <span class="count" id="count"></span>
+        <button class="btn" id="read" type="button" aria-label="lire une bouteille">lire<span class="long"> une bouteille</span></button>
+        <button class="btn" id="write" type="button" aria-label="écrire une bouteille">écrire<span class="long"> une bouteille</span></button>
+        <button class="btn" id="save" type="button" aria-label="enregistrer l'image de l'eau">garder<span class="long"> l'eau</span></button>
+        <button class="btn" id="help" type="button" aria-label="revoir la visite guidée">?</button>
+      </div>
+    </header>
+
+    <main id="stage">
+      <canvas
+        id="cv"
+        role="img"
+        aria-label="De l'encre noire, blanche et rose sur l'eau, et des bouteilles qui dérivent. On pose de l'encre en cliquant, on remue l'eau en glissant, et on ouvre une bouteille en cliquant dessus. Les boutons « lire une bouteille » et « écrire une bouteille » font la même chose au clavier."
+      ></canvas>
+      <canvas id="over" aria-hidden="true"></canvas>
+      <p class="hint" id="hint">clique pour poser de l'encre · glisse pour remuer l'eau · clique une bouteille pour la lire</p>
+
+      <div class="paper" id="paper" role="dialog" aria-labelledby="pText" hidden>
+        <i class="pin"></i>
+        <button class="x" id="pClose" type="button" aria-label="fermer">×</button>
+        <i class="seal" aria-hidden="true">漂</i>
+        <p class="slip">MESSAGE DANS UNE BOUTEILLE</p>
+        <p class="msg" id="pText"></p>
+        <p class="meta" id="pMeta"></p>
+        <div class="row">
+          <button class="btn dark" id="pBack" type="button">remettre à l'eau</button>
+          <button class="btn dark" id="pNext" type="button">une autre bouteille</button>
+          <button class="btn dark" id="pDel" type="button" hidden>supprimer</button>
+        </div>
+      </div>
+
+      <div class="paper" id="wr" role="dialog" aria-labelledby="wTitle" hidden>
+        <i class="pin"></i>
+        <button class="x" id="wClose" type="button" aria-label="fermer">×</button>
+        <i class="seal" aria-hidden="true">漂</i>
+        <p class="slip" id="wTitle">ÉCRIRE UNE BOUTEILLE</p>
+        <textarea id="wText" maxlength="100" rows="3" placeholder="Un message court, pour quelqu'un que tu ne connais pas."></textarea>
+        <p class="meta"><span id="wCount">0 / 100</span> <span id="wErr" role="alert"></span></p>
+        <div class="row">
+          <button class="btn dark" id="wSend" type="button" disabled>mettre à l'eau</button>
+          <button class="btn dark" id="wCancel" type="button">annuler</button>
+        </div>
+        <p class="meta">Pas d'information personnelle. Le message reste dans ton navigateur. Ctrl + Entrée pour envoyer.</p>
+      </div>
+
+      <div class="tour" id="tour" hidden>
+        <p class="mark" id="tStep"></p>
+        <p id="tText"></p>
+        <div class="row">
+          <button class="btn" id="tNext" type="button">suivant</button>
+          <button class="btn" id="tSkip" type="button">passer</button>
+        </div>
+      </div>
+
+      <p class="sr" id="status" aria-live="polite"></p>
+    </main>
+
+    <footer class="foot">
+      <p><span class="mark">crédits</span> Conçu par <a href="https://github.com/Bebbou">Lino Volle</a> · encre : suminagashi, le papier marbré japonais</p>
+      <nav aria-label="Liens">
+        <a href="../docs/04-drift.html">doc</a>
+        <a href="https://github.com/Bebbou/devtober-2026/tree/main/04-Drift">code</a>
+        <a href="https://github.com/Bebbou">github</a>
+      </nav>
+    </footer>
+
+    <script src="messages.js"></script>
+    <script src="script.js"></script>
+  </body>
+</html>

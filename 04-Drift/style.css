@@ -1,0 +1,495 @@
+/*
+  Direction artistique du Devtober : fond #0D0D0D, texte #E0E0E0, accent #FF0055.
+  Le rose n'apparaît que sur ce qui est vivant : ici, l'encre rose et ce qui flotte dessus.
+  Police : Courier New (comme Loop et Bloom).
+*/
+:root {
+  --bg: #0d0d0d;
+  --surface: #111111;
+  --text: #e0e0e0;
+  --muted: #8c8c8c;
+  --dim: #5a5a5a;
+  --line: #1f1f1f;
+  --line-strong: #333333;
+  --pink: #ff0055;
+  --font: "Courier New", Courier, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+html {
+  background: var(--bg);
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.6 var(--font);
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+::selection {
+  background: var(--pink);
+  color: #fff;
+}
+
+:focus-visible {
+  outline: 2px solid var(--pink);
+  outline-offset: 3px;
+}
+
+/* Marqueur de section : ">> titre" */
+.mark {
+  margin: 0;
+  color: var(--muted);
+}
+
+.mark::before {
+  content: ">> ";
+  color: var(--pink);
+}
+
+/* ---------- En-tête ---------- */
+.top {
+  flex: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 70px;
+  padding: 0 28px;
+}
+
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--pink);
+}
+
+.right {
+  display: flex;
+  align-items: baseline;
+  gap: 8px 24px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.count {
+  font-size: 12px;
+  color: var(--dim);
+}
+
+.btn {
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid var(--line-strong);
+  background: none;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.btn:hover {
+  color: var(--pink);
+  border-color: var(--pink);
+}
+
+/* ---------- Scène ---------- */
+#stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  animation: entree 1.2s ease-out backwards;
+}
+
+@keyframes entree {
+  from {
+    opacity: 0;
+  }
+}
+
+#cv {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  /* le pointeur est un petit rond : une goutte d'encre avant qu'elle tombe */
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18'%3E%3Ccircle cx='9' cy='9' r='4' fill='none' stroke='%238c8c8c'/%3E%3C/svg%3E") 9 9, crosshair;
+}
+
+/* le dessin des bouteilles, par-dessus l'eau : il ne reçoit pas les clics */
+#over {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* le papier d'un message : un petit bout de papier épinglé, comme dans Loop */
+.paper {
+  max-height: calc(100% - 24px);
+  overflow-y: auto;
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  width: min(340px, calc(100% - 32px));
+  padding: 22px 22px 18px;
+  background: #e4e0d6;
+  color: #1a1a1a;
+  transform: translate(-50%, -50%) rotate(-1.2deg);
+  animation: pose 0.28s cubic-bezier(0.2, 1.3, 0.4, 1);
+}
+
+/* le papier d'une bouteille : placé par script.js à côté d'elle, il se déplie depuis elle */
+.paper.anchored {
+  left: auto;
+  top: auto;
+  transform: rotate(-1.2deg);
+  animation: none;
+}
+
+.paper[hidden] {
+  display: none;
+}
+
+@keyframes pose {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -46%) rotate(-3deg) scale(0.96);
+  }
+}
+
+/* le sceau 漂 (dériver) : chaque jour a le sien, 咲 pour Bloom */
+.paper .seal {
+  position: absolute;
+  right: 16px;
+  top: 14px;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  background: var(--pink);
+  color: var(--bg);
+  font: 600 22px/1 "Yu Gothic", "Hiragino Sans", "Noto Sans JP", "Meiryo", sans-serif;
+  font-style: normal;
+  clip-path: polygon(1% 4%, 22% 0, 51% 2%, 79% 0, 99% 3%, 100% 31%, 98% 62%, 100% 97%, 71% 100%, 46% 98%, 20% 100%, 0 96%, 2% 66%, 0 35%);
+  transform: rotate(var(--r, -8deg));
+  opacity: 0.92;
+  animation: tampon 0.3s cubic-bezier(0.2, 1.5, 0.4, 1) 0.12s backwards;
+}
+
+@keyframes tampon {
+  from {
+    opacity: 0;
+    transform: rotate(var(--r, -8deg)) scale(1.6);
+  }
+}
+
+.paper .slip {
+  padding-right: 48px;
+}
+
+.paper .x {
+  position: absolute;
+  left: 8px;
+  top: 4px;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  background: none;
+  color: #6b675d;
+  font: 20px/1 var(--font);
+}
+
+.paper .x:hover {
+  color: #b0002f;
+}
+
+.paper .pin {
+  position: absolute;
+  left: 50%;
+  top: -5px;
+  width: 10px;
+  height: 10px;
+  margin-left: -5px;
+  border-radius: 50%;
+  background: var(--pink);
+}
+
+.paper .slip {
+  margin: 0 0 10px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: #6b675d;
+}
+
+.paper .msg {
+  margin: 0 0 12px;
+  font-size: 15px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.paper .meta {
+  margin: 8px 0 0;
+  font-size: 11px;
+  color: #6b675d;
+}
+
+.paper #wErr {
+  color: #b0002f;
+}
+
+.paper textarea {
+  display: block;
+  width: 100%;
+  resize: none;
+  padding: 8px;
+  border: 1px solid #b9b4a8;
+  background: #efece4;
+  color: #1a1a1a;
+  font: 14px/1.5 var(--font);
+}
+
+.paper textarea:focus-visible {
+  outline: 2px solid var(--pink);
+  outline-offset: 1px;
+}
+
+.paper .row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin-top: 10px;
+}
+
+.btn.dark {
+  color: #1a1a1a;
+  border-bottom-color: #8a8578;
+  font-size: 13px;
+}
+
+.btn.dark:disabled {
+  color: #8a8578;
+  border-bottom-color: #c4bfb2;
+  cursor: default;
+}
+
+.btn.dark:disabled:hover {
+  color: #8a8578;
+  border-color: #c4bfb2;
+}
+
+.btn.dark:hover {
+  color: #b0002f;
+  border-color: #b0002f;
+}
+
+/* la visite guidée : une petite bulle sombre, qui suit ce qu'elle montre */
+.tour {
+  position: absolute;
+  z-index: 3;
+  width: min(330px, calc(100% - 24px));
+  padding: 16px 18px;
+  background: #16080d;
+  border: 1px solid var(--pink);
+  border-left-width: 5px;
+  color: #fff;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.tour[hidden] {
+  display: none;
+}
+
+.tour p {
+  margin: 0 0 12px;
+}
+
+.tour .mark {
+  font-size: 12px;
+  letter-spacing: 0.06em;
+}
+
+/* « suivant » est un bouton plein : il se voit */
+.tour #tNext {
+  padding: 5px 16px;
+  border: 0;
+  background: var(--pink);
+  color: var(--bg);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.tour #tNext:hover {
+  background: #fff;
+  color: var(--bg);
+}
+
+.tour #tSkip {
+  align-self: center;
+  font-size: 13px;
+}
+
+.tour .row {
+  display: flex;
+  gap: 18px;
+  margin: 0;
+}
+
+/* le bouton « écrire » est entouré de rose à la dernière étape */
+.btn.pulse {
+  padding: 3px 10px;
+  border: 1px solid var(--pink);
+  color: var(--pink);
+  animation: bat 1.2s ease-in-out infinite;
+}
+
+@keyframes bat {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.hint {
+  position: absolute;
+  left: 28px;
+  bottom: 14px;
+  margin: 0;
+  font-size: 12px;
+  color: var(--dim);
+  pointer-events: none;
+  transition: opacity 1.2s;
+}
+
+.hint.off {
+  opacity: 0;
+}
+
+/* lu par les lecteurs d'écran seulement */
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ---------- Pied de page : les crédits ---------- */
+.foot {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px 28px;
+  padding: 12px 28px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+  color: var(--dim);
+}
+
+.foot p {
+  margin: 0;
+}
+
+.foot .mark {
+  display: inline;
+  margin-right: 8px;
+}
+
+.foot nav {
+  display: flex;
+  gap: 6px 16px;
+}
+
+.foot a {
+  color: var(--muted);
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.foot a:hover {
+  color: var(--pink);
+  border-color: var(--pink);
+}
+
+@media (max-width: 560px) {
+  .top {
+    padding: 0 16px;
+  }
+
+  .right {
+    font-size: 12px;
+    gap: 4px 14px;
+  }
+
+  .count,
+  .long {
+    display: none;
+  }
+
+  .top {
+    gap: 16px;
+  }
+
+  .paper {
+    top: 50%;
+    padding: 20px 18px 16px;
+  }
+
+  .foot nav {
+    margin-left: auto;
+  }
+
+  .hint {
+    left: 16px;
+    right: 16px;
+  }
+
+  .foot {
+    padding: 10px 16px;
+  }
+}
+
+/* Les animations CSS s'arrêtent si le navigateur le demande (script.js tient compte de `calm`) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

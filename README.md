@@ -9,6 +9,7 @@ Un projet par jour pendant le **Devtober 2026**
 | 01 | Pulse | [`01-Pulse`](01-Pulse)
 | 02 | Loop | [`02-Loop`](02-Loop)
 | 03 | Bloom | [`03-Bloom`](03-Bloom)
+| 04 | Drift | [`04-Drift`](04-Drift)
 
 ## Documentation
 
