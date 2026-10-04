@@ -7,6 +7,12 @@
     <meta name="theme-color" content="#0d0d0d" />
     <title>Bloom · jour 03</title>
     <meta name="description" content="Un monde mort qu'on fait refleurir en dessinant des cercles au pinceau." />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Devtober 2026" />
+    <meta property="og:title" content="Bloom · jour 03" />
+    <meta property="og:description" content="Un monde mort qu'on fait refleurir en dessinant des cercles au pinceau." />
+    <meta property="og:image" content="https://bebbou.github.io/devtober-2026/docs/og/bloom.jpg" />
+    <meta name="twitter:card" content="summary_large_image" />
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
@@ -25,7 +31,9 @@
         role="img"
         aria-label="Un paysage de nuit, avec des arbres morts. On les fait refleurir en dessinant un cercle autour d'eux. Le bouton « faire fleurir » fait la même chose au clavier."
       ></canvas>
+      <div class="crows" id="crows" aria-hidden="true"></div>
       <p class="hint" id="hint">dessine un cercle autour d'un arbre, ou autour du sol</p>
+      <div class="hanko" id="hanko" aria-hidden="true">咲</div>
       <p class="sr" id="status" aria-live="polite"></p>
     </main>
 
@@ -34,6 +42,7 @@
         <span class="mark">crédits</span>
         Conçu par <a href="https://github.com/Bebbou">Lino Volle</a>
         · le pinceau vient d'<a href="https://fr.wikipedia.org/wiki/%C5%8Ckami">Ōkami</a>
+        · rendu avec <a href="https://threejs.org">Three.js</a>
       </p>
       <nav aria-label="Liens">
         <a href="../docs/03-bloom.html">doc</a>
@@ -42,6 +51,6 @@
       </nav>
     </footer>
 
-    <script src="script.js"></script>
+    <script type="module" src="script.js"></script>
   </body>
 </html>

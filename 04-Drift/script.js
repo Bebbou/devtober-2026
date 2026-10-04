@@ -387,6 +387,7 @@
 
   const bottlesStep = (dt, t) => {
     if (velFrame++ % 6 === 0) readVelocity();
+    tourTick();
     for (let i = bottles.length - 1; i >= 0; i--) {
       const b = bottles[i];
       b.age += dt;
@@ -409,7 +410,7 @@
           b.vy += (dyp / d) * push / cssH * dt * 8;
         }
       });
-      const slow = b === hovered ? 0.12 : 1; // sous le pointeur, elle ralentit
+      const slow = b === hovered ? 0.12 : b.welcome && tourStep >= 0 ? 0.12 : 1; // sous le pointeur, ou pendant la visite, elle ralentit
       b.x += b.vx * dt * slow; b.y += b.vy * dt * slow;
       if (Math.hypot(b.vx * aspect, b.vy) > 0.004) {
         let d = Math.atan2(-b.vy, b.vx * aspect) - b.a;
@@ -454,7 +455,7 @@
       og.save();
       og.setTransform(s, 0, 0, s, 0, 0);
       og.translate(b.x * cssW, (1 - b.y) * cssH);
-      if ((b.welcome && !seen) || b.flash > 0) { // l'accueil : un anneau rose qui bat autour de la première bouteille
+      if ((b.welcome && tourStep === 1) || b.flash > 0) { // l'accueil : un anneau rose qui bat autour de la première bouteille
         const p = calm ? 0.5 : (Math.sin(t * 3) + 1) / 2;
         og.save(); og.strokeStyle = "#ff0055"; og.globalAlpha = 0.85 - p * 0.55; og.lineWidth = 1.2;
         og.beginPath(); og.arc(0, 0, 30 + p * 10, 0, 6.2832); og.stroke(); og.restore();
@@ -544,7 +545,7 @@
       ? "Ta bouteille, à l'eau depuis " + ago(Date.now() - b.since) + "."
       : "Lue " + b.reads + " fois sur " + MAX_READS + ". Elle coule à la " + MAX_READS + "e lecture.";
     b.welcome = false;
-    if (!seen) { seen = true; try { localStorage.setItem(STORE + "-vu", "1"); } catch (e) { /* on s'en passe */ } }
+    tourEvent("open");
     pDel.hidden = !b.mine;
     paper.hidden = false;
     placePaper(b);
@@ -552,6 +553,7 @@
     hint.classList.add("off");
   };
   $("#pBack").addEventListener("click", closePaper);
+  $("#pClose").addEventListener("click", closePaper);
   $("#pNext").addEventListener("click", () => readOne(opened));
   pDel.addEventListener("click", () => {
     const b = opened;
@@ -573,6 +575,7 @@
     lastFocus = from && from !== document.body ? from : null;
     wText.value = "";
     refreshWrite();
+    tourEvent("write");
     wr.hidden = false;
     wText.focus();
     hint.classList.add("off");
@@ -588,6 +591,7 @@
   };
   wText.addEventListener("input", refreshWrite);
   $("#wCancel").addEventListener("click", closeWrite);
+  $("#wClose").addEventListener("click", closeWrite);
   $("#wSend").addEventListener("click", () => {
     const s = wText.value.replace(/\s+/g, " ").trim();
     if (s.length < 2 || s.length > 100 || /(https?:|www\.|@|\.com|\.fr|\.net)/i.test(s)) {
@@ -624,6 +628,80 @@
     if (!wr.hidden) closeWrite(); else closePaper();
   });
 
+  const tour = $("#tour"), tText = $("#tText"), tStep = $("#tStep"), tNext = $("#tNext"), writeBtn = $("#write");
+  let tourStep = seen ? -1 : 0;
+  const welcomeBottle = () => bottles.find((b) => b.welcome) || bottles.find((b) => !b.mine && !b.sink);
+  const TOUR = [
+    { text: "Clique dans l'eau pour poser une goutte d'encre. Glisse pour la remuer.", at: () => ({ x: cssW / 2, y: cssH * 0.62 }) },
+    { text: "Les bouteilles dérivent avec l'eau. Clique sur celle qui est entourée de rose pour lire son message.", at: () => { const b = welcomeBottle(); return b ? { x: b.x * cssW, y: (1 - b.y) * cssH } : { x: cssW / 2, y: cssH / 2 }; } },
+    { text: "Ici, tu écris la tienne : elle dérivera avec les autres.", at: () => { const r = writeBtn.getBoundingClientRect(), s = stage.getBoundingClientRect(); return { x: r.left + r.width / 2 - s.left, y: 0, top: true }; } },
+  ];
+  const tourShow = () => {
+    writeBtn.classList.toggle("pulse", tourStep === 2);
+    if (tourStep < 0) { tour.hidden = true; return; }
+    tStep.textContent = "visite " + (tourStep + 1) + " / " + TOUR.length;
+    tText.textContent = TOUR[tourStep].text;
+    tNext.textContent = tourStep === TOUR.length - 1 ? "compris" : "suivant";
+    tour.hidden = false;
+  };
+  const tourEnd = () => {
+    tourStep = -1; seen = true;
+    try { localStorage.setItem(STORE + "-vu", "1"); } catch (e) { /* on s'en passe */ }
+    const w = bottles.find((b) => b.welcome); if (w) w.welcome = false;
+    tourShow();
+  };
+  const tourGo = (n) => { if (tourStep < 0) return; if (n >= TOUR.length) { tourEnd(); return; } tourStep = n; tourShow(); };
+  const startTour = () => { tourStep = 0; tourShow(); };
+  // une action de la personne fait avancer la visite
+  const tourEvent = (name) => {
+    if (tourStep < 0) return;
+    if (name === "ink" && tourStep === 0) setTimeout(() => { if (tourStep === 0) tourGo(1); }, 1600);
+    else if (name === "open" && tourStep === 1) tourGo(2);
+    else if (name === "write" && tourStep === 2) tourEnd();
+  };
+  // la bulle se place près de ce qu'elle montre, et se cache quand un papier est ouvert
+  const tourTick = () => {
+    if (tourStep < 0) return;
+    const hide = !!opened || !wr.hidden;
+    if (tour.hidden !== hide) tour.hidden = hide;
+    if (hide) return;
+    const p = TOUR[tourStep].at(), bw = tour.offsetWidth, bh = tour.offsetHeight;
+    const left = Math.min(cssW - bw - 12, Math.max(12, p.x - bw / 2));
+    let top = p.top ? 12 : p.y < cssH / 2 ? p.y + 52 : p.y - 52 - bh;
+    top = Math.min(cssH - bh - 12, Math.max(12, top));
+    tour.style.left = left + "px";
+    tour.style.top = top + "px";
+  };
+  tNext.addEventListener("click", () => tourGo(tourStep + 1));
+  $("#tSkip").addEventListener("click", tourEnd);
+  $("#help").addEventListener("click", () => {
+    closePaper(); closeWrite();
+    const w = bottles.find((b) => !b.mine && !b.sink);
+    if (w) w.welcome = true;
+    startTour();
+  });
+
+  let wantShot = false;
+  const savePicture = () => {
+    const c = document.createElement("canvas");
+    c.width = cv.width; c.height = cv.height;
+    const g = c.getContext("2d"), pr = c.width / cssW;
+    g.drawImage(cv, 0, 0);
+    g.drawImage(over, 0, 0);
+    g.font = 12 * pr + "px 'Courier New', monospace";
+    g.fillStyle = "#8c8c8c";
+    g.textBaseline = "bottom";
+    g.fillText("drift · devtober 2026 · Lino Volle", 18 * pr, c.height - 14 * pr);
+    c.toBlob((blob) => {
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "drift-" + new Date().toISOString().slice(0, 10) + ".png";
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    }, "image/png");
+  };
+  $("#save").addEventListener("click", () => { wantShot = true; });
+
   const hover = (e) => {
     hovered = bottleAt(e);
     cv.style.cursor = hovered ? "pointer" : "";
@@ -637,7 +715,7 @@
     if (!seen) {
       const w = bottles.find((b) => !b.mine);
       if (w) { w.welcome = true; w.x = 0.5; w.y = 0.55; w.size = 1.7; }
-      hint.textContent = "clique sur la bouteille entourée de rose";
+      startTour();
     }
   };
 
@@ -656,6 +734,7 @@
     last = pos(e);
     lastInput = performance.now();
     drop(last.x, last.y, 0.14, Math.random() < 0.3);
+    tourEvent("ink");
     hint.classList.add("off");
     try { cv.setPointerCapture(e.pointerId); } catch (err) { /* pas grave */ }
     e.preventDefault();
@@ -685,6 +764,7 @@
     bottlesStep(dt, t - t0);
     step(dt, t - t0);
     drawBottles(t - t0);
+    if (wantShot) { wantShot = false; savePicture(); flashHint("image enregistrée"); }
     requestAnimationFrame(frame);
   };
 

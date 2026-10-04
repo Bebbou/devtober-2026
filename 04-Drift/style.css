@@ -219,6 +219,22 @@ a {
   padding-right: 48px;
 }
 
+.paper .x {
+  position: absolute;
+  left: 8px;
+  top: 4px;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  background: none;
+  color: #6b675d;
+  font: 20px/1 var(--font);
+}
+
+.paper .x:hover {
+  color: #b0002f;
+}
+
 .paper .pin {
   position: absolute;
   left: 50%;
@@ -297,6 +313,49 @@ a {
 .btn.dark:hover {
   color: #b0002f;
   border-color: #b0002f;
+}
+
+/* la visite guidée : une petite bulle sombre, qui suit ce qu'elle montre */
+.tour {
+  position: absolute;
+  z-index: 3;
+  width: min(270px, calc(100% - 24px));
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.tour[hidden] {
+  display: none;
+}
+
+.tour p {
+  margin: 0 0 8px;
+}
+
+.tour .mark {
+  font-size: 12px;
+}
+
+.tour .row {
+  display: flex;
+  gap: 18px;
+  margin: 0;
+}
+
+/* le bouton « écrire » est entouré de rose à la dernière étape */
+.btn.pulse {
+  color: var(--pink);
+  border-color: var(--pink);
+  animation: bat 1.2s ease-in-out infinite;
+}
+
+@keyframes bat {
+  50% {
+    opacity: 0.45;
+  }
 }
 
 .hint {

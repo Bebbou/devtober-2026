@@ -66,4 +66,5 @@ Lino commite et pousse lui-même. Ne pas faire de commit, de push ni de branche 
 ## À faire plus tard
 
 - Phaser R312 : Lino remet le jeu à jour la semaine du 5 octobre 2026. Quand GitHub Pages sera activé sur ce dépôt, ajouter un lien « jouer » dans son conteneur, refaire l'affiche `img/phaser-r312.png` et mettre à jour « 4 salles » et « en cours ».
+- Visite guidée : Drift a une visite en 3 bulles (première visite seulement, relançable par « ? »). Lino veut la même chose sur Pulse, Loop et Bloom. À lui rappeler après `/finish-day 04`.
 - D'autres conteneurs viendront (infographie, etc.) : Lino les envoie un par un.
