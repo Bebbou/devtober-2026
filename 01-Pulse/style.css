@@ -144,6 +144,112 @@ button {
   }
 }
 
+/* ---------- Visite guidée ---------- */
+.help {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: none;
+  color: var(--muted);
+  font: 500 14px var(--mono);
+  cursor: pointer;
+}
+
+.help:hover {
+  color: var(--pink);
+  border-color: var(--pink);
+}
+
+.tour {
+  position: fixed;
+  z-index: 30;
+  width: min(330px, calc(100% - 24px));
+  padding: 16px 18px;
+  background: #16080d;
+  border: 1px solid var(--pink);
+  border-left-width: 5px;
+  color: #fff;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.tour[hidden],
+.tourfx[hidden] {
+  display: none;
+}
+
+.tour p {
+  margin: 0 0 12px;
+}
+
+.tour .mark {
+  font-size: 12px;
+}
+
+.tour .row {
+  display: flex;
+  gap: 18px;
+}
+
+.tour .tnext {
+  padding: 6px 16px;
+  border: 0;
+  background: var(--pink);
+  color: var(--bg);
+  font: 700 14px var(--mono);
+  cursor: pointer;
+}
+
+.tour .tnext:hover {
+  background: #fff;
+}
+
+.tour .tskip {
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid var(--line-strong);
+  background: none;
+  color: var(--muted);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.tourfx {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 29;
+}
+
+.tourfx rect {
+  stroke: var(--pink);
+  stroke-width: 2.5;
+  stroke-dasharray: 9 8;
+  animation: tbat 1.2s ease-in-out infinite;
+}
+
+.tourfx path {
+  fill: var(--pink);
+  stroke: var(--pink);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+
+@keyframes tbat {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tourfx rect {
+    animation: none;
+  }
+}
+
 /* ---------- Mise en page ---------- */
 main {
   max-width: 1160px;

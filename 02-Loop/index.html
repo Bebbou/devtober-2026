@@ -14,6 +14,7 @@
     <header class="top">
       <a class="logo" href="#"><i></i>loop</a>
       <div class="right">
+        <button class="help" id="help" type="button" aria-label="revoir la visite guidée">?</button>
         <div class="speed" aria-hidden="true">
           <b id="arrow">··</b>
           <span id="stamp">0 km/h</span>
@@ -119,6 +120,17 @@
       </div>
       <p class="exit">échap pour sortir</p>
     </dialog>
+
+    <!-- La visite guidée : hors de la scène, pour que ses boutons ne fassent pas glisser le train -->
+    <svg class="tourfx" id="tourfx" aria-hidden="true" hidden><rect id="tRing" rx="6" fill="none"></rect><path id="tArrow"></path></svg>
+    <div class="tour" id="tour" hidden>
+      <p class="mark" id="tStep"></p>
+      <p id="tText"></p>
+      <div class="row">
+        <button class="tnext" id="tNext" type="button">suivant</button>
+        <button class="tskip" id="tSkip" type="button">passer</button>
+      </div>
+    </div>
 
     <script src="logos.js"></script>
     <script src="projects.js"></script>

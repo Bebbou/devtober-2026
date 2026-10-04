@@ -632,6 +632,68 @@
   });
   addEventListener("pagehide", () => projects.forEach(disconnectLive));
 
+  /* ---------- La visite guidée ----------
+     Trois bulles à la première visite : le rythme global, une carte, puis le bouton d'actualisation. */
+
+  const tour = $("#tour"), tText = $("#tText"), tStep = $("#tStep"), tFx = $("#tourfx"), tRing = $("#tRing"), tArrow = $("#tArrow");
+  const SEEN = "devtober-pulse-1-vu";
+  const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let tourStep = -1, tourLoopOn = false;
+  const clampN = (v, a, b) => Math.min(b, Math.max(a, v));
+  const TOUR = [
+    { text: "Le grand chiffre est le rythme cardiaque de tous mes projets : plus ils sont actifs, plus il monte.", el: () => $(".hero .meta") },
+    { text: "Chaque carte est un projet. Sa ligne bat plus vite quand il y a des commits récents. Un clic ouvre le dépôt.", el: () => $(".card") },
+    { text: "Ce bouton actualise les chiffres. Ceux de GitHub se renouvellent toutes les 15 minutes.", el: () => $("#refresh") },
+  ];
+  const tourShow = () => {
+    tour.hidden = tourStep < 0;
+    tFx.toggleAttribute("hidden", tourStep < 0);
+    if (tourStep < 0) return;
+    tStep.textContent = "visite " + (tourStep + 1) + " / " + TOUR.length;
+    tText.textContent = TOUR[tourStep].text;
+    $("#tNext").textContent = tourStep === TOUR.length - 1 ? "compris" : "suivant";
+    // la page défile pour montrer la cible
+    // la carte est montrée au centre ; le chiffre global et le bouton sont en haut de page
+    if (tourStep === 1) { const target = TOUR[1].el(); if (target) target.scrollIntoView({ block: "center", behavior: calm ? "auto" : "smooth" }); }
+    else scrollTo({ top: 0, behavior: calm ? "auto" : "smooth" });
+    if (!calm) tour.animate([{ opacity: 0, transform: "translateY(10px)" }, { opacity: 1, transform: "none" }], { duration: 320, easing: "ease-out" });
+    if (!tourLoopOn) { tourLoopOn = true; requestAnimationFrame(tourLoop); }
+  };
+  const tourEnd = () => {
+    tourStep = -1;
+    try { localStorage.setItem(SEEN, "1"); } catch (e) { /* on s'en passe */ }
+    tourShow();
+  };
+  const tourGo = (n) => { if (tourStep < 0) return; if (n >= TOUR.length) { tourEnd(); return; } tourStep = n; tourShow(); };
+  // la bulle, le cadre et la flèche suivent la cible (la page défile, les cartes arrivent après le chargement)
+  const tourTick = () => {
+    const target = TOUR[tourStep].el();
+    if (!target) return;
+    const T = target.getBoundingClientRect(), W = innerWidth, H = innerHeight, pad = 10;
+    const bw = tour.offsetWidth, bh = tour.offsetHeight, cx = (T.left + T.right) / 2, cy = (T.top + T.bottom) / 2;
+    const left = clampN(cx - bw / 2, 12, W - bw - 12);
+    const top = clampN(cy < H / 2 ? T.bottom + pad + 48 : T.top - pad - 48 - bh, 12, H - bh - 12);
+    tour.style.left = left + "px";
+    tour.style.top = top + "px";
+    tFx.setAttribute("viewBox", "0 0 " + W + " " + H);
+    tRing.setAttribute("x", T.left - pad); tRing.setAttribute("y", T.top - pad);
+    tRing.setAttribute("width", T.width + pad * 2); tRing.setAttribute("height", T.height + pad * 2);
+    const sx = clampN(cx, left, left + bw), sy = clampN(cy, top, top + bh);
+    const ex = clampN(sx, T.left - pad, T.right + pad), ey = clampN(sy, T.top - pad, T.bottom + pad);
+    const a = Math.atan2(ey - sy, ex - sx);
+    tArrow.setAttribute("d", "M" + sx + " " + sy + "L" + ex + " " + ey +
+      "L" + (ex - Math.cos(a - 0.45) * 13) + " " + (ey - Math.sin(a - 0.45) * 13) +
+      "L" + (ex - Math.cos(a + 0.45) * 13) + " " + (ey - Math.sin(a + 0.45) * 13) + "L" + ex + " " + ey);
+  };
+  function tourLoop() {
+    if (tourStep < 0) { tourLoopOn = false; return; }
+    tourTick();
+    requestAnimationFrame(tourLoop);
+  }
+  $("#tNext").addEventListener("click", () => tourGo(tourStep + 1));
+  $("#tSkip").addEventListener("click", tourEnd);
+  $("#help").addEventListener("click", () => { scrollTo(0, 0); tourStep = 0; tourShow(); });
+
   projects.forEach(buildCard);
   $("#count").textContent = `${projects.length} dépôts`;
   $("#refresh").addEventListener("click", () => refresh(true));
@@ -639,4 +701,7 @@
   setInterval(() => refresh(false), AUTO_REFRESH);
   refresh(false);
   projects.forEach(connectLive);
+  let seenTour = false;
+  try { seenTour = localStorage.getItem(SEEN) === "1"; } catch (e) { /* on s'en passe */ }
+  if (!seenTour) { tourStep = 0; tourShow(); }
 })();

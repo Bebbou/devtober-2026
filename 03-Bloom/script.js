@@ -892,6 +892,7 @@ const ring = (cx, cy, rx, ry, hit) => {
   a.onfinish = () => el.remove();
 };
 
+let tourEvent = () => {}; // remplacée plus bas par la visite guidée
 const bloomAt = (cx, cy, rx, ry) => {
   const hit = region(cx, cy, rx, ry, false);
   ring(cx, cy, rx, ry, hit > 0);
@@ -899,6 +900,7 @@ const bloomAt = (cx, cy, rx, ry) => {
   circles.push({ x: cx / W, y: cy / H, rx: rx / H, ry: ry / H });
   save();
   report(false);
+  tourEvent("bloom");
   if (!finished) hint.classList.add("off");
 };
 
@@ -1080,11 +1082,73 @@ const frame = () => {
   if (pctEl.textContent !== pct) pctEl.textContent = pct;
   simulate(t, dt);
   updateBrush(t);
+  tourTick();
   renderer.render(scene, camera);
   requestAnimationFrame(frame);
 };
 
 /* ---------- Démarrage ---------- */
+
+/* ---------- La visite guidée ----------
+   Trois bulles à la première visite : dessiner un cercle autour d'un arbre, entourer le reste, puis le bouton clavier. */
+
+const tour = $("#tour"), tText = $("#tText"), tStep = $("#tStep"), tNextBtn = $("#tNext"), tFx = $("#tourfx"), tRing = $("#tRing"), tArrow = $("#tArrow"), nextBtn = $("#next");
+const SEEN = KEY + "-vu";
+let tourStep = -1;
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const bigTree = () => trees.filter((t) => !t.row).sort((a, b) => (b.maxy - b.miny) - (a.maxy - a.miny))[0] || trees[0];
+const TOUR = [
+  { text: "Dessine un cercle au pinceau, à la souris ou au doigt, autour d'un arbre : il refleurit.", at: () => { const t = bigTree(); return { x: (t.minx + t.maxx) / 2, y: (t.miny + t.maxy) / 2, rx: (t.maxx - t.minx) / 2 * 0.95, ry: (t.maxy - t.miny) / 2 * 0.95 }; } },
+  { text: "Entoure aussi le torii, les lanternes et le sol. Quand tout a refleuri, le jour se lève.", at: () => { const p = props.find((q) => q.kind === "torii") || props[0]; return { x: p.x, y: p.cy, rx: p.w * 0.75, ry: U0 * 0.17 }; } },
+  { text: "Pas de souris ? « faire fleurir » fait refleurir l'élément suivant.", at: () => { const r = nextBtn.getBoundingClientRect(), s = stage.getBoundingClientRect(); return { x: r.left + r.width / 2 - s.left, y: 0, top: true }; } },
+];
+const tourShow = () => {
+  nextBtn.classList.toggle("pulse", tourStep === 2);
+  tour.hidden = tourStep < 0;
+  tFx.toggleAttribute("hidden", tourStep < 0); // un SVG n'a pas de propriété hidden : c'est l'attribut qui compte
+  if (tourStep < 0) return;
+  tStep.textContent = "visite " + (tourStep + 1) + " / " + TOUR.length;
+  tText.textContent = TOUR[tourStep].text;
+  tNextBtn.textContent = tourStep === TOUR.length - 1 ? "compris" : "suivant";
+  hint.classList.add("off");
+  if (!calm) tour.animate([{ opacity: 0, transform: "translateY(10px)" }, { opacity: 1, transform: "none" }], { duration: 320, easing: "ease-out" });
+};
+const tourEnd = () => {
+  tourStep = -1;
+  try { localStorage.setItem(SEEN, "1"); } catch (e) { /* on s'en passe */ }
+  tourShow();
+};
+const tourGo = (n) => { if (tourStep < 0) return; if (n >= TOUR.length) { tourEnd(); return; } tourStep = n; tourShow(); };
+tourEvent = (name) => {
+  if (tourStep < 0) return;
+  if (name === "bloom" && tourStep < 2) { const at = tourStep; setTimeout(() => { if (tourStep === at) tourGo(at + 1); }, 1400); }
+  else if (name === "next" && tourStep === 2) tourEnd();
+};
+// la bulle, le cercle en pointillé et la flèche suivent ce qu'ils montrent (l'écran peut changer de taille)
+const tourTick = () => {
+  if (tourStep < 0) return;
+  const T = TOUR[tourStep].at(), bw = tour.offsetWidth, bh = tour.offsetHeight;
+  const left = clamp(T.x - bw / 2, 12, W - bw - 12);
+  const top = clamp(T.top ? 12 : T.y < H / 2 ? T.y + T.ry + 46 : T.y - T.ry - 46 - bh, 12, H - bh - 12);
+  tour.style.left = left + "px";
+  tour.style.top = top + "px";
+  tFx.setAttribute("viewBox", "0 0 " + W + " " + H);
+  let ex = T.x, ey = T.top ? 0 : T.y;
+  if (T.rx) {
+    tRing.style.display = "";
+    tRing.setAttribute("cx", T.x); tRing.setAttribute("cy", T.y); tRing.setAttribute("rx", T.rx); tRing.setAttribute("ry", T.ry);
+  } else tRing.style.display = "none";
+  const sx = clamp(ex, left, left + bw), sy = clamp(ey, top, top + bh);
+  const dx = ex - sx, dy = ey - sy, d = Math.hypot(dx, dy) || 1, ux = dx / d, uy = dy / d;
+  const stop = T.rx ? 1 / Math.hypot(ux / T.rx, uy / T.ry) + 6 : 0; // jusqu'au bord de l'ellipse
+  const ax = ex - ux * stop, ay = ey - uy * stop, a = Math.atan2(ay - sy, ax - sx);
+  const h1 = [ax - Math.cos(a - 0.45) * 13, ay - Math.sin(a - 0.45) * 13], h2 = [ax - Math.cos(a + 0.45) * 13, ay - Math.sin(a + 0.45) * 13];
+  tArrow.setAttribute("d", "M" + sx + " " + sy + "L" + ax + " " + ay + "L" + h1[0] + " " + h1[1] + "L" + h2[0] + " " + h2[1] + "L" + ax + " " + ay);
+};
+tNextBtn.addEventListener("click", () => tourGo(tourStep + 1));
+$("#tSkip").addEventListener("click", tourEnd);
+nextBtn.addEventListener("click", () => tourEvent("next"));
+$("#help").addEventListener("click", () => { tourStep = 0; tourShow(); });
 
 $("#next").addEventListener("click", bloomNext);
 $("#reset").addEventListener("click", reset);
@@ -1103,4 +1167,7 @@ load();
 build();
 replay();
 if (circles.length) { report(true); if (!finished) hint.classList.add("off"); }
+let seenTour = false;
+try { seenTour = localStorage.getItem(SEEN) === "1"; } catch (e) { /* on s'en passe */ }
+if (!circles.length && !seenTour) { tourStep = 0; tourShow(); }
 requestAnimationFrame(frame);

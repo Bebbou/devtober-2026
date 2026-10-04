@@ -16,6 +16,7 @@
         <span class="count"><span class="lbl">fleuri </span><b id="pct">0 %</b></span>
         <button class="btn" id="next" type="button">faire fleurir</button>
         <button class="btn" id="reset" type="button">recommencer</button>
+        <button class="btn" id="help" type="button" aria-label="revoir la visite guidée">?</button>
       </div>
     </header>
 
@@ -28,6 +29,16 @@
       <div class="crows" id="crows" aria-hidden="true"></div>
       <p class="hint" id="hint">dessine un cercle autour d'un arbre, ou autour du sol</p>
       <div class="hanko" id="hanko" aria-hidden="true">咲</div>
+      <svg class="tourfx" id="tourfx" aria-hidden="true" hidden><ellipse id="tRing" fill="none"></ellipse><path id="tArrow"></path></svg>
+      <div class="tour" id="tour" hidden>
+        <p class="mark" id="tStep"></p>
+        <p id="tText"></p>
+        <div class="row">
+          <button class="btn" id="tNext" type="button">suivant</button>
+          <button class="btn" id="tSkip" type="button">passer</button>
+        </div>
+      </div>
+
       <p class="sr" id="status" aria-live="polite"></p>
     </main>
 

@@ -20,6 +20,7 @@
       <a class="logo" href="#"><i></i>Pulse</a>
       <span class="grow"></span>
       <span class="stamp" id="stamp">chargement…</span>
+      <button class="help" id="help" aria-label="Revoir la visite guidée">?</button>
       <button class="icon" id="refresh" aria-label="Actualiser">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M3 12a9 9 0 1 0 3-6.7" />
@@ -69,6 +70,17 @@
         </ul>
       </div>
     </footer>
+
+    <!-- La visite guidée -->
+    <svg class="tourfx" id="tourfx" aria-hidden="true" hidden><rect id="tRing" rx="8" fill="none"></rect><path id="tArrow"></path></svg>
+    <div class="tour" id="tour" hidden>
+      <p class="mark" id="tStep"></p>
+      <p id="tText"></p>
+      <div class="row">
+        <button class="tnext" id="tNext" type="button">suivant</button>
+        <button class="tskip" id="tSkip" type="button">passer</button>
+      </div>
+    </div>
 
     <script src="projects.js"></script>
     <script src="script.js"></script>

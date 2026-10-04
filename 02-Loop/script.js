@@ -410,6 +410,7 @@
     lever.classList.toggle("on", leverOn || speed >= 8);
     setText(odo, "odo", "tour " + (Math.floor(trip / period) + 1) + " · " + fmtDistance(stored + trip / METRE));
 
+    tourTick();
     requestAnimationFrame(frame);
   }
 
@@ -569,6 +570,7 @@
 
   /* ---------- L'intérieur du conteneur ---------- */
   function open(i, from) {
+    tourEvent("open");
     var p = PROJECTS[i];
     if (!p) return;
     $("#dKind").textContent = p.kind;
@@ -690,6 +692,98 @@
   dlg.addEventListener("cancel", function (e) { e.preventDefault(); closeFiche(); });
   $("#dClose").addEventListener("click", closeFiche);
 
+  /* ---------- La visite guidée ----------
+     Trois bulles à la première visite : survoler un conteneur, l'ouvrir, puis conduire le train. */
+
+  var tour = $("#tour"), tText = $("#tText"), tStep = $("#tStep"), tFx = $("#tourfx"), tRing = $("#tRing"), tArrow = $("#tArrow");
+  var SEEN = "devtober-loop-2-vu";
+  var tourStep = -1, tourBox = null;
+  var TOUR = [
+    { text: "Le train roule tout seul. Passe la souris sur un conteneur : il s'arrête." },
+    { text: "Clique sur le conteneur pour entrer dedans. Échap pour en sortir." },
+    { text: "Molette, glisser ou manette : tu conduis le train, vers l'avant comme vers l'arrière." },
+  ];
+  function clampN(v, a, b) { return Math.min(b, Math.max(a, v)); }
+  // le conteneur qu'on montre : le plus proche du centre de l'écran, entièrement visible
+  function pickBox() {
+    var boxes = document.querySelectorAll(".box"), best = null, bd = 1e9, i, r, d;
+    for (i = 0; i < boxes.length; i++) {
+      r = boxes[i].getBoundingClientRect();
+      if (r.left < 24 || r.right > window.innerWidth - 24 || !r.width) continue;
+      d = Math.abs((r.left + r.right) / 2 - window.innerWidth / 2);
+      if (d < bd) { bd = d; best = boxes[i]; }
+    }
+    return best;
+  }
+  function tourTarget() {
+    if (tourStep === 2) return lever.getBoundingClientRect();
+    if (tourBox) {
+      var r = tourBox.getBoundingClientRect();
+      if (r.left >= 12 && r.right <= window.innerWidth - 12) return r;
+    }
+    tourBox = pickBox();
+    return tourBox ? tourBox.getBoundingClientRect() : null;
+  }
+  function tourShow() {
+    tour.hidden = tourStep < 0;
+    if (tourStep < 0) tFx.setAttribute("hidden", ""); else tFx.removeAttribute("hidden");
+    if (tourStep < 0) return;
+    tStep.textContent = "visite " + (tourStep + 1) + " / " + TOUR.length;
+    tText.textContent = TOUR[tourStep].text;
+    $("#tNext").textContent = tourStep === TOUR.length - 1 ? "compris" : "suivant";
+    if (!reduced && tour.animate) tour.animate([{ opacity: 0, transform: "translateY(10px)" }, { opacity: 1, transform: "none" }], { duration: 320, easing: "ease-out" });
+  }
+  function tourEnd() {
+    tourStep = -1;
+    try { localStorage.setItem(SEEN, "1"); } catch (e) { /* on s'en passe */ }
+    tourShow();
+  }
+  function tourGo(n) {
+    if (tourStep < 0) return;
+    if (n >= TOUR.length) { tourEnd(); return; }
+    tourStep = n;
+    tourShow();
+  }
+  // une action de la personne fait avancer la visite
+  function tourEvent(name) {
+    if (tourStep < 0) return;
+    if (name === "hover" && tourStep === 0) setTimeout(function () { if (tourStep === 0) tourGo(1); }, 900);
+    else if (name === "open" && tourStep === 1) tourGo(2);
+    else if (name === "drive" && tourStep === 2) setTimeout(function () { if (tourStep === 2) tourEnd(); }, 1200);
+  }
+  // la bulle, le cadre et la flèche suivent le conteneur qui avance
+  function tourTick() {
+    if (tourStep < 0) return;
+    if (dlg.open) { tour.hidden = true; tFx.setAttribute("hidden", ""); return; }
+    tour.hidden = false; tFx.removeAttribute("hidden");
+    if (tourStep === 0 && hover) tourEvent("hover");
+    var T = tourTarget();
+    if (!T) return;
+    var W = window.innerWidth, H = window.innerHeight, bw = tour.offsetWidth, bh = tour.offsetHeight, pad = 10;
+    var cx = (T.left + T.right) / 2, cy = (T.top + T.bottom) / 2;
+    var left = clampN(cx - bw / 2, 12, W - bw - 12);
+    var top = clampN(cy < H / 2 ? T.bottom + pad + 48 : T.top - pad - 48 - bh, 12, H - bh - 12);
+    tour.style.left = left + "px";
+    tour.style.top = top + "px";
+    tFx.setAttribute("viewBox", "0 0 " + W + " " + H);
+    tRing.setAttribute("x", T.left - pad); tRing.setAttribute("y", T.top - pad);
+    tRing.setAttribute("width", T.width + pad * 2); tRing.setAttribute("height", T.height + pad * 2);
+    var sx = clampN(cx, left, left + bw), sy = clampN(cy, top, top + bh);
+    var ex = clampN(sx, T.left - pad, T.right + pad), ey = clampN(sy, T.top - pad, T.bottom + pad);
+    var a = Math.atan2(ey - sy, ex - sx);
+    tArrow.setAttribute("d", "M" + sx + " " + sy + "L" + ex + " " + ey +
+      "L" + (ex - Math.cos(a - 0.45) * 13) + " " + (ey - Math.sin(a - 0.45) * 13) +
+      "L" + (ex - Math.cos(a + 0.45) * 13) + " " + (ey - Math.sin(a + 0.45) * 13) + "L" + ex + " " + ey);
+  }
+  $("#tNext").addEventListener("click", function () { tourGo(tourStep + 1); });
+  $("#tSkip").addEventListener("click", tourEnd);
+  $("#help").addEventListener("click", function () { tourBox = null; tourStep = 0; tourShow(); });
+  stage.addEventListener("wheel", function () { tourEvent("drive"); }, { passive: true });
+  lever.addEventListener("pointerdown", function () { tourEvent("drive"); });
+  window.addEventListener("keydown", function (e) { if (e.key === "ArrowLeft" || e.key === "ArrowRight") tourEvent("drive"); });
+  var seenTour = false;
+  try { seenTour = localStorage.getItem(SEEN) === "1"; } catch (e) { /* on s'en passe */ }
+
   /* ---------- Démarrage ---------- */
   function buildAll() {
     LAYERS.forEach(buildCity);
@@ -706,5 +800,6 @@
     resizeTimer = setTimeout(buildAll, 150);
   });
 
+  if (!seenTour) { tourStep = 0; tourShow(); }
   requestAnimationFrame(function (t) { last = t; frame(t); });
 })();
