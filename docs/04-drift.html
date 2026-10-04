@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0d0d0d">
+<title>Drift · Jour 04 · Devtober 2026</title>
+<meta name="description" content="Jour 04 du Devtober 2026 : Drift, une eau noire où dérive de l'encre, et des bouteilles avec des messages à lire ou à écrire.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Devtober 2026">
+<meta property="og:title" content="Drift · Jour 04 · Devtober 2026">
+<meta property="og:description" content="Jour 04 du Devtober 2026 : Drift, une eau noire où dérive de l'encre, et des bouteilles avec des messages à lire ou à écrire.">
+<meta property="og:image" content="https://bebbou.github.io/devtober-2026/docs/og/drift.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="top">
+  <a class="logo" href="index.html"><i></i>devtober 2026</a>
+</header>
+
+<div class="shell">
+  <aside class="side">
+    <nav id="docNav">
+      <p class="mark">documents</p>
+      <a href="index.html">accueil</a>
+    </nav>
+    <nav id="secNav">
+      <p class="mark">sur cette page</p>
+    </nav>
+  </aside>
+
+  <main>
+    <header>
+      <h1>Drift</h1>
+      <p class="lead">Jour 04. Une eau noire où dérive de l'encre blanche et rose, et des bouteilles qui portent un message. On pose de l'encre, on remue l'eau, on lit les messages des autres et on écrit le sien.</p>
+      <p class="links">
+        <a href="../04-Drift/">ouvrir le projet</a>
+        <a href="https://github.com/Bebbou/devtober-2026/tree/main/04-Drift">code source</a>
+      </p>
+    </header>
+
+    <section id="apercu" data-name="aperçu">
+      <h2>aperçu</h2>
+      <p>L'encre vient du suminagashi, l'art japonais du papier marbré : on pose des gouttes d'encre sur l'eau, elles forment des anneaux, et le moindre courant les plie en volutes. Les bouteilles suivent ces courants.</p>
+      <div class="frame">
+        <iframe src="../04-Drift/index.html" title="Drift, en direct" loading="lazy"></iframe>
+      </div>
+      <p class="cap">Version en direct. <a href="../04-Drift/">L'ouvrir en plein écran</a></p>
+    </section>
+
+    <section id="commandes" data-name="commandes">
+      <h2>commandes</h2>
+      <div class="tblwrap">
+        <table class="tbl">
+          <thead><tr><th>geste</th><th>effet</th></tr></thead>
+          <tbody>
+            <tr><td>cliquer dans l'eau</td><td>Pose une goutte d'encre : sept anneaux fins, deux blancs puis un rose.</td></tr>
+            <tr><td>glisser</td><td>Remue l'eau. L'encre se plie dans le sens du geste.</td></tr>
+            <tr><td>cliquer une bouteille</td><td>Ouvre son message dans un papier, à côté d'elle. La bouteille ralentit quand le pointeur passe dessus.</td></tr>
+            <tr><td>lire</td><td>Ouvre une bouteille au hasard. C'est la version clavier.</td></tr>
+            <tr><td>écrire</td><td>Ouvre le papier pour écrire un message de 100 caractères au plus. Ctrl + Entrée l'envoie.</td></tr>
+            <tr><td>garder</td><td>Enregistre l'eau, avec ses bouteilles, en image PNG.</td></tr>
+            <tr><td>?</td><td>Relance la visite guidée.</td></tr>
+            <tr><td>Échap</td><td>Ferme le papier ouvert.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="eau" data-name="l'eau">
+      <h2>l'eau</h2>
+      <p>L'eau est un fluide simulé sur le GPU, en WebGL 2, sans bibliothèque. Deux champs vivent côte à côte : la vitesse de l'eau (128 pixels de haut) et l'encre qu'elle emporte (512 pixels de haut au plus). À chaque image :</p>
+      <ul class="bul">
+        <li>un courant lent, sans divergence, fait dériver l'eau toute seule ;</li>
+        <li>on calcule la pression qui empêche l'eau de se comprimer (12 itérations) et on la retire de la vitesse ;</li>
+        <li>la vitesse s'emporte elle-même et s'amortit ;</li>
+        <li>l'encre est emportée par cette vitesse et pâlit : elle perd 6 % de sa densité par seconde.</li>
+      </ul>
+      <p>Les bords nets de l'encre viennent de deux choses. À l'affichage, un seuil : en dessous d'une certaine densité, il n'y a plus que de l'eau. Et un petit effet raffermit les lignes à chaque image, borné pour ne jamais dépasser le plus fort des pixels voisins. Sans cette borne, il fabriquait de l'encre sur les filaments fins et la mer finissait pleine.</p>
+      <p>Une goutte fait sept anneaux d'encre fine, avec un rose tous les trois. Quand personne ne touche, une goutte tombe toutes les 9 à 17 secondes, et un coup de vent traverse l'eau toutes les 28 à 50 secondes.</p>
+    </section>
+
+    <section id="bouteilles" data-name="les bouteilles">
+      <h2>les bouteilles</h2>
+      <p>Une bouteille est un petit objet dessiné par-dessus l'eau. Elle suit le courant : toutes les 6 images, on relit la vitesse de l'eau dans la simulation, et on l'applique à la bouteille.</p>
+      <div class="code" data-label-js="script.js">
+<script type="text/plain" data-lang="js">
+const f = flowAt(b.x, b.y), k = Math.min(1, dt * 3);
+b.vx += (f[0] * 0.8 - b.vx) * k; // la bouteille rattrape la vitesse de l'eau en douceur
+b.vy += (f[1] * 0.8 - b.vy) * k;
+</script>
+      </div>
+      <ul class="bul">
+        <li>Deux bouteilles trop proches s'écartent, pour qu'elles ne s'empilent pas.</li>
+        <li>Près des bords, l'eau les repousse vers le large.</li>
+        <li>Sous le pointeur, une bouteille ralentit : on peut l'attraper.</li>
+        <li>Elle laisse une traîne rose, qui disparaît en quelques secondes. La traîne a son propre canal dans la texture de l'encre, qui s'efface bien plus vite que l'encre des gouttes.</li>
+        <li>La mer garde six bouteilles d'inconnus. Une bouteille coule à sa cinquième lecture, et une autre arrive d'un bord.</li>
+      </ul>
+      <p>Les messages de départ sont dans <code>04-Drift/messages.js</code> : un message par ligne, 100 caractères au plus.</p>
+    </section>
+
+    <section id="papier" data-name="le papier">
+      <h2>le papier</h2>
+      <p>Quand on ouvre une bouteille, son message apparaît sur un papier épinglé, placé juste à côté d'elle (en dessous si elle est dans le haut de l'écran, au-dessus sinon). Le papier se déplie depuis la bouteille en 0,4 seconde, et un fil rose les relie. Le sceau 漂 (dériver) est tamponné en coin, légèrement de travers à chaque fois, comme le 咲 de Bloom.</p>
+      <p>Le papier indique combien de fois la bouteille a été lue sur 5. Un « × », « remettre à l'eau » et Échap le ferment.</p>
+    </section>
+
+    <section id="ecrire" data-name="écrire">
+      <h2>écrire une bouteille</h2>
+      <ul class="bul">
+        <li>Le message fait de 2 à 100 caractères. Les liens et les adresses (<code>http:</code>, <code>www.</code>, <code>@</code>, <code>.com</code>, <code>.fr</code>, <code>.net</code>) sont refusés, avec une explication.</li>
+        <li>Le bouton d'envoi reste grisé tant que le message est trop court. Le compteur devient rouge à 90 caractères.</li>
+        <li>La bouteille part du bord gauche, entourée d'un anneau rose pendant 4 secondes pour qu'on la suive.</li>
+        <li>Tes bouteilles sont roses et plus grandes. Il y en a cinq au plus : la plus ancienne s'en va quand on en écrit une sixième. Le papier donne depuis combien de temps elle est à l'eau, et on peut la supprimer.</li>
+        <li>Tout reste dans ton navigateur (<code>localStorage</code>). Personne d'autre ne les voit.</li>
+      </ul>
+    </section>
+
+    <section id="visite" data-name="visite guidée">
+      <h2>la visite guidée</h2>
+      <p>À la première visite, trois bulles accompagnent les premiers gestes : poser de l'encre, ouvrir la bouteille entourée de rose, puis écrire. Chaque étape avance quand la personne fait l'action. La bulle se place près de ce qu'elle montre et se cache quand un papier est ouvert. « passer » l'arrête, et le « ? » en haut la relance.</p>
+    </section>
+
+    <section id="acces" data-name="accessibilité">
+      <h2>accessibilité et petits écrans</h2>
+      <ul class="bul">
+        <li>« lire » et « écrire » donnent tout le jeu au clavier. Le focus revient sur le bouton d'origine quand on ferme un papier.</li>
+        <li>Les confirmations (« ta bouteille est à l'eau ») sont lues aux lecteurs d'écran et affichées un instant dans la ligne d'aide.</li>
+        <li>Si le navigateur demande de réduire les animations, l'eau ne dérive plus toute seule, il n'y a plus de coups de vent, et le papier apparaît sans se déplier.</li>
+        <li>Sur téléphone, les boutons deviennent « lire » et « écrire », la zone de clic des bouteilles est plus large, et le papier garde une marge de 12 pixels.</li>
+        <li>Sans WebGL 2, la page l'écrit à la place de l'indice.</li>
+      </ul>
+    </section>
+
+    <section id="limites" data-name="limites">
+      <h2>limites</h2>
+      <ul class="bul">
+        <li>Il n'y a pas de serveur : les bouteilles « des autres » sont les 18 messages de départ, et les tiennes restent chez toi. Personne ne reçoit ce que tu écris.</li>
+        <li>J'ai testé dans le panneau intégré de l'application, sur un seul GPU (Intel Arc), avec des clics simulés. Je n'ai pas testé un téléphone physique, Firefox ni Safari.</li>
+        <li>La mesure de fluidité (environ 80 images par seconde au maximum à 1920×908) vient de ce panneau, où l'animation tourne sur minuteur.</li>
+        <li>Les lignes fines d'encre sont un peu crénelées par endroits.</li>
+        <li>La page demande WebGL 2 avec les textures flottantes (<code>EXT_color_buffer_float</code>).</li>
+      </ul>
+      <h3>Pistes</h3>
+      <ul class="bul">
+        <li>Un petit serveur et une base pour de vraies bouteilles d'autres visiteurs, avec une modération simple (signalement, suppression, bouteilles qui s'effacent au bout de 7 jours).</li>
+        <li>Des bouteilles qui portent un dessin d'un seul trait de pinceau plutôt qu'un texte.</li>
+      </ul>
+    </section>
+
+    <section id="credits" data-name="crédits">
+      <h2>crédits</h2>
+      <ul class="bul">
+        <li>L'encre s'inspire du suminagashi, l'art japonais du papier marbré. Le dessin, le code et la simulation sont à moi, sans bibliothèque.</li>
+        <li>Le kanji 漂 est celui de « dériver ».</li>
+      </ul>
+    </section>
+
+    <footer class="foot">
+      <span>devtober 2026 · jour 04 · par Lino Volle</span>
+      <a href="index.html">retour à l'accueil</a>
+    </footer>
+  </main>
+</div>
+
+<script src="pages.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
