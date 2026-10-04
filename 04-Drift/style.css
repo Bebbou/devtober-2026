@@ -157,6 +157,8 @@ a {
 
 /* le papier d'un message : un petit bout de papier épinglé, comme dans Loop */
 .paper {
+  max-height: calc(100% - 24px);
+  overflow-y: auto;
   position: absolute;
   left: 50%;
   top: 46%;
@@ -166,6 +168,14 @@ a {
   color: #1a1a1a;
   transform: translate(-50%, -50%) rotate(-1.2deg);
   animation: pose 0.28s cubic-bezier(0.2, 1.3, 0.4, 1);
+}
+
+/* le papier d'une bouteille : placé par script.js à côté d'elle, il se déplie depuis elle */
+.paper.anchored {
+  left: auto;
+  top: auto;
+  transform: rotate(-1.2deg);
+  animation: none;
 }
 
 .paper[hidden] {
@@ -273,6 +283,17 @@ a {
   font-size: 13px;
 }
 
+.btn.dark:disabled {
+  color: #8a8578;
+  border-bottom-color: #c4bfb2;
+  cursor: default;
+}
+
+.btn.dark:disabled:hover {
+  color: #8a8578;
+  border-color: #c4bfb2;
+}
+
 .btn.dark:hover {
   color: #b0002f;
   border-color: #b0002f;
@@ -352,8 +373,22 @@ a {
     gap: 4px 14px;
   }
 
-  .count {
+  .count,
+  .long {
     display: none;
+  }
+
+  .top {
+    gap: 16px;
+  }
+
+  .paper {
+    top: 50%;
+    padding: 20px 18px 16px;
+  }
+
+  .foot nav {
+    margin-left: auto;
   }
 
   .hint {
