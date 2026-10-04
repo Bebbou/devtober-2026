@@ -320,10 +320,18 @@
   const SEEDS = (window.DRIFT_MESSAGES || []).slice();
   const bottles = [];
   let mine = [];
-  try { mine = JSON.parse(localStorage.getItem(STORE) || "[]").filter((s) => typeof s === "string").slice(0, 5); } catch (e) { mine = []; }
+  try {
+    // chaque bouteille a son texte et la date où elle est partie (les anciennes, sans date, partent d'aujourd'hui)
+    mine = JSON.parse(localStorage.getItem(STORE) || "[]")
+      .map((s) => (typeof s === "string" ? { text: s, t: Date.now() } : s))
+      .filter((s) => s && typeof s.text === "string").slice(0, 5);
+  } catch (e) { mine = []; }
+  let seen = false; // la première visite : une bouteille bat comme un cœur jusqu'à ce qu'on l'ouvre
+  try { seen = localStorage.getItem(STORE + "-vu") === "1"; } catch (e) { /* on s'en passe */ }
   const saveMine = () => { try { localStorage.setItem(STORE, JSON.stringify(mine)); } catch (e) { /* on s'en passe */ } };
 
-  let velBuf = null, velFrame = 0, hovered = null, opened = null, nextRelease = 0;
+  let velBuf = null, velFrame = 0, hovered = null, opened = null, nextRelease = 0, nextGust = 20, shownCount = -1;
+  const countEl = $("#count");
 
   const readVelocity = () => {
     const v = vel.read;
@@ -339,8 +347,11 @@
     return [velBuf[i] / v.w, velBuf[i + 1] / v.h];
   };
 
-  const addBottle = (text, isMine, x, y) => {
-    const b = { text, mine: isMine, x, y, a: Math.random() * 6.28, vx: 0, vy: 0, reads: 0, held: false, sink: 0, id: Math.random() * 100 };
+  const addBottle = (text, isMine, x, y, since) => {
+    const b = {
+      text, mine: isMine, since, x, y, a: Math.random() * 6.28, vx: 0, vy: 0, reads: 0, held: false, sink: 0, id: Math.random() * 100,
+      size: isMine ? 1.55 : 1.15 + Math.random() * 0.4, // les bouteilles ne sont pas toutes de la même taille
+    };
     bottles.push(b);
     return b;
   };
@@ -380,7 +391,8 @@
       const m = 0.07;
       b.vx += (Math.max(0, m - b.x) - Math.max(0, b.x - (1 - m))) * dt * 1.2;
       b.vy += (Math.max(0, m - b.y) - Math.max(0, b.y - (1 - m))) * dt * 1.2;
-      b.x += b.vx * dt; b.y += b.vy * dt;
+      const slow = b === hovered ? 0.12 : 1; // sous le pointeur, elle ralentit
+      b.x += b.vx * dt * slow; b.y += b.vy * dt * slow;
       if (Math.hypot(b.vx * aspect, b.vy) > 0.004) {
         let d = Math.atan2(-b.vy, b.vx * aspect) - b.a;
         d = Math.atan2(Math.sin(d), Math.cos(d));
@@ -388,6 +400,17 @@
       }
       const sp = Math.hypot(b.vx * aspect, b.vy);
       if (sp > 0.006) wake(b, Math.min(1, sp / 0.03)); // une bouteille à l'arrêt ne laisse rien
+    }
+    // de temps en temps, un coup de vent traverse la mer et pousse tout dans la même direction
+    if (!calm && t > nextGust) {
+      const a = Math.random() * 6.28, dx = Math.cos(a), dy = Math.sin(a), x0 = 0.5 - dx * 0.4, y0 = 0.5 - dy * 0.4;
+      for (let i = 0; i < 7; i++) stir(x0 + dx * i * 0.13, y0 + dy * i * 0.13, dx * 260, dy * 260, 0.006);
+      nextGust = t + 28 + Math.random() * 22;
+    }
+    const n = bottles.filter((b) => !b.sink).length;
+    if (n !== shownCount) {
+      shownCount = n;
+      countEl.textContent = n + (n > 1 ? " bouteilles" : " bouteille") + " à l'eau";
     }
     const sea = bottles.filter((b) => !b.mine && !b.sink).length;
     if (sea < SEA_MIN && t > nextRelease) { release(false); nextRelease = t + 4 + Math.random() * 5; }
@@ -403,8 +426,13 @@
       og.save();
       og.setTransform(s, 0, 0, s, 0, 0);
       og.translate(b.x * cssW, (1 - b.y) * cssH);
+      if (b.welcome && !seen) { // l'accueil : un anneau rose qui bat autour de la première bouteille
+        const p = calm ? 0.5 : (Math.sin(t * 3) + 1) / 2;
+        og.save(); og.strokeStyle = "#ff0055"; og.globalAlpha = 0.85 - p * 0.55; og.lineWidth = 1.2;
+        og.beginPath(); og.arc(0, 0, 30 + p * 10, 0, 6.2832); og.stroke(); og.restore();
+      }
       og.rotate(b.a + (calm ? 0 : Math.sin(t * 1.3 + b.id) * 0.12));
-      og.scale(k * 1.35, k * 1.35);
+      og.scale(k * b.size, k * b.size);
       og.globalAlpha = k;
       og.lineWidth = 1.4; og.lineJoin = "round"; og.lineCap = "round";
       og.strokeStyle = b.mine ? "#ff0055" : b === hovered ? "#ffffff" : "#c8c8c8";
@@ -423,17 +451,26 @@
 
   const bottleAt = (e) => {
     const r = cv.getBoundingClientRect(), px = e.clientX - r.left, py = e.clientY - r.top;
-    let best = null, bd = 28;
+    let best = null, bd = 100;
     bottles.forEach((b) => {
       if (b.sink) return;
-      const d = Math.hypot(px - b.x * r.width, py - (1 - b.y) * r.height);
-      if (d < bd) { bd = d; best = b; }
+      const reach = (e.pointerType === "touch" ? 34 : 24) * b.size; // la zone de clic suit la taille de la bouteille
+      const d = Math.hypot(px - b.x * r.width, py - (1 - b.y) * r.height) - reach;
+      if (d < 0 && d < bd) { bd = d; best = b; }
     });
     return best;
   };
 
   /* le papier : lire, remettre à l'eau, jeter */
   const paper = $("#paper"), pText = $("#pText"), pMeta = $("#pMeta"), pDel = $("#pDel");
+  const ago = (ms) => {
+    const m = Math.round(ms / 60000);
+    if (m < 2) return "un instant";
+    if (m < 90) return m + " minutes";
+    const h = Math.round(m / 60);
+    if (h < 36) return h + " heures";
+    return Math.round(h / 24) + " jours";
+  };
   const closePaper = () => {
     if (!opened) return;
     const b = opened;
@@ -446,19 +483,25 @@
     closeWrite();
     opened = b; b.held = true; b.reads++;
     pText.textContent = b.text;
-    pMeta.textContent = b.mine ? "C'est ta bouteille." : "Lue " + b.reads + " fois sur " + MAX_READS + ", elle coule à la dernière.";
+    paper.style.setProperty("--r", (Math.random() * 14 - 7).toFixed(1) + "deg"); // le sceau tombe un peu de travers
+    pMeta.textContent = b.mine
+      ? "C'est ta bouteille, à l'eau depuis " + ago(Date.now() - b.since) + "."
+      : "Lue " + b.reads + " fois sur " + MAX_READS + ", elle coule à la dernière.";
+    b.welcome = false;
+    if (!seen) { seen = true; try { localStorage.setItem(STORE + "-vu", "1"); } catch (e) { /* on s'en passe */ } }
     pDel.hidden = !b.mine;
     paper.hidden = false;
     $("#pBack").focus();
     hint.classList.add("off");
   };
   $("#pBack").addEventListener("click", closePaper);
+  $("#pNext").addEventListener("click", () => readOne(opened));
   pDel.addEventListener("click", () => {
     const b = opened;
     if (!b) return;
     opened = null; paper.hidden = true;
     bottles.splice(bottles.indexOf(b), 1);
-    mine = mine.filter((s) => s !== b.text);
+    mine = mine.filter((s) => s.text !== b.text);
     saveMine();
     statusEl.textContent = "Ta bouteille est jetée.";
   });
@@ -473,6 +516,7 @@
     wText.focus();
     hint.classList.add("off");
   };
+  wText.addEventListener("keydown", (e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); $("#wSend").click(); } });
   wText.addEventListener("input", () => { wCount.textContent = wText.value.length + " / 100"; wErr.textContent = ""; });
   $("#wCancel").addEventListener("click", closeWrite);
   $("#wSend").addEventListener("click", () => {
@@ -481,14 +525,14 @@
       wErr.textContent = "Entre 2 et 100 caractères, sans lien ni adresse.";
       return;
     }
-    mine.unshift(s);
+    mine.unshift({ text: s, t: Date.now() });
     if (mine.length > 5) { // la plus ancienne de tes bouteilles s'en va
-      const old = mine.pop(), i = bottles.findIndex((b) => b.mine && b.text === old);
+      const old = mine.pop().text, i = bottles.findIndex((b) => b.mine && b.text === old);
       if (i >= 0) bottles.splice(i, 1);
     }
     saveMine();
     const y = 0.3 + Math.random() * 0.4;
-    addBottle(s, true, 0.07, y);
+    addBottle(s, true, 0.07, y, Date.now());
     drop(0.07, y, 0.06, true);
     stir(0.07, y, 90, (Math.random() - 0.5) * 40, 0.003); // un coup d'eau vers le large
     closeWrite();
@@ -496,10 +540,15 @@
   });
 
   $("#write").addEventListener("click", openWrite);
-  $("#read").addEventListener("click", () => {
-    const free = bottles.filter((b) => !b.sink && !b.held);
-    if (free.length) openBottle(free[(Math.random() * free.length) | 0]);
-  });
+  // ouvre une autre bouteille au hasard (pas celle qu'on tient)
+  const readOne = (except) => {
+    const free = bottles.filter((b) => !b.sink && !b.held && b !== except);
+    if (!free.length) return;
+    const next = free[(Math.random() * free.length) | 0];
+    closePaper();
+    openBottle(next);
+  };
+  $("#read").addEventListener("click", () => readOne(null));
   window.addEventListener("keydown", (e) => {
     if (e.key !== "Escape") return;
     if (!wr.hidden) closeWrite(); else closePaper();
@@ -507,12 +556,17 @@
 
   const hover = (e) => {
     hovered = bottleAt(e);
-    cv.style.cursor = hovered ? "pointer" : "crosshair";
+    cv.style.cursor = hovered ? "pointer" : "";
   };
 
   const initBottles = () => {
-    mine.forEach((s) => addBottle(s, true, 0.15 + Math.random() * 0.7, 0.25 + Math.random() * 0.5));
+    mine.forEach((s) => addBottle(s.text, true, 0.15 + Math.random() * 0.7, 0.25 + Math.random() * 0.5, s.t));
     for (let i = 0; i < SEA_MIN; i++) release(true);
+    if (!seen) {
+      const w = bottles.find((b) => !b.mine);
+      if (w) { w.welcome = true; w.x = 0.5; w.y = 0.55; w.size = 1.7; }
+      hint.textContent = "une bouteille bat en rose : attrape-la";
+    }
   };
 
   /* ---------- Le pointeur ---------- */

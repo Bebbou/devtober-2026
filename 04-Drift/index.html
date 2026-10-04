@@ -6,15 +6,16 @@
     <meta name="color-scheme" content="dark" />
     <meta name="theme-color" content="#0d0d0d" />
     <title>Drift · jour 04</title>
-    <meta name="description" content="Une mer d'encre où dérivent des bouteilles." />
+    <meta name="description" content="Une mer d'encre où dérivent des bouteilles. On les repêche, on en jette une à la mer." />
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <header class="top">
       <a class="logo" href="#"><i></i>drift</a>
       <div class="right">
-        <button class="btn" id="read" type="button">lire une bouteille</button>
-        <button class="btn" id="write" type="button">écrire une bouteille</button>
+        <span class="count" id="count"></span>
+        <button class="btn" id="read" type="button">repêcher une bouteille</button>
+        <button class="btn" id="write" type="button">jeter une bouteille à la mer</button>
       </div>
     </header>
 
@@ -22,32 +23,35 @@
       <canvas
         id="cv"
         role="img"
-        aria-label="Une eau noire où dérive de l'encre blanche et rose, et des bouteilles. On pose de l'encre en cliquant, on remue l'eau en glissant, et on ouvre une bouteille en cliquant dessus. Les boutons « lire une bouteille » et « écrire une bouteille » font la même chose au clavier."
+        aria-label="Une mer d'encre noire, blanche et rose, où dérivent des bouteilles. On pose de l'encre en cliquant, on remue l'eau en glissant, et on ouvre une bouteille en cliquant dessus. Les boutons « repêcher une bouteille » et « jeter une bouteille à la mer » font la même chose au clavier."
       ></canvas>
       <canvas id="over" aria-hidden="true"></canvas>
-      <p class="hint" id="hint">clique pour poser de l'encre · glisse pour remuer l'eau · clique une bouteille pour la lire</p>
+      <p class="hint" id="hint">clique pour poser de l'encre · glisse pour remuer l'eau · repêche une bouteille</p>
 
       <div class="paper" id="paper" role="dialog" aria-labelledby="pText" hidden>
         <i class="pin"></i>
+        <i class="seal" aria-hidden="true">漂</i>
         <p class="slip">MESSAGE DANS UNE BOUTEILLE</p>
         <p class="msg" id="pText"></p>
         <p class="meta" id="pMeta"></p>
         <div class="row">
           <button class="btn dark" id="pBack" type="button">remettre à l'eau</button>
-          <button class="btn dark" id="pDel" type="button" hidden>jeter</button>
+          <button class="btn dark" id="pNext" type="button">en repêcher une autre</button>
+          <button class="btn dark" id="pDel" type="button" hidden>la reprendre</button>
         </div>
       </div>
 
       <div class="paper" id="wr" role="dialog" aria-labelledby="wTitle" hidden>
         <i class="pin"></i>
-        <p class="slip" id="wTitle">ÉCRIRE UNE BOUTEILLE</p>
+        <i class="seal" aria-hidden="true">漂</i>
+        <p class="slip" id="wTitle">JETER UNE BOUTEILLE À LA MER</p>
         <textarea id="wText" maxlength="100" rows="3" placeholder="Un message court, pour quelqu'un que tu ne connais pas."></textarea>
         <p class="meta"><span id="wCount">0 / 100</span> <span id="wErr" role="alert"></span></p>
         <div class="row">
-          <button class="btn dark" id="wSend" type="button">sceller et lancer</button>
+          <button class="btn dark" id="wSend" type="button">la jeter à l'eau</button>
           <button class="btn dark" id="wCancel" type="button">annuler</button>
         </div>
-        <p class="meta">Ne mets pas d'information personnelle. Les messages restent dans ton navigateur.</p>
+        <p class="meta">Ne mets pas d'information personnelle. Les messages restent dans ton navigateur. Ctrl + Entrée pour envoyer.</p>
       </div>
 
       <p class="sr" id="status" aria-live="polite"></p>
