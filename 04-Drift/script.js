@@ -439,6 +439,29 @@
     const s = over.width / cssW;
     og.setTransform(1, 0, 0, 1, 0, 0);
     og.clearRect(0, 0, over.width, over.height);
+    if (tourStep >= 0 && !tour.hidden) {
+      const T = TOUR[tourStep].at(), l = tour.offsetLeft, tp = tour.offsetTop, w = tour.offsetWidth, h = tour.offsetHeight;
+      const pulse = calm ? 0.5 : (Math.sin(t * 4) + 1) / 2;
+      const R = (tourStep === 1 ? 46 : 38) + pulse * 10;
+      og.save();
+      og.setTransform(s, 0, 0, s, 0, 0);
+      og.strokeStyle = "#ff0055"; og.fillStyle = "#ff0055"; og.lineWidth = 2; og.lineCap = "round";
+      let ex = T.x, ey = T.top ? 0 : T.y;
+      if (T.ring) { og.globalAlpha = 0.95 - pulse * 0.5; og.beginPath(); og.arc(ex, ey, R, 0, 6.2832); og.stroke(); }
+      // la flèche part du bord de la bulle le plus proche et s'arrête avant la cible
+      const sx = Math.min(Math.max(ex, l), l + w), sy = Math.min(Math.max(ey, tp), tp + h);
+      const dx = ex - sx, dy = ey - sy, d = Math.hypot(dx, dy) || 1;
+      const stop = T.top ? 0 : (T.ring ? R : 44);
+      const ax = ex - (dx / d) * stop, ay = ey - (dy / d) * stop;
+      og.globalAlpha = 0.95;
+      og.beginPath(); og.moveTo(sx, sy); og.lineTo(ax, ay); og.stroke();
+      const ang = Math.atan2(ay - sy, ax - sx);
+      og.beginPath(); og.moveTo(ax, ay);
+      og.lineTo(ax - Math.cos(ang - 0.45) * 12, ay - Math.sin(ang - 0.45) * 12);
+      og.lineTo(ax - Math.cos(ang + 0.45) * 12, ay - Math.sin(ang + 0.45) * 12);
+      og.closePath(); og.fill();
+      og.restore();
+    }
     if (opened && !paper.hidden) {
       const b = opened, bx = b.x * cssW, by = (1 - b.y) * cssH;
       const l = paper.offsetLeft, tp = paper.offsetTop, w = paper.offsetWidth, h = paper.offsetHeight;
@@ -632,7 +655,7 @@
   let tourStep = seen ? -1 : 0;
   const welcomeBottle = () => bottles.find((b) => b.welcome) || bottles.find((b) => !b.mine && !b.sink);
   const TOUR = [
-    { text: "Clique dans l'eau pour poser une goutte d'encre. Glisse pour la remuer.", at: () => ({ x: cssW / 2, y: cssH * 0.62 }) },
+    { text: "Clique dans l'eau pour poser une goutte d'encre. Glisse pour la remuer.", at: () => ({ x: cssW / 2, y: cssH * 0.62, ring: true }) },
     { text: "Les bouteilles dérivent avec l'eau. Clique sur celle qui est entourée de rose pour lire son message.", at: () => { const b = welcomeBottle(); return b ? { x: b.x * cssW, y: (1 - b.y) * cssH } : { x: cssW / 2, y: cssH / 2 }; } },
     { text: "Ici, tu écris la tienne : elle dérivera avec les autres.", at: () => { const r = writeBtn.getBoundingClientRect(), s = stage.getBoundingClientRect(); return { x: r.left + r.width / 2 - s.left, y: 0, top: true }; } },
   ];
@@ -643,6 +666,7 @@
     tText.textContent = TOUR[tourStep].text;
     tNext.textContent = tourStep === TOUR.length - 1 ? "compris" : "suivant";
     tour.hidden = false;
+    if (!calm) tour.animate([{ opacity: 0, transform: "translateY(10px)" }, { opacity: 1, transform: "none" }], { duration: 320, easing: "ease-out" });
   };
   const tourEnd = () => {
     tourStep = -1; seen = true;
@@ -667,7 +691,7 @@
     if (hide) return;
     const p = TOUR[tourStep].at(), bw = tour.offsetWidth, bh = tour.offsetHeight;
     const left = Math.min(cssW - bw - 12, Math.max(12, p.x - bw / 2));
-    let top = p.top ? 12 : p.y < cssH / 2 ? p.y + 52 : p.y - 52 - bh;
+    let top = p.top ? 12 : p.y < cssH / 2 ? p.y + 78 : p.y - 78 - bh;
     top = Math.min(cssH - bh - 12, Math.max(12, top));
     tour.style.left = left + "px";
     tour.style.top = top + "px";

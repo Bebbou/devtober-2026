@@ -319,12 +319,14 @@ a {
 .tour {
   position: absolute;
   z-index: 3;
-  width: min(270px, calc(100% - 24px));
-  padding: 12px 14px;
-  background: var(--surface);
-  border: 1px solid var(--line-strong);
-  font-size: 13px;
-  line-height: 1.5;
+  width: min(330px, calc(100% - 24px));
+  padding: 16px 18px;
+  background: #16080d;
+  border: 1px solid var(--pink);
+  border-left-width: 5px;
+  color: #fff;
+  font-size: 15px;
+  line-height: 1.55;
 }
 
 .tour[hidden] {
@@ -332,11 +334,32 @@ a {
 }
 
 .tour p {
-  margin: 0 0 8px;
+  margin: 0 0 12px;
 }
 
 .tour .mark {
   font-size: 12px;
+  letter-spacing: 0.06em;
+}
+
+/* « suivant » est un vrai bouton plein : il se voit */
+.tour #tNext {
+  padding: 5px 16px;
+  border: 0;
+  background: var(--pink);
+  color: var(--bg);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.tour #tNext:hover {
+  background: #fff;
+  color: var(--bg);
+}
+
+.tour #tSkip {
+  align-self: center;
+  font-size: 13px;
 }
 
 .tour .row {
@@ -347,8 +370,9 @@ a {
 
 /* le bouton « écrire » est entouré de rose à la dernière étape */
 .btn.pulse {
+  padding: 3px 10px;
+  border: 1px solid var(--pink);
   color: var(--pink);
-  border-color: var(--pink);
   animation: bat 1.2s ease-in-out infinite;
 }
 
