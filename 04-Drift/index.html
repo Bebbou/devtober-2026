@@ -12,15 +12,45 @@
   <body>
     <header class="top">
       <a class="logo" href="#"><i></i>drift</a>
+      <div class="right">
+        <button class="btn" id="read" type="button">lire une bouteille</button>
+        <button class="btn" id="write" type="button">écrire une bouteille</button>
+      </div>
     </header>
 
     <main id="stage">
       <canvas
         id="cv"
         role="img"
-        aria-label="Une eau noire où dérive de l'encre blanche et rose. On pose de l'encre en cliquant et on remue l'eau en glissant."
+        aria-label="Une eau noire où dérive de l'encre blanche et rose, et des bouteilles. On pose de l'encre en cliquant, on remue l'eau en glissant, et on ouvre une bouteille en cliquant dessus. Les boutons « lire une bouteille » et « écrire une bouteille » font la même chose au clavier."
       ></canvas>
-      <p class="hint" id="hint">clique pour poser de l'encre · glisse pour remuer l'eau</p>
+      <canvas id="over" aria-hidden="true"></canvas>
+      <p class="hint" id="hint">clique pour poser de l'encre · glisse pour remuer l'eau · clique une bouteille pour la lire</p>
+
+      <div class="paper" id="paper" role="dialog" aria-labelledby="pText" hidden>
+        <i class="pin"></i>
+        <p class="slip">MESSAGE DANS UNE BOUTEILLE</p>
+        <p class="msg" id="pText"></p>
+        <p class="meta" id="pMeta"></p>
+        <div class="row">
+          <button class="btn dark" id="pBack" type="button">remettre à l'eau</button>
+          <button class="btn dark" id="pDel" type="button" hidden>jeter</button>
+        </div>
+      </div>
+
+      <div class="paper" id="wr" role="dialog" aria-labelledby="wTitle" hidden>
+        <i class="pin"></i>
+        <p class="slip" id="wTitle">ÉCRIRE UNE BOUTEILLE</p>
+        <textarea id="wText" maxlength="100" rows="3" placeholder="Un message court, pour quelqu'un que tu ne connais pas."></textarea>
+        <p class="meta"><span id="wCount">0 / 100</span> <span id="wErr" role="alert"></span></p>
+        <div class="row">
+          <button class="btn dark" id="wSend" type="button">sceller et lancer</button>
+          <button class="btn dark" id="wCancel" type="button">annuler</button>
+        </div>
+        <p class="meta">Ne mets pas d'information personnelle. Les messages restent dans ton navigateur.</p>
+      </div>
+
+      <p class="sr" id="status" aria-live="polite"></p>
     </main>
 
     <footer class="foot">
@@ -32,6 +62,7 @@
       </nav>
     </footer>
 
+    <script src="messages.js"></script>
     <script src="script.js"></script>
   </body>
 </html>

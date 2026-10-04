@@ -9,6 +9,10 @@
   const stage = $("#stage");
   const cv = $("#cv");
   const hint = $("#hint");
+  const over = $("#over");
+  const og = over.getContext("2d");
+  const statusEl = $("#status");
+  let cssW = 1, cssH = 1; // la taille de la scène en pixels CSS
 
   const gl = cv.getContext("webgl2", { alpha: false, antialias: false });
   if (!gl || !gl.getExtension("EXT_color_buffer_float")) {
@@ -41,27 +45,39 @@
   const FRAGS = {
     // emporte une grandeur (la vitesse ou l'encre) le long de la vitesse
     advect: HEAD + `
-      uniform sampler2D uVel, uSrc; uniform vec2 uTexel, uST; uniform float uDt, uDiss, uSharp;
+      uniform sampler2D uVel, uSrc; uniform vec2 uTexel, uST; uniform float uDt, uDiss, uDissA, uSharp;
       void main() {
         vec2 back = vUv - uDt * texture(uVel, vUv).xy * uTexel;
         vec4 c = texture(uSrc, back);
         if (uSharp > 0.0) {
           // l'interpolation étale l'encre un peu à chaque image : on la raffermit pour que les lignes tiennent
-          vec4 avg = 0.25 * (texture(uSrc, back + vec2(uST.x, 0.0)) + texture(uSrc, back - vec2(uST.x, 0.0))
-                           + texture(uSrc, back + vec2(0.0, uST.y)) + texture(uSrc, back - vec2(0.0, uST.y)));
+          vec4 n1 = texture(uSrc, back + vec2(uST.x, 0.0)), n2 = texture(uSrc, back - vec2(uST.x, 0.0));
+          vec4 n3 = texture(uSrc, back + vec2(0.0, uST.y)), n4 = texture(uSrc, back - vec2(0.0, uST.y));
           // sur l'intensité seulement : sinon chaque canal déborde de son côté et la teinte change
-          float mc = max(c.r, c.g), ma = max(avg.r, avg.g);
-          float target = clamp(mc + uSharp * (mc - ma), 0.0, 3.2);
+          float mc = max(c.r, c.g);
+          float m1 = max(n1.r, n1.g), m2 = max(n2.r, n2.g), m3 = max(n3.r, n3.g), m4 = max(n4.r, n4.g);
+          float ma = 0.25 * (m1 + m2 + m3 + m4);
+          // on ne dépasse jamais le plus fort des voisins : on raffermit les bords sans fabriquer d'encre
+          float target = clamp(mc + uSharp * (mc - ma), 0.0, max(mc, max(max(m1, m2), max(m3, m4))));
           c.rgb *= mc > 0.001 ? target / mc : 0.0;
         }
-        o = uDiss * c;
+        o = vec4(uDiss * c.rgb, uDissA * c.a);
       }`,
     // une goutte de force (ou d'encre) qui s'étale en douceur
     splat: HEAD + `
       uniform sampler2D uTarget; uniform float uAspect, uRadius; uniform vec3 uColor; uniform vec2 uPoint;
       void main() {
         vec2 p = vUv - uPoint; p.x *= uAspect;
-        o = vec4(texture(uTarget, vUv).rgb + exp(-dot(p, p) / uRadius) * uColor, 1.0);
+        vec4 base = texture(uTarget, vUv);
+        o = vec4(base.rgb + exp(-dot(p, p) / uRadius) * uColor, base.a);
+      }`,
+    // le sillage d'une bouteille : il va dans le canal alpha, qui s'efface bien plus vite que l'encre
+    wake: HEAD + `
+      uniform sampler2D uTarget; uniform float uAspect, uRadius, uAmt; uniform vec2 uPoint;
+      void main() {
+        vec2 p = vUv - uPoint; p.x *= uAspect;
+        vec4 base = texture(uTarget, vUv);
+        o = vec4(base.rgb, min(base.a + exp(-dot(p, p) / uRadius) * uAmt, 1.2));
       }`,
     // une goutte de suminagashi : des anneaux concentriques d'encres qui alternent, séparés par de l'eau
     ring: HEAD + `
@@ -69,12 +85,12 @@
       void main() {
         vec2 p = vUv - uPoint; p.x *= uAspect;
         float k = length(p) / uR;
-        vec3 base = texture(uTarget, vUv).rgb;
-        if (k >= 1.0) { o = vec4(base, 1.0); return; }
+        vec4 base = texture(uTarget, vUv);
+        if (k >= 1.0) { o = base; return; }
         // une ligne fine par anneau : deux blanches, puis une rose
         float s = k * 7.0, band = floor(s), f = fract(s);
         float w = smoothstep(0.05, 0.22, f) * (1.0 - smoothstep(0.38, 0.55, f));
-        o = vec4(mix(base, mod(band, 3.0) < 2.0 ? uA : uB, w), 1.0);
+        o = vec4(mix(base.rgb, mod(band, 3.0) < 2.0 ? uA : uB, w), base.a);
       }`,
     // un courant lent, sans divergence, qui fait dériver l'eau toute seule
     drift: HEAD + `
@@ -117,8 +133,10 @@
         // l'encre a un bord net : au-dessous d'une certaine densité, il n'y a plus que de l'eau
         float m = max(ink.r, ink.g);
         float a = smoothstep(0.85, 1.15, m);
-        vec3 col = ink / max(m, 0.001);
-        o = vec4(mix(water, col * 0.92, a), 1.0);
+        vec3 col = mix(water, ink / max(m, 0.001) * 0.92, a);
+        // le sillage des bouteilles, en rose, par-dessus
+        col = mix(col, vec3(1.0, 0.0, 0.333), smoothstep(0.3, 0.75, texture(uDye, vUv).a) * 0.95);
+        o = vec4(col, 1.0);
       }`,
   };
 
@@ -165,7 +183,7 @@
     gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
     gl.viewport(0, 0, w, h);
-    gl.clearColor(0, 0, 0, 1);
+    gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT);
     return { tex, fbo, w, h, texel: [1 / w, 1 / h] };
   };
@@ -196,8 +214,11 @@
     cv.width = Math.max(2, Math.round(r.width * pr));
     cv.height = Math.max(2, Math.round(r.height * pr));
     aspect = cv.width / cv.height;
+    over.width = cv.width; over.height = cv.height;
+    cssW = r.width; cssH = r.height;
+    velBuf = null;
     const simH = 128, simW = Math.round(simH * aspect);
-    const dyeH = Math.min(640, cv.height), dyeW = Math.round(dyeH * aspect);
+    const dyeH = Math.min(512, cv.height), dyeW = Math.round(dyeH * aspect);
     vel = makePair(simW, simH, gl.LINEAR);
     dye = makePair(dyeW, dyeH, gl.LINEAR);
     pressure = makePair(simW, simH, gl.NEAREST);
@@ -255,7 +276,7 @@
     u = use("pressure");
     gl.uniform2f(u.uTexel, vel.read.texel[0], vel.read.texel[1]);
     tex(1, divergence, u.uDiv);
-    for (let i = 0; i < 18; i++) {
+    for (let i = 0; i < 12; i++) {
       tex(0, pressure.read, u.uP);
       bind(pressure.write); draw(); pressure.swap();
     }
@@ -273,11 +294,13 @@
     tex(1, vel.read, u.uSrc);
     gl.uniform1f(u.uDiss, 1 / (1 + dt * 0.6));
     gl.uniform1f(u.uSharp, 0);
+    gl.uniform1f(u.uDissA, 1);
     gl.uniform2f(u.uST, 0, 0);
     bind(vel.write); draw(); vel.swap();
     tex(1, dye.read, u.uSrc);
-    gl.uniform1f(u.uDiss, Math.pow(0.985, dt));
+    gl.uniform1f(u.uDiss, Math.pow(0.94, dt));
     gl.uniform1f(u.uSharp, 0.4);
+    gl.uniform1f(u.uDissA, Math.pow(0.6, dt)); // le sillage disparaît en quelques secondes
     gl.uniform2f(u.uST, dye.read.texel[0], dye.read.texel[1]);
     bind(dye.write); draw(); dye.swap();
 
@@ -285,6 +308,211 @@
     gl.uniform2f(u.uRes, cv.width, cv.height);
     tex(0, dye.read, u.uDye);
     bind(null); draw();
+  };
+
+  /* ---------- Les bouteilles ----------
+     Une bouteille suit le courant : on lit la vitesse de l'eau (une image sur quatre) et on la lui applique.
+     Elle laisse derrière elle un sillage d'encre rose. Un clic l'ouvre : c'est un papier avec un message. */
+
+  const STORE = "devtober-drift-4";
+  const MAX_READS = 5; // une bouteille coule à sa cinquième lecture
+  const SEA_MIN = 6; // la mer garde au moins six bouteilles des autres
+  const SEEDS = (window.DRIFT_MESSAGES || []).slice();
+  const bottles = [];
+  let mine = [];
+  try { mine = JSON.parse(localStorage.getItem(STORE) || "[]").filter((s) => typeof s === "string").slice(0, 5); } catch (e) { mine = []; }
+  const saveMine = () => { try { localStorage.setItem(STORE, JSON.stringify(mine)); } catch (e) { /* on s'en passe */ } };
+
+  let velBuf = null, velFrame = 0, hovered = null, opened = null, nextRelease = 0;
+
+  const readVelocity = () => {
+    const v = vel.read;
+    if (!velBuf || velBuf.length !== v.w * v.h * 4) velBuf = new Float32Array(v.w * v.h * 4);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, v.fbo);
+    gl.readPixels(0, 0, v.w, v.h, gl.RGBA, gl.FLOAT, velBuf);
+  };
+  // la vitesse de l'eau à cet endroit, en largeurs et hauteurs d'écran par seconde
+  const flowAt = (x, y) => {
+    const v = vel.read;
+    if (!velBuf) return [0, 0];
+    const i = (Math.min(v.h - 1, Math.max(0, Math.floor(y * v.h))) * v.w + Math.min(v.w - 1, Math.max(0, Math.floor(x * v.w)))) * 4;
+    return [velBuf[i] / v.w, velBuf[i + 1] / v.h];
+  };
+
+  const addBottle = (text, isMine, x, y) => {
+    const b = { text, mine: isMine, x, y, a: Math.random() * 6.28, vx: 0, vy: 0, reads: 0, held: false, sink: 0, id: Math.random() * 100 };
+    bottles.push(b);
+    return b;
+  };
+  // une bouteille d'un inconnu arrive : d'un bord, ou n'importe où au départ
+  const release = (anywhere) => {
+    const free = SEEDS.filter((s) => !bottles.some((b) => b.text === s));
+    if (!free.length) return;
+    const side = Math.floor(Math.random() * 4), r = Math.random();
+    const x = anywhere ? 0.12 + r * 0.76 : side === 0 ? 0.04 : side === 1 ? 0.96 : 0.1 + r * 0.8;
+    const y = anywhere ? 0.2 + Math.random() * 0.6 : side === 2 ? 0.06 : side === 3 ? 0.94 : 0.15 + r * 0.7;
+    addBottle(free[(Math.random() * free.length) | 0], false, x, y);
+  };
+
+  // le sillage : un peu d'encre rose posée derrière la bouteille
+  const wake = (b, strength) => {
+    const dx = Math.cos(b.a) * 46 / cssW, dy = -Math.sin(b.a) * 46 / cssH;
+    const u = use("wake");
+    gl.uniform1f(u.uAspect, aspect);
+    gl.uniform2f(u.uPoint, b.x - dx, b.y - dy);
+    gl.uniform1f(u.uAmt, 0.22 * strength);
+    gl.uniform1f(u.uRadius, 0.00002);
+    gl.uniform2f(u.uTexel, dye.read.texel[0], dye.read.texel[1]);
+    tex(0, dye.read, u.uTarget);
+    bind(dye.write); draw(); dye.swap();
+  };
+
+  const bottlesStep = (dt, t) => {
+    if (velFrame++ % 6 === 0) readVelocity();
+    for (let i = bottles.length - 1; i >= 0; i--) {
+      const b = bottles[i];
+      if (b.sink > 0) { b.sink += dt; if (b.sink > 1.5) bottles.splice(i, 1); continue; }
+      if (b.held) continue;
+      const f = flowAt(b.x, b.y), k = Math.min(1, dt * 3);
+      b.vx += (f[0] * 0.8 - b.vx) * k;
+      b.vy += (f[1] * 0.8 - b.vy) * k;
+      // près des bords, l'eau repousse doucement la bouteille vers le large
+      const m = 0.07;
+      b.vx += (Math.max(0, m - b.x) - Math.max(0, b.x - (1 - m))) * dt * 1.2;
+      b.vy += (Math.max(0, m - b.y) - Math.max(0, b.y - (1 - m))) * dt * 1.2;
+      b.x += b.vx * dt; b.y += b.vy * dt;
+      if (Math.hypot(b.vx * aspect, b.vy) > 0.004) {
+        let d = Math.atan2(-b.vy, b.vx * aspect) - b.a;
+        d = Math.atan2(Math.sin(d), Math.cos(d));
+        b.a += d * Math.min(1, dt * 2.5);
+      }
+      const sp = Math.hypot(b.vx * aspect, b.vy);
+      if (sp > 0.006) wake(b, Math.min(1, sp / 0.03)); // une bouteille à l'arrêt ne laisse rien
+    }
+    const sea = bottles.filter((b) => !b.mine && !b.sink).length;
+    if (sea < SEA_MIN && t > nextRelease) { release(false); nextRelease = t + 4 + Math.random() * 5; }
+  };
+
+  const drawBottles = (t) => {
+    const s = over.width / cssW;
+    og.setTransform(1, 0, 0, 1, 0, 0);
+    og.clearRect(0, 0, over.width, over.height);
+    bottles.forEach((b) => {
+      const k = b.sink ? Math.max(0, 1 - b.sink / 1.3) : 1;
+      if (k <= 0) return;
+      og.save();
+      og.setTransform(s, 0, 0, s, 0, 0);
+      og.translate(b.x * cssW, (1 - b.y) * cssH);
+      og.rotate(b.a + (calm ? 0 : Math.sin(t * 1.3 + b.id) * 0.12));
+      og.scale(k * 1.35, k * 1.35);
+      og.globalAlpha = k;
+      og.lineWidth = 1.4; og.lineJoin = "round"; og.lineCap = "round";
+      og.strokeStyle = b.mine ? "#ff0055" : b === hovered ? "#ffffff" : "#c8c8c8";
+      og.fillStyle = "#0d0d0d";
+      // le corps, le goulot, le bouchon : la bouteille regarde vers la droite avant la rotation
+      og.beginPath();
+      og.moveTo(-17, -6); og.lineTo(4, -6); og.quadraticCurveTo(8, -6, 9, -2.5); og.lineTo(15, -2.5);
+      og.lineTo(15, 2.5); og.lineTo(9, 2.5); og.quadraticCurveTo(8, 6, 4, 6); og.lineTo(-17, 6);
+      og.quadraticCurveTo(-19, 6, -19, 4); og.lineTo(-19, -4); og.quadraticCurveTo(-19, -6, -17, -6);
+      og.closePath(); og.fill(); og.stroke();
+      og.beginPath(); og.moveTo(-13, 0); og.lineTo(1, 0); og.stroke(); // le papier roulé dedans
+      og.strokeStyle = "#ff0055"; og.beginPath(); og.moveTo(15, -2); og.lineTo(19, -2); og.lineTo(19, 2); og.lineTo(15, 2); og.stroke(); // le bouchon
+      og.restore();
+    });
+  };
+
+  const bottleAt = (e) => {
+    const r = cv.getBoundingClientRect(), px = e.clientX - r.left, py = e.clientY - r.top;
+    let best = null, bd = 28;
+    bottles.forEach((b) => {
+      if (b.sink) return;
+      const d = Math.hypot(px - b.x * r.width, py - (1 - b.y) * r.height);
+      if (d < bd) { bd = d; best = b; }
+    });
+    return best;
+  };
+
+  /* le papier : lire, remettre à l'eau, jeter */
+  const paper = $("#paper"), pText = $("#pText"), pMeta = $("#pMeta"), pDel = $("#pDel");
+  const closePaper = () => {
+    if (!opened) return;
+    const b = opened;
+    opened = null; paper.hidden = true; b.held = false;
+    if (!b.mine && b.reads >= MAX_READS) { b.sink = 0.001; drop(b.x, b.y, 0.05, true); statusEl.textContent = "Cette bouteille a coulé."; return; }
+    stir(b.x, b.y, (Math.random() - 0.5) * 90, (Math.random() - 0.5) * 90, 0.002); // un coup d'eau pour la relancer
+  };
+  const openBottle = (b) => {
+    closePaper();
+    closeWrite();
+    opened = b; b.held = true; b.reads++;
+    pText.textContent = b.text;
+    pMeta.textContent = b.mine ? "C'est ta bouteille." : "Lue " + b.reads + " fois sur " + MAX_READS + ", elle coule à la dernière.";
+    pDel.hidden = !b.mine;
+    paper.hidden = false;
+    $("#pBack").focus();
+    hint.classList.add("off");
+  };
+  $("#pBack").addEventListener("click", closePaper);
+  pDel.addEventListener("click", () => {
+    const b = opened;
+    if (!b) return;
+    opened = null; paper.hidden = true;
+    bottles.splice(bottles.indexOf(b), 1);
+    mine = mine.filter((s) => s !== b.text);
+    saveMine();
+    statusEl.textContent = "Ta bouteille est jetée.";
+  });
+
+  /* l'écriture : un message de 100 caractères au plus, sans lien ni adresse */
+  const wr = $("#wr"), wText = $("#wText"), wCount = $("#wCount"), wErr = $("#wErr");
+  const closeWrite = () => { wr.hidden = true; };
+  const openWrite = () => {
+    closePaper();
+    wText.value = ""; wCount.textContent = "0 / 100"; wErr.textContent = "";
+    wr.hidden = false;
+    wText.focus();
+    hint.classList.add("off");
+  };
+  wText.addEventListener("input", () => { wCount.textContent = wText.value.length + " / 100"; wErr.textContent = ""; });
+  $("#wCancel").addEventListener("click", closeWrite);
+  $("#wSend").addEventListener("click", () => {
+    const s = wText.value.replace(/\s+/g, " ").trim();
+    if (s.length < 2 || s.length > 100 || /(https?:|www\.|@|\.com|\.fr|\.net)/i.test(s)) {
+      wErr.textContent = "Entre 2 et 100 caractères, sans lien ni adresse.";
+      return;
+    }
+    mine.unshift(s);
+    if (mine.length > 5) { // la plus ancienne de tes bouteilles s'en va
+      const old = mine.pop(), i = bottles.findIndex((b) => b.mine && b.text === old);
+      if (i >= 0) bottles.splice(i, 1);
+    }
+    saveMine();
+    const y = 0.3 + Math.random() * 0.4;
+    addBottle(s, true, 0.07, y);
+    drop(0.07, y, 0.06, true);
+    stir(0.07, y, 90, (Math.random() - 0.5) * 40, 0.003); // un coup d'eau vers le large
+    closeWrite();
+    statusEl.textContent = "Ta bouteille est à l'eau.";
+  });
+
+  $("#write").addEventListener("click", openWrite);
+  $("#read").addEventListener("click", () => {
+    const free = bottles.filter((b) => !b.sink && !b.held);
+    if (free.length) openBottle(free[(Math.random() * free.length) | 0]);
+  });
+  window.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    if (!wr.hidden) closeWrite(); else closePaper();
+  });
+
+  const hover = (e) => {
+    hovered = bottleAt(e);
+    cv.style.cursor = hovered ? "pointer" : "crosshair";
+  };
+
+  const initBottles = () => {
+    mine.forEach((s) => addBottle(s, true, 0.15 + Math.random() * 0.7, 0.25 + Math.random() * 0.5));
+    for (let i = 0; i < SEA_MIN; i++) release(true);
   };
 
   /* ---------- Le pointeur ---------- */
@@ -295,6 +523,9 @@
     return { x: (e.clientX - r.left) / r.width, y: 1 - (e.clientY - r.top) / r.height };
   };
   cv.addEventListener("pointerdown", (e) => {
+    if (opened || !wr.hidden) { closePaper(); closeWrite(); e.preventDefault(); return; } // un clic dans l'eau referme le papier
+    const b = bottleAt(e);
+    if (b) { openBottle(b); e.preventDefault(); return; }
     down = true;
     last = pos(e);
     lastInput = performance.now();
@@ -304,7 +535,7 @@
     e.preventDefault();
   });
   cv.addEventListener("pointermove", (e) => {
-    if (!down) return;
+    if (!down) { hover(e); return; }
     const p = pos(e);
     stir(p.x, p.y, (p.x - last.x) * 3500, (p.y - last.y) * 3500, 0.0007);
     last = p;
@@ -323,9 +554,11 @@
     // sans personne, l'eau reçoit une goutte de temps en temps : elle n'est jamais vide
     if (t >= nextDrop && performance.now() - lastInput > 4000) {
       drop(0.1 + Math.random() * 0.8, 0.2 + Math.random() * 0.6, 0.09 + Math.random() * 0.06, Math.random() < 0.3);
-      nextDrop = t + (nextDrop === 0 ? 0.3 : 5 + Math.random() * 6);
+      nextDrop = t + (nextDrop === 0 ? 0.3 : 9 + Math.random() * 8);
     }
+    bottlesStep(dt, t - t0);
     step(dt, t - t0);
+    drawBottles(t - t0);
     requestAnimationFrame(frame);
   };
 
@@ -338,5 +571,6 @@
   }).observe(stage);
 
   build();
+  initBottles();
   requestAnimationFrame(frame);
 })();

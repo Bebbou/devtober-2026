@@ -94,6 +94,28 @@ a {
   background: var(--pink);
 }
 
+.right {
+  display: flex;
+  align-items: baseline;
+  gap: 8px 24px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.btn {
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid var(--line-strong);
+  background: none;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.btn:hover {
+  color: var(--pink);
+  border-color: var(--pink);
+}
+
 /* ---------- Scène ---------- */
 #stage {
   position: relative;
@@ -116,6 +138,108 @@ a {
   height: 100%;
   touch-action: none;
   cursor: crosshair;
+}
+
+/* le dessin des bouteilles, par-dessus l'eau : il ne reçoit pas les clics */
+#over {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* le papier d'un message : un petit bout de papier épinglé, comme dans Loop */
+.paper {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  width: min(340px, calc(100% - 32px));
+  padding: 22px 22px 18px;
+  background: #e4e0d6;
+  color: #1a1a1a;
+  transform: translate(-50%, -50%) rotate(-1.2deg);
+  animation: pose 0.28s cubic-bezier(0.2, 1.3, 0.4, 1);
+}
+
+.paper[hidden] {
+  display: none;
+}
+
+@keyframes pose {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -46%) rotate(-3deg) scale(0.96);
+  }
+}
+
+.paper .pin {
+  position: absolute;
+  left: 50%;
+  top: -5px;
+  width: 10px;
+  height: 10px;
+  margin-left: -5px;
+  border-radius: 50%;
+  background: var(--pink);
+}
+
+.paper .slip {
+  margin: 0 0 10px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: #6b675d;
+}
+
+.paper .msg {
+  margin: 0 0 12px;
+  font-size: 15px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.paper .meta {
+  margin: 8px 0 0;
+  font-size: 11px;
+  color: #6b675d;
+}
+
+.paper #wErr {
+  color: #b0002f;
+}
+
+.paper textarea {
+  display: block;
+  width: 100%;
+  resize: none;
+  padding: 8px;
+  border: 1px solid #b9b4a8;
+  background: #efece4;
+  color: #1a1a1a;
+  font: 14px/1.5 var(--font);
+}
+
+.paper textarea:focus-visible {
+  outline: 2px solid var(--pink);
+  outline-offset: 1px;
+}
+
+.paper .row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin-top: 10px;
+}
+
+.btn.dark {
+  color: #1a1a1a;
+  border-bottom-color: #8a8578;
+  font-size: 13px;
+}
+
+.btn.dark:hover {
+  color: #b0002f;
+  border-color: #b0002f;
 }
 
 .hint {
@@ -185,6 +309,11 @@ a {
 @media (max-width: 560px) {
   .top {
     padding: 0 16px;
+  }
+
+  .right {
+    font-size: 12px;
+    gap: 4px 14px;
   }
 
   .hint {
