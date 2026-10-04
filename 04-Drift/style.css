@@ -342,7 +342,7 @@ a {
   letter-spacing: 0.06em;
 }
 
-/* « suivant » est un vrai bouton plein : il se voit */
+/* « suivant » est un bouton plein : il se voit */
 .tour #tNext {
   padding: 5px 16px;
   border: 0;

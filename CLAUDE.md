@@ -8,7 +8,7 @@ Site statique sur GitHub Pages : `https://bebbou.github.io/devtober-2026/`. La r
 
 | Chemin | Contenu |
 | :-- | :-- |
-| `NN-Nom/` | le projet du jour (`01-Pulse`, `02-Loop`) |
+| `NN-Nom/` | le projet du jour (`01-Pulse`, `02-Loop`, `03-Bloom`, `04-Drift`) |
 | `docs/` | le site de documentation : une page `NN-nom.html` par jour, `pages.js` (THEMES et DOCS), `style.css`, `script.js` |
 | `_template/` | les fichiers de départ d'un jour et de sa page de doc (voir `/new-day`) |
 | `.github/` | la collecte des données de Pulse (`status.json` sur la branche `pulse-data`, ne pas y toucher) |
@@ -62,6 +62,13 @@ Lino commite et pousse lui-même. Ne pas faire de commit, de push ni de branche 
 - Images dans `02-Loop/img/`, moins de 400 Ko : une petite version pour l'affiche (`-small`) et une grande pour le clic.
 - Descriptions courtes, environ 250 caractères : au-delà, le papier cache les caisses du dessus.
 - Le texte et les liens de l'intérieur sont dans une couche 2D, car les clics ne passent pas dans la scène 3D.
+
+## Drift (jour 4)
+
+- Fluide en WebGL 2 écrit à la main, sans bibliothèque (`script.js`) : vitesse de l'eau à 128 px de haut, encre à 512 px au plus. Le sillage des bouteilles est dans le canal alpha de la texture d'encre, qui s'efface plus vite que l'encre. L'effet de netteté est borné par le plus fort voisin : ne pas le renforcer sans cette borne, il fabrique de l'encre.
+- Les messages de départ sont dans `04-Drift/messages.js` (100 caractères au plus). Les bouteilles de la personne sont dans `localStorage` (clé `devtober-drift-4`, drapeau de visite `-vu`). Pas de serveur pour l'instant.
+- Pour tester dans le panneau intégré, qui ne fait pas tourner `requestAnimationFrame` quand il est masqué : copier `index.html` en `_t.html` avec une boucle pilotée par minuteur, et supprimer ce fichier ensuite.
+- Les vignettes de partage sont dans `docs/og/` (une image par jour) et déclarées par des balises `og:` dans chaque page.
 
 ## À faire plus tard
 
