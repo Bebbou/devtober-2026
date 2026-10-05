@@ -280,7 +280,6 @@
 
   const render = () => {
     const now = Date.now();
-    const shapesOn = document.body.classList.contains("shapes");
     const nq = key(q);
     const base = events.filter((e) => e.inside && now - e.ms <= days * DAY && (!nq || e.hay.includes(nq)));
     const inPeriod = showDep ? base : base.filter((e) => e.prec !== "dep");

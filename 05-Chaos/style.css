@@ -436,13 +436,6 @@ main {
   border-color: var(--pink);
 }
 
-.note {
-  margin: 10px 0 0;
-  font-size: 11px;
-  line-height: 1.5;
-  color: var(--dim);
-}
-
 /* ---------- La carte ---------- */
 .mapwrap {
   position: relative;
