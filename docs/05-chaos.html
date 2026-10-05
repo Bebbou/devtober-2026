@@ -70,7 +70,8 @@
             <tr><td>▶ rejouer</td><td>Les événements de la période reviennent dans l'ordre, au rythme où ils sont arrivés.</td></tr>
             <tr><td>▣</td><td>Photos ou formes seules.</td></tr>
             <tr><td>⌂, +, −</td><td>Vue d'ensemble, zoom avant, zoom arrière.</td></tr>
-            <tr><td>⤢</td><td>Carte en plein écran (téléphone). Échap ou × pour en sortir.</td></tr>
+            <tr><td>⤢</td><td>Carte en plein écran (ordinateur). Échap ou × pour en sortir.</td></tr>
+            <tr><td>sur téléphone</td><td>Pincer ou toucher deux fois pour zoomer, glisser pour déplacer. La poignée en bas ouvre le tiroir (liste, période, filtres) : un toucher ou un geste vers le haut.</td></tr>
             <tr><td>lien</td><td>Copie l'adresse : elle contient la période, les filtres, la recherche, le département et l'événement ouvert.</td></tr>
             <tr><td>i, ?</td><td>Sources et limites, et la visite guidée.</td></tr>
             <tr><td>Échap</td><td>Ferme le papier ouvert.</td></tr>
@@ -184,7 +185,7 @@ const makeSprite = (img) => {
         <li>La liste donne tout au clavier : 30 lignes d'abord et « voir plus » pour la suite, avec le focus sur la première nouvelle ligne. Deux liens d'évitement (« aller à la carte », « passer la liste ») apparaissent au focus.</li>
         <li>Le texte gris le plus discret est à <code>#7a7a7a</code> sur <code>#0d0d0d</code> : environ 4,5 pour 1 de contraste.</li>
         <li>Si le navigateur demande de réduire les animations, le rejeu n'anime plus l'apparition des pastilles, les déplacements de la vue sont immédiats, et la visite apparaît sans glisser.</li>
-        <li>Sur téléphone, la carte démarre rangée, passe sous le panneau, et un bouton la met en plein écran. Hors plein écran, un doigt sur la carte fait défiler la page.</li>
+        <li>Sur téléphone, la carte occupe tout l'écran entre l'en-tête et un tiroir en bas, et tous les gestes sont à elle (la page ne défile plus). Le tiroir fermé garde le total et les boutons « rejouer » et « ranger ». La carte démarre rangée, avec des bulles et des pastilles un peu plus petites, et la zone de touche des pastilles est plus large qu'à la souris. Le papier s'affiche en feuille au-dessus du tiroir, et le champ de recherche est à 16 pixels pour que le navigateur ne zoome pas dessus. La visite guidée a ses propres bulles, sur ce qui est visible à l'écran.</li>
       </ul>
     </section>
 
@@ -197,7 +198,7 @@ const makeSprite = (img) => {
         <li>La date est celle de la publication de l'article, pas celle du fait.</li>
         <li>Les titres sont repris tels que les journaux les publient, noms de victimes compris. Les violences sexuelles et les suicides sont écartés, le reste est montré, photos comprises.</li>
         <li>Les photos appartiennent aux journaux. Elles ne sont pas copiées, mais chaque visiteur les charge depuis leurs serveurs, qui voient donc passer son adresse IP. La page ne transmet pas la page d'origine (<code>no-referrer</code>).</li>
-        <li>J'ai testé dans le panneau intégré de l'application, avec des gestes simulés. Je n'ai pas mesuré la fluidité sur un écran réel, ni testé un téléphone physique, Firefox ou Safari. Les 5 400 éléments SVG de la première version étaient très lents ; la version actuelle devrait l'être bien moins, sans mesure à l'appui.</li>
+        <li>J'ai testé dans le panneau intégré de l'application, avec des gestes simulés (y compris le pincement et le double toucher sur une fenêtre de 375 pixels). Je n'ai pas mesuré la fluidité sur un écran réel, ni testé un téléphone physique, Firefox ou Safari. Les 5 400 éléments SVG de la première version étaient très lents ; la version actuelle devrait l'être bien moins, sans mesure à l'appui.</li>
         <li>Les pastilles ne se parcourent pas au clavier : la liste donne les mêmes événements.</li>
         <li>Rien n'est mis à jour tant que l'Action n'a pas tourné : jusque-là, la page affiche la copie du dossier.</li>
       </ul>

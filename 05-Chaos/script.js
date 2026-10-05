@@ -6,6 +6,8 @@
   // true si la personne préfère éviter les animations : toute boucle d'animation doit le respecter
   const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+  const mobile = () => matchMedia("(max-width: 820px)").matches;
+
   const F = window.FRANCE;
   const KEY = "devtober-chaos-5";
   // Les données sont collectées toutes les heures par l'Action GitHub (.github/workflows/chaos-data.yml).
@@ -583,20 +585,21 @@
   const place = () => {
     const u = 1 / scale();
     const now = Date.now();
+    const mob = mobile();
     groups = [];
     svg.style.setProperty("--sw", u.toFixed(4));
     svg.style.setProperty("--u", u.toFixed(4));
     for (const n of order) {
       n.inCl = false;
       // en désordre, les pastilles sont un peu plus grandes : elles se recouvrent davantage
-      n.R = 13 * (1 + 0.2 * n.n) * (tidy ? 1 : 1.2);
+      n.R = 13 * (1 + 0.2 * n.n) * (tidy ? 1 : 1.2) * (mob ? 0.8 : 1);
       // plusieurs faits dans la même commune : on les écarte en spirale
       const p = posOf(n.e, u);
       n.x = p[0];
       n.y = p[1];
     }
     if (tidy && vb.w > MAX_ZOOM_W) {
-      const reach = CELL * u;
+      const reach = (mob ? 22 : CELL) * u;
       for (const n of order) {
         // l'événement ouvert et ceux du rejeu pas encore apparus ne comptent pas
         if (n.hide || n.id === sel) continue;
@@ -611,7 +614,7 @@
         g.m.forEach((e) => { nodes.get(e.id).inCl = true; });
         g.cx = g.m.reduce((s, e) => s + e.ux, 0) / k;
         g.cy = g.m.reduce((s, e) => s + e.uy, 0) / k;
-        g.R = Math.min(36, 15 + 3.2 * Math.sqrt(k));
+        g.R = mob ? Math.min(27, 12 + 2.6 * Math.sqrt(k)) : Math.min(36, 15 + 3.2 * Math.sqrt(k));
         g.live = g.m.some((e) => now - e.ms < 3 * HOUR);
       });
     }
@@ -695,7 +698,7 @@
     if (fly) {
       const a = e.slot * 2.4, r = e.slot ? SPREAD * Math.sqrt(e.slot) : 0, u = 1 / scale();
       flyTo(e.ux + Math.cos(a) * r * u, e.uy + Math.sin(a) * r * u, Math.min(vb.w, 380));
-      if (matchMedia("(max-width: 820px)").matches) wrap.scrollIntoView({ block: "nearest", behavior: calm ? "auto" : "smooth" });
+      if (mobile()) setSheet(false);
     }
     syncHash();
     place();
@@ -733,28 +736,33 @@
 
   /* ---------- Les gestes sur la carte ---------- */
   const ptrs = new Map();
+  let lastTap = null;
   let moved = false, downHit = null, downDep = "", pinch = 0, hovKey = "";
 
   // ce qui se trouve à cet endroit de l'écran : une bulle, sinon la pastille du dessus
-  const hit = (cx, cy) => {
+  const hit = (cx, cy, touch) => {
     const r = box(), x = cx - r.left, y = cy - r.top;
     for (let i = groups.length - 1; i >= 0; i--) {
       const g = groups[i];
-      if (g.sx !== undefined && Math.hypot(g.sx - x, g.sy - y) <= g.R + 2) return { cl: i };
+      if (g.sx !== undefined && Math.hypot(g.sx - x, g.sy - y) <= g.R + (touch ? 6 : 2)) return { cl: i };
     }
     for (const n of order) {
       if (n.inCl || n.hide) continue;
-      if (Math.hypot(n.sx - x, n.sy - y) <= n.R + 3) return { n };
+      if (Math.hypot(n.sx - x, n.sy - y) <= n.R + (touch ? 10 : 3)) return { n };
     }
     return null;
   };
 
   svg.addEventListener("pointerdown", (e) => {
-    svg.setPointerCapture(e.pointerId);
+    try {
+      svg.setPointerCapture(e.pointerId);
+    } catch (err) {
+      /* certains navigateurs refusent la capture : le geste continue sans */
+    }
     ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (ptrs.size === 1) {
       moved = false;
-      downHit = hit(e.clientX, e.clientY);
+      downHit = hit(e.clientX, e.clientY, e.pointerType === "touch");
       const d = e.target.closest("#deps path");
       downDep = d ? d.dataset.k : "";
     }
@@ -836,7 +844,17 @@
       if (downHit && downHit.n) openCard(downHit.n.id, false);
       else if (downHit) expand(downHit.cl);
       else if (downDep) { closeCard(); pickDep(downDep); }
-      else closeCard();
+      else {
+        const t = performance.now();
+        if (e.pointerType === "touch" && lastTap && t - lastTap.t < 320 && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < 30) {
+          zoomAt(e.clientX, e.clientY, 2.2);
+          lastTap = null;
+        } else {
+          lastTap = { t, x: e.clientX, y: e.clientY };
+          closeCard();
+          if (mobile()) setSheet(false);
+        }
+      }
     }
   };
   svg.addEventListener("pointerup", up);
@@ -884,7 +902,29 @@
       return;
     }
     const r = e.target.closest(".row");
-    if (r) openCard(r.dataset.id, true);
+    if (r) {
+      if (mobile()) setSheet(false);
+      openCard(r.dataset.id, true);
+    }
+  });
+  // le tiroir du téléphone : la poignée l'ouvre au toucher ou en tirant vers le haut
+  const grip = $("#grip");
+  const setSheet = (on) => {
+    document.body.classList.toggle("sheet", on);
+    grip.setAttribute("aria-expanded", on);
+    grip.setAttribute("aria-label", on ? "Fermer la liste et les filtres" : "Ouvrir la liste et les filtres");
+  };
+  let gripY = null, swiped = false;
+  grip.addEventListener("pointerdown", (e) => { gripY = e.clientY; swiped = false; });
+  grip.addEventListener("pointerup", (e) => {
+    if (gripY === null) return;
+    const dy = e.clientY - gripY;
+    gripY = null;
+    if (Math.abs(dy) > 30) { swiped = true; setSheet(dy < 0); }
+  });
+  grip.addEventListener("click", () => {
+    if (swiped) { swiped = false; return; }
+    setSheet(!document.body.classList.contains("sheet"));
   });
   // liens d'évitement : la carte, sans passer par toute la liste
   ["#skipMap", "#skipList"].forEach((s) =>
@@ -935,6 +975,7 @@
   addEventListener("keydown", (e) => {
     if (e.key !== "Escape") return;
     if (!card.hidden) closeCard();
+    else if (document.body.classList.contains("sheet")) setSheet(false);
     else if (document.body.classList.contains("mapfull")) setFull(false);
   });
 
@@ -1095,15 +1136,23 @@
   const tour = $("#tour"), tText = $("#tText"), tStep = $("#tStep"), tFx = $("#tourfx"), tRing = $("#tRing"), tArrow = $("#tArrow");
   const SEEN = KEY + "-vu";
   let tourStep = -1, tourLoopOn = false;
-  const TOUR = [
+  const TOUR_M = [
+    { text: "Pince pour zoomer, glisse pour déplacer, touche deux fois pour zoomer d'un coup. Touche une pastille pour lire l'article.", el: () => $(".zoom") },
+    { text: "Tire cette barre vers le haut : la liste, la période et les filtres.", el: () => $("#grip") },
+    { text: "« ranger » regroupe les pastilles en bulles, « rejouer » repasse la période.", el: () => $(".acts") },
+  ];
+  const TOUR_D = [
     { text: "Chaque forme est un type d'événement rapporté par la presse : incendie, intempérie, accident, mobilisation, violence, panne. Un contour rose date de moins de 3 h.", el: () => $("#cats") },
     { text: "Choisis la période : les dernières 24 h, 7 jours ou 30 jours.", el: () => $("#periods") },
     { text: "Clique une pastille ou une ligne pour lire l'article, une bulle pour zoomer, un département pour ne voir que lui. « ranger » regroupe tout en bulles.", el: () => $(".row") || $("#list") },
   ];
+  let TOUR = TOUR_D;
   const tourShow = () => {
     tour.hidden = tourStep < 0;
     tFx.toggleAttribute("hidden", tourStep < 0);
     if (tourStep < 0) return;
+    if (tourStep === 0) TOUR = mobile() ? TOUR_M : TOUR_D;
+    if (mobile()) setSheet(false);
     closeCard();
     tStep.textContent = "visite " + (tourStep + 1) + " / " + TOUR.length;
     tText.textContent = TOUR[tourStep].text;
