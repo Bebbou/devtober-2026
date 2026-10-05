@@ -24,9 +24,11 @@
     violence: { label: "violences", g: '<path class="o" d="M-5 -5L5 5M5 -5L-5 5"/>' },
     panne: { label: "pannes", g: '<path class="o" d="M-6 0L-3 -5.2H3L6 0L3 5.2H-3Z"/>' },
   };
+  const NOPHOTO = new Set(["violence", "accident"]); // pas de photo : on ne montre pas de victimes
   const HOUR = 3600e3;
   const DAY = 24 * HOUR;
   const LIST_MAX = 120;
+  const MAX_PTS = 500; // pastilles dessinées : les plus récentes. Le reste compte dans la liste et les totaux.
 
   const svg = $("#map");
   const gDeps = $("#deps");
@@ -41,11 +43,14 @@
   let active = new Set(Object.keys(CATS));
   let sel = null;
   let shown = [];
+  let tidy = matchMedia("(max-width: 820px)").matches; // en désordre sur grand écran, rangé sur téléphone
+  let drawn = [];
   let shownAll = []; // sans le filtre département : la teinte de la carte s'appuie dessus
   let q = "";
   let depSel = "";
   let loaded = false;
   let hashEvent = "";
+  let showDep = true;
   const nodes = new Map(); // id -> { g, row, e }
   const vb = { x: 0, y: 0, w: F.w, h: F.h };
 
@@ -55,6 +60,8 @@
     // on retient ce que la personne a masqué : une catégorie ajoutée plus tard reste visible
     if (Array.isArray(saved.off)) saved.off.forEach((c) => active.delete(c));
     if (saved.shapes) document.body.classList.add("shapes");
+    if (typeof saved.tidy === "boolean") tidy = saved.tidy;
+    if (saved.nodep) showDep = false;
   } catch (e) {
     /* on s'en passe */
   }
@@ -65,6 +72,9 @@
     active = new Set(Object.keys(CATS));
     hash.get("off").split(",").forEach((c) => active.delete(c));
   }
+  if (hash.has("t")) tidy = hash.get("t") === "1";
+  if (hash.has("x")) showDep = hash.get("x") !== "1";
+  document.body.classList.toggle("tidy", tidy);
   q = hash.get("q") || "";
   depSel = hash.get("d") || "";
   hashEvent = hash.get("e") || "";
@@ -74,6 +84,8 @@
     p.set("p", days);
     const off = Object.keys(CATS).filter((c) => !active.has(c));
     if (off.length) p.set("off", off.join(","));
+    p.set("t", tidy ? "1" : "0");
+    if (!showDep) p.set("x", "1");
     if (q) p.set("q", q);
     if (depSel) p.set("d", depSel);
     if (sel) p.set("e", sel);
@@ -85,7 +97,7 @@
   }
   const save = () => {
     try {
-      localStorage.setItem(KEY, JSON.stringify({ days, off: Object.keys(CATS).filter((c) => !active.has(c)), shapes: document.body.classList.contains("shapes") }));
+      localStorage.setItem(KEY, JSON.stringify({ days, off: Object.keys(CATS).filter((c) => !active.has(c)), shapes: document.body.classList.contains("shapes"), tidy, nodep: !showDep }));
     } catch (e) {
       /* on s'en passe */
     }
@@ -107,11 +119,20 @@
     }),
   );
   const depEls = new Map(F.deps.map((d, i) => [key(d.n), { el: gDeps.children[i], name: d.n }]));
+  const gDc = $("#dc");
+  gDc.innerHTML = F.deps
+    .map((d) => {
+      const b = depBox.get(key(d.n));
+      return `<text x="${((b.x0 + b.x1) / 2).toFixed(1)}" y="${((b.y0 + b.y1) / 2).toFixed(1)}"></text>`;
+    })
+    .join("");
+  F.deps.forEach((d, i) => { depEls.get(key(d.n)).lb = gDc.children[i]; });
 
   const heat = (list = shownAll) => {
     const count = (l) => {
       const m = new Map();
-      l.forEach((e) => m.set(key(e.dep), (m.get(key(e.dep)) || 0) + 1));
+      const add = (d) => m.set(key(d), (m.get(key(d)) || 0) + 1);
+      l.forEach((e) => { add(e.dep); (e.also || []).forEach(add); });
       return m;
     };
     const n = count(list);
@@ -122,6 +143,7 @@
       // échelle en racine : quelques événements se voient déjà, le plus touché est franchement rose
       d.el.style.fill = c ? "rgba(255, 0, 85, " + (0.09 + 0.4 * Math.sqrt(c / max)).toFixed(3) + ")" : "";
       d.el.firstChild.textContent = d.name + (c ? " : " + c : "");
+      d.lb.textContent = c || "";
     });
   };
 
@@ -241,7 +263,8 @@
       e.uy = p[1];
       e.ms = new Date(e.t).getTime();
       e.inside = e.ux > 0 && e.ux < F.w && e.uy > 0 && e.uy < F.h;
-      e.hay = key([e.place, e.dep, ...e.items.map((i) => i.title)].join(" "));
+      e.pic = NOPHOTO.has(e.cat) ? "" : e.img || "";
+      e.hay = key([e.place, e.dep, ...(e.also || []), ...e.items.map((i) => i.title)].join(" "));
       const k = e.lat + "|" + e.lon;
       e.slot = slots.get(k) || 0;
       slots.set(k, e.slot + 1);
@@ -253,12 +276,19 @@
 
   const render = () => {
     const now = Date.now();
+    const shapesOn = document.body.classList.contains("shapes");
     const nq = key(q);
-    const inPeriod = events.filter((e) => e.inside && now - e.ms <= days * DAY && (!nq || e.hay.includes(nq)));
-    const depOk = (e) => !depSel || key(e.dep) === depSel;
+    const base = events.filter((e) => e.inside && now - e.ms <= days * DAY && (!nq || e.hay.includes(nq)));
+    const inPeriod = showDep ? base : base.filter((e) => e.prec !== "dep");
+    const depOk = (e) => !depSel || key(e.dep) === depSel || (e.also || []).some((d) => key(d) === depSel);
+    const dt = $("#depToggle");
+    if (dt) {
+      dt.setAttribute("aria-pressed", showDep);
+      dt.querySelector(".n").textContent = base.filter((e) => e.prec === "dep").length;
+    }
     const counts = {};
     inPeriod.filter(depOk).forEach((e) => (counts[e.cat] = (counts[e.cat] || 0) + 1));
-    document.querySelectorAll(".cat").forEach((b) => {
+    document.querySelectorAll(".cat[data-cat]").forEach((b) => {
       // une catégorie sans événement disparaît, sauf si elle est masquée : on doit pouvoir la rallumer
       b.hidden = !counts[b.dataset.cat] && active.has(b.dataset.cat);
       b.setAttribute("aria-pressed", active.has(b.dataset.cat));
@@ -273,56 +303,38 @@
     $("#depbar").hidden = !depSel;
     if (depSel && depEls.has(depSel)) $("#depName").textContent = depEls.get(depSel).name + " : " + shown.length;
     $("#total").textContent = shown.length;
-    $("#unit").textContent = (shown.length === 1 ? "événement" : "événements") + " sur " + (days === 1 ? "24 h" : days + " jours");
+    $("#unit").textContent = (shown.length === 1 ? "événement" : "événements") + " sur " + (days === 1 ? "24 h" : days + " jours") + (shown.length > MAX_PTS ? " (" + MAX_PTS + " sur la carte)" : "");
 
     nodes.clear();
     // les plus anciens d'abord : les récents restent au-dessus
-    gPts.innerHTML = [...shown]
+    drawn = shown.slice(0, MAX_PTS);
+    gPts.innerHTML = [...drawn]
       .reverse()
       .map((e, i, arr) => {
         const n = Math.min(e.items.length - 1, 6);
-        const live = level(now - e.ms) === 0 && arr.length - 1 - i < 8;
+        const r = arr.length - 1 - i;
+        const live = level(now - e.ms) === 0 && r < 8;
         // un tremblement différent pour chacun : ils ne battent pas en même temps
         const sh = `--sd:${(0.38 + (e.slot % 5) * 0.07 + (e.ms % 7) * 0.02).toFixed(2)}s;--dl:-${((e.ms % 11) * 0.09).toFixed(2)}s`;
         const g = CATS[e.cat].g;
-        const photo = e.img
-          ? '<g class="photo"><circle class="bgc" r="13"/><g transform="scale(.8)">' + g + "</g>" +
-            `<image class="im" data-src="${esc(e.img)}" x="-13" y="-13" width="26" height="26" preserveAspectRatio="xMidYMid slice" clip-path="url(#cp)"/>` +
-            '<circle class="rim" r="13"/><g class="badge" transform="translate(10 10)"><circle r="7.5"/><g transform="scale(.6)">' + g + "</g></g></g>"
-          : "";
         return (
-          `<g class="pt${e.img ? " has" : ""}" data-id="${e.id}" data-age="${level(now - e.ms)}" data-live="${live ? 1 : 0}" data-n="${n}" data-prec="${e.prec || ""}" aria-hidden="true">` +
+          `<g class="pt${e.prec === "dep" ? " dp" : ""}" data-id="${e.id}" data-c="${e.cat}" data-age="${level(now - e.ms)}" data-live="${live ? 1 : 0}" data-n="${n}" data-prec="${e.prec || ""}" aria-hidden="true">` +
           '<circle class="hit" r="16"/>' + (live ? '<circle class="pulse" r="14"/>' : "") + '<circle class="ring" r="17"/>' +
-          `<g class="sh" style="${sh}">` + photo + '<g class="sym">' + g + "</g></g>" +
+          `<g class="sh" style="${sh}"><g class="sym">` + g + "</g></g>" +
           "</g>"
         );
       })
       .join("");
-    const byId = new Map(shown.map((e) => [e.id, e]));
+    const byId = new Map(drawn.map((e) => [e.id, e]));
     const rank = new Map(shown.map((e, i) => [e.id, i]));
     gPts.querySelectorAll(".pt").forEach((g) =>
-      nodes.set(g.dataset.id, { g, e: byId.get(g.dataset.id), n: +g.dataset.n, im: g.querySelector(".im"), rank: rank.get(g.dataset.id), hide: false, inCl: false }),
+      nodes.set(g.dataset.id, { g, e: byId.get(g.dataset.id), n: +g.dataset.n, rank: rank.get(g.dataset.id), hide: false, inCl: false }),
     );
 
-    list.innerHTML = shown
-      .slice(0, LIST_MAX)
-      .map((e) => {
-        const age = now - e.ms;
-        const where = e.sat ? "Détection satellite" : e.place + (e.prec === "dep" ? " · département" : "");
-        return (
-          `<li><button class="row" type="button" data-id="${e.id}">` +
-          (e.img ? `<img class="thumb" src="${esc(e.img)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : glyph(e.cat)) +
-          `<span class="place">${esc(where)}</span>` +
-          `<span class="age${age < 3 * HOUR ? " live" : ""}">${ago(age)}</span>` +
-          `<span class="title">${esc(e.items[0].title)}</span></button></li>`
-        );
-      })
-      .join("");
-    if (shown.length > LIST_MAX) list.insertAdjacentHTML("beforeend", `<li class="more">et ${shown.length - LIST_MAX} autres sur la carte</li>`);
-    list.querySelectorAll(".row").forEach((r) => {
-      const n = nodes.get(r.dataset.id);
-      if (n) n.row = r;
-    });
+    const sig = [days, nq, depSel, [...active].join(), showDep].join("|");
+    if (sig !== lastSig) listN = 30;
+    lastSig = sig;
+    renderList(now);
 
     const empty = $("#empty");
     empty.hidden = shown.length > 0;
@@ -337,23 +349,74 @@
     heat();
     histo();
     place();
+    clearTimeout(growT);
+    loadLimit = 40;
+    growT = setTimeout(growPhotos, 1100);
+  };
+
+  let listN = 30, lastSig = "";
+  const renderList = (now) => {
+    list.innerHTML = shown
+      .slice(0, listN)
+      .map((e) => {
+        const age = now - e.ms;
+        const where = e.sat ? "Détection satellite" : e.place + (e.prec === "dep" ? " · département" : "") + (e.also ? " +" + e.also.length : "");
+        return (
+          `<li><button class="row" type="button" data-id="${e.id}">` +
+          (e.pic ? `<img class="thumb" src="${esc(e.pic)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : glyph(e.cat)) +
+          `<span class="place">${esc(where)}</span>` +
+          `<span class="age${age < 3 * HOUR ? " live" : ""}">${ago(age)}</span>` +
+          `<span class="title">${esc(e.items[0].title)}</span></button></li>`
+        );
+      })
+      .join("");
+    if (shown.length > listN) {
+      const rest = shown.length - listN;
+      list.insertAdjacentHTML(
+        "beforeend",
+        listN < LIST_MAX
+          ? `<li class="more"><button type="button" id="moreRows">voir plus (${Math.min(30, rest)} de ${rest})</button></li>`
+          : `<li class="more">et ${rest} autres : affine avec la recherche ou les filtres</li>`,
+      );
+    }
+    list.querySelectorAll(".row").forEach((r) => {
+      const n = nodes.get(r.dataset.id);
+      if (n) n.row = r;
+    });
   };
 
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 
-  // Une centaine de photos d'un coup pèserait des Mo : on charge les 40 plus récentes,
-  // puis les autres quand elles entrent dans la vue après un zoom.
+  // La photo est ajoutée à la pastille au moment de la charger : 40 d'abord, puis 20 de plus toutes
+  // les 1,1 s jusqu'à 150, les autres seulement quand on zoome dessus. Sans photo, la forme reste.
+  let loadLimit = 40, growT = 0;
+  const ensurePhoto = (n) => {
+    n.g.querySelector(".sh").insertAdjacentHTML(
+      "afterbegin",
+      '<g class="photo"><circle class="bgc" r="13"/>' +
+        `<image class="im" href="${esc(n.e.pic)}" x="-13" y="-13" width="26" height="26" preserveAspectRatio="xMidYMid slice" clip-path="url(#cp)"/>` +
+        '<circle class="rim" r="13"/><g class="badge" transform="translate(10 10)"><circle r="7.5"/><g transform="scale(.6)">' + CATS[n.e.cat].g + "</g></g></g>",
+    );
+    n.g.classList.add("has");
+  };
   const loadPhotos = () => {
+    if (document.body.classList.contains("shapes")) return;
     const zoomed = vb.w < 520;
     nodes.forEach((n) => {
-      if (n.loaded || !n.im || !n.e || n.inCl) return;
-      if (n.rank >= 40 && !zoomed) return;
+      if (n.loaded || !n.e || !n.e.pic || n.inCl) return;
+      if (n.rank >= loadLimit && !zoomed) return;
       if (n.e.ux < vb.x - 30 || n.e.ux > vb.x + vb.w + 30 || n.e.uy < vb.y - 30 || n.e.uy > vb.y + vb.h + 30) return;
       n.loaded = true;
-      n.im.setAttribute("href", n.im.dataset.src);
+      ensurePhoto(n);
     });
   };
-  // une image en panne (adresse expirée) : la pastille retombe sur la forme
+  const growPhotos = () => {
+    if (loadLimit >= 150) return;
+    loadLimit += 20;
+    loadPhotos();
+    growT = setTimeout(growPhotos, 1100);
+  };
+  // une image en panne (adresse expirée) : la pastille retombe sur sa forme
   gPts.addEventListener(
     "error",
     (ev) => {
@@ -383,10 +446,10 @@
     const now = Date.now();
     groups = [];
     svg.style.setProperty("--sw", u.toFixed(4));
-    nodes.forEach((n) => { n.inCl = false; });
-    if (vb.w > MAX_ZOOM_W) {
+    svg.style.setProperty("--u", u.toFixed(4));    nodes.forEach((n) => { n.inCl = false; });
+    if (tidy && vb.w > MAX_ZOOM_W) {
       const reach = CELL * u;
-      for (const e of shown) {
+      for (const e of drawn) {
         const n = nodes.get(e.id);
         // l'événement ouvert et ceux du rejeu pas encore apparus ne comptent pas
         if (!n || n.hide || e.id === sel) continue;
@@ -407,7 +470,7 @@
       if (!e || n.inCl) return;
       // plusieurs faits dans la même commune : on les écarte en spirale
       const a = e.slot * 2.4, r = e.slot ? SPREAD * Math.sqrt(e.slot) : 0;
-      const s = u * (1 + 0.2 * n.n);
+      const s = u * (1 + 0.2 * n.n) * (e.prec === "dep" ? 0.82 : 1);
       const tr = `translate(${(e.ux + Math.cos(a) * r * u).toFixed(2)} ${(e.uy + Math.sin(a) * r * u).toFixed(2)}) scale(${s.toFixed(4)})`;
       if (n.tr !== tr) {
         n.g.setAttribute("transform", tr);
@@ -459,6 +522,21 @@
     card.style.top = clamp(p[1] - 24, 12, Math.max(12, H - ch - 12)) + "px";
   };
 
+  const posOf = (e, u) => {
+    const a = e.slot * 2.4, r = e.slot ? SPREAD * Math.sqrt(e.slot) : 0;
+    return [e.ux + Math.cos(a) * r * u, e.uy + Math.sin(a) * r * u];
+  };
+  // les pastilles posées à moins de 16 px de celle-ci
+  const neighbours = (e) => {
+    const u = 1 / scale(), p = posOf(e, u), reach = 16 * u, out = [];
+    nodes.forEach((n) => {
+      if (!n.e || n.inCl || n.hide) return;
+      const q = posOf(n.e, u);
+      if (Math.hypot(q[0] - p[0], q[1] - p[1]) < reach) out.push(n.e);
+    });
+    return out.sort((a, b) => b.ms - a.ms);
+  };
+
   const openCard = (id, fly) => {
     if (sel && sel !== id) mark(sel, false);
     sel = id;
@@ -478,11 +556,20 @@
       .slice(0, 6)
       .map((i) => `<li><a href="${esc(i.link)}" target="_blank" rel="noopener">${esc(i.title)}</a><span>${esc(i.source)}</span></li>`)
       .join("");
+    const also = e.also && e.also.length ? "Aussi dans : " + e.also.slice(0, 12).join(", ") + (e.also.length > 12 ? " et " + (e.also.length - 12) + " autres" : "") : "";
+    $("#cAlso").textContent = also;
+    $("#cAlso").hidden = !also;
+    const near = neighbours(e);
+    $("#cPileBox").hidden = near.length < 2;
+    $("#cPile").innerHTML = near
+      .slice(0, 10)
+      .map((x) => `<li><button type="button" data-id="${x.id}"${x.id === e.id ? ' aria-current="true"' : ""}>${esc(x.sat ? "satellite" : x.place)} · ${esc(x.items[0].title)}</button></li>`)
+      .join("");
     const shot = $("#cShot");
-    const first = e.items.find((i) => i.img === e.img) || e.items[0];
-    shot.hidden = !e.img;
-    if (e.img) {
-      $("#cImg").src = e.img;
+    const first = e.items.find((i) => i.img === e.pic) || e.items[0];
+    shot.hidden = !e.pic;
+    if (e.pic) {
+      $("#cImg").src = e.pic;
       shot.href = first.link;
     }
     card.hidden = false;
@@ -594,19 +681,35 @@
     { passive: false },
   );
 
+  const legend = $("#legend");
+  const LEGEND = legend.textContent;
+  const info = (text) => {
+    legend.textContent = text || LEGEND;
+    legend.classList.toggle("hov", !!text);
+  };
+  const describe = (e) =>
+    (e.sat ? "satellite" : e.place + (e.prec === "dep" ? " (département)" : "")) + " · " + CATS[e.cat].label + " · " + ago(Date.now() - e.ms) + " · " + e.items[0].title.slice(0, 120);
   const hot = (id, on) => {
     const n = nodes.get(id);
     if (!n) return;
     n.g.classList.toggle("hot", on);
     if (n.row) n.row.classList.toggle("hot", on);
+    info(on ? describe(n.e) : "");
   };
   svg.addEventListener("pointerover", (e) => {
     const t = e.target.closest(".pt");
     if (t && !ptrs.size) hot(t.dataset.id, true);
+    const c = e.target.closest(".cl");
+    if (c && !ptrs.size && groups[+c.dataset.i]) {
+      const m = groups[+c.dataset.i].m, by = {};
+      m.forEach((x) => (by[x.cat] = (by[x.cat] || 0) + 1));
+      info(m.length + " événements : " + Object.entries(by).sort((a, b) => b[1] - a[1]).map(([k, v]) => v + " " + CATS[k].label).join(", ") + " · cliquer pour zoomer");
+    }
   });
   svg.addEventListener("pointerout", (e) => {
     const t = e.target.closest(".pt");
     if (t) hot(t.dataset.id, false);
+    if (e.target.closest(".cl")) info("");
   });
   list.addEventListener("pointerover", (e) => {
     const r = e.target.closest(".row");
@@ -632,19 +735,53 @@
     true,
   );
   list.addEventListener("click", (e) => {
+    if (e.target.closest("#moreRows")) {
+      const before = listN;
+      listN = Math.min(LIST_MAX, listN + 30);
+      renderList(Date.now());
+      const next = list.querySelectorAll(".row")[before];
+      if (next) next.focus();
+      return;
+    }
     const r = e.target.closest(".row");
     if (r) openCard(r.dataset.id, true);
   });
+  // liens d'évitement : la carte, sans passer par toute la liste
+  ["#skipMap", "#skipList"].forEach((s) =>
+    $(s).addEventListener("click", (e) => {
+      e.preventDefault();
+      $("#zin").focus();
+    }),
+  );
 
   $("#cClose").addEventListener("click", closeCard);
+  $("#cPile").addEventListener("click", (ev) => {
+    const b = ev.target.closest("button");
+    if (b && b.dataset.id !== sel) openCard(b.dataset.id, false);
+  });
   $("#cImg").addEventListener("error", () => { $("#cShot").hidden = true; putCard(); });
   $("#cImg").addEventListener("load", putCard);
+  const tb = $("#tidy");
+  const showTidy = () => {
+    tb.setAttribute("aria-pressed", tidy);
+    tb.textContent = tidy ? "désordre" : "ranger";
+    document.body.classList.toggle("tidy", tidy);
+  };
+  showTidy();
+  tb.addEventListener("click", () => {
+    tidy = !tidy;
+    showTidy();
+    save();
+    place();
+  });
   const zimg = $("#zimg");
   zimg.setAttribute("aria-pressed", !document.body.classList.contains("shapes"));
   zimg.addEventListener("click", () => {
     const on = document.body.classList.toggle("shapes");
     zimg.setAttribute("aria-pressed", !on);
     save();
+    stopReplay();
+    render();
   });
   const zfull = $("#zfull");
   const setFull = (on) => {
@@ -756,10 +893,17 @@
   /* ---------- Les filtres ---------- */
   $("#cats").innerHTML = Object.keys(CATS)
     .map((c) => `<button class="cat" type="button" data-cat="${c}" aria-pressed="true">${glyph(c)}${CATS[c].label} <span class="n">0</span></button>`)
-    .join("");
+    .join("") + '<button class="cat" type="button" id="depToggle" data-x="dep" aria-pressed="true" title="Les points placés au centre d\'un département, quand le titre ne cite pas de commune">≈ au département <span class="n">0</span></button>';
   $("#cats").addEventListener("click", (e) => {
     const b = e.target.closest(".cat");
     if (!b) return;
+    if (b.dataset.x) {
+      stopReplay();
+      showDep = !showDep;
+      save();
+      render();
+      return;
+    }
     const c = b.dataset.cat;
     stopReplay();
     if (active.has(c)) active.delete(c);
@@ -779,9 +923,14 @@
   /* ---------- Démarrage ---------- */
   const stamp = () => {
     const el = $("#stamp");
-    if (!generated) return (el.textContent = "");
+    if (!generated) {
+      el.textContent = "";
+      $("#fresh").textContent = "";
+      return;
+    }
     const age = Date.now() - generated;
     el.textContent = "données " + ago(age) + (age > 6 * HOUR ? " (pas de mise à jour récente)" : "");
+    $("#fresh").textContent = "· " + ago(age) + (age > 6 * HOUR ? " : pas de mise à jour récente" : "");
   };
 
   const load = async () => {
@@ -815,9 +964,9 @@
   const SEEN = KEY + "-vu";
   let tourStep = -1, tourLoopOn = false;
   const TOUR = [
-    { text: "Chaque pastille est un événement rapporté par la presse, avec la photo de l'article. La forme dans son coin donne le type : incendie, intempérie, accident, mobilisation, violence. Un contour rose date de moins de 3 h.", el: () => $("#cats") },
+    { text: "Chaque forme est un type d'événement rapporté par la presse : incendie, intempérie, accident, mobilisation, violence, panne. Un contour rose date de moins de 3 h.", el: () => $("#cats") },
     { text: "Choisis la période : les dernières 24 h, 7 jours ou 30 jours.", el: () => $("#periods") },
-    { text: "Clique une bulle pour zoomer, un département pour ne voir que lui, une ligne de la liste ou une pastille pour lire le titre et ouvrir l'article.", el: () => $(".row") || $("#list") },
+    { text: "Clique une pastille ou une ligne pour lire l'article, une bulle pour zoomer, un département pour ne voir que lui. « ranger » regroupe tout en bulles.", el: () => $(".row") || $("#list") },
   ];
   const tourShow = () => {
     tour.hidden = tourStep < 0;

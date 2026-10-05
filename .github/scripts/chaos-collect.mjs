@@ -63,17 +63,20 @@ const FEEDS = [
 // s'allumer dans « charançon ». Les mots trop larges (mort, brûle, explosion) sont écartés,
 // ils attrapent des décès de célébrités et des expressions.
 const CATS = [
-  ["feu", /\b(incendie|incendies|feu de|feux de|flammes|incendiaire)/],
-  ["meteo", /\b(vigilance (orange|rouge|jaune)|inondation|crue|tempete|orages? violents?|glissement de terrain|seisme|avalanche|canicule|intemperies|submerg)/],
-  ["panne", /\b(panne|pannes|coupure d'(electricite|eau|courant)|cyberattaque|penurie|fuite de gaz|effondrement|sans electricite)/],
-  ["accident", /\b(accident|collision|carambolage|deraill|naufrage|s'ecrase|choc frontal|grievement blesse|explosion (de gaz|dans|d'un|d'une))/],
-  ["manif", /\b(manifestation|manifestant|blocus|blocage|greve|mobilisation|emeute|barrage filtrant|heurts|affrontements|lacrymogene|interpellations?)/],
-  ["violence", /\b(fusillade|coups? de feu|tue par balle|blesse par balle|attentat|attaque (au couteau|armee)|poignard|coups? de couteau|meurtre|homicide|prise d'otage|rixe|tabass|agression|braquage|reglement de comptes|narcotrafic|enlevement|kidnapp)/],
+  ["feu", /\b(incendi|feu de|feux de|flammes|depart de feu)/],
+  ["meteo", /\b(vigilance (orange|rouge|jaune)|inondation|crue|tempete|orages?|glissement de terrain|seisme|secousse|avalanche|canicule|intemperies|submerg|fortes? (pluies?|averses)|pluies? (intenses|diluviennes)|chutes? de neige|verglas|rafales|montee des eaux)/],
+  ["panne", /\b(panne|pannes|coupure d'(electricite|eau|courant)|coupure de courant|cyberattaque|penurie|fuite de gaz|effondrement|sans electricite|evacuation|confinement)/],
+  ["accident", /\b(accident|collision|carambolage|deraill|naufrage|s'ecrase|choc frontal|grievement blesse|blesses? (graves?|legers?|dans)|explosion (de gaz|dans|d'un|d'une)|noyade|noye|percute)/],
+  ["manif", /\b(manifestation|manifestant|blocus|blocage|greve|mobilis|emeute|barrage filtrant|heurts|affrontements|lacrymogene|interpellations?)/],
+  ["violence", /\b(fusillade|coups? de feu|tue par balle|blesse par balle|attentat|attaque (au couteau|armee)|poignard|coups? de couteau|meurtre|homicide|prise d'otage|rixe|tabass|agression|braquage|reglement de comptes|narcotrafic|enlevement|kidnapp|cambriol|garde a vue|interpelle|vandal)/],
 ];
 
 // Jamais sur la carte : violences sexuelles et suicides. Les rédactions s'en abstiennent
 // ou anonymisent, et un point sur une carte pourrait désigner la victime ou sa famille.
 const EXCLUS = /suicid|se donne la mort|se donner la mort|viol |violee|violeur|agression sexuelle|attouchement|pedocrimin|pedophil|abus sexuel|sexuel|harcelement sexuel|inceste/;
+// Procès et affaires anciennes, tribunes, mises à jour sans fait : ce ne sont pas des événements
+const PAS_UN_EVENEMENT = /(?:^|[^a-z])(proces|assises|tribunal|condamn\w*|requisitoire|verdict|affaire|calme|tribune|editorial|edito|chronique|mis en examen|mise en examen)(?![a-z])/;
+const SIGNATURE = /,\s+par\s+\p{Lu}[\p{L}'-]+(?:\s+\p{Lu}[\p{L}'-]+)+\s*$/u;
 
 // Départements : le centre est la moyenne des sommets du contour de 05-Chaos/france.js
 const FR = JSON.parse(
@@ -93,6 +96,20 @@ const DEP_RE = new RegExp(
     ")(?![\\p{L}-])(?!\\s+(?:du|de|des)\\s)",
   "u",
 );
+
+const slug = (s) =>
+  s
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .toLowerCase()
+    .replace(/['’]/g, "-")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+const F3_DEPTS = "hauts-de-france/aisne auvergne-rhone-alpes/allier provence-alpes-cote-d-azur/alpes-de-haute-provence auvergne-rhone-alpes/ain provence-alpes-cote-d-azur/hautes-alpes provence-alpes-cote-d-azur/alpes-maritimes grand-est/ardennes occitanie/aude occitanie/ariege occitanie/aveyron auvergne-rhone-alpes/cantal normandie/calvados provence-alpes-cote-d-azur/bouches-du-rhone centre-val-de-loire/cher auvergne-rhone-alpes/ardeche grand-est/aube bourgogne-franche-comte/cote-d-or bretagne/cotes-d-armor nouvelle-aquitaine/charente bourgogne-franche-comte/doubs auvergne-rhone-alpes/drome nouvelle-aquitaine/charente-maritime nouvelle-aquitaine/correze normandie/eure centre-val-de-loire/eure-et-loir bretagne/finistere nouvelle-aquitaine/creuse occitanie/gard occitanie/haute-garonne occitanie/gers nouvelle-aquitaine/dordogne nouvelle-aquitaine/gironde occitanie/herault centre-val-de-loire/indre bretagne/ille-et-vilaine corse/corse-du-sud corse/haute-corse auvergne-rhone-alpes/isere bourgogne-franche-comte/jura auvergne-rhone-alpes/loire centre-val-de-loire/indre-et-loire auvergne-rhone-alpes/haute-loire pays-de-la-loire/loire-atlantique centre-val-de-loire/loir-et-cher centre-val-de-loire/loiret occitanie/lot occitanie/lozere normandie/manche grand-est/marne nouvelle-aquitaine/landes grand-est/haute-marne grand-est/meurthe-et-moselle grand-est/meuse bretagne/morbihan grand-est/moselle nouvelle-aquitaine/lot-et-garonne bourgogne-franche-comte/nievre pays-de-la-loire/maine-et-loire normandie/orne pays-de-la-loire/mayenne hauts-de-france/nord auvergne-rhone-alpes/puy-de-dome hauts-de-france/pas-de-calais occitanie/hautes-pyrenees occitanie/pyrenees-orientales grand-est/bas-rhin hauts-de-france/oise auvergne-rhone-alpes/rhone bourgogne-franche-comte/haute-saone pays-de-la-loire/sarthe auvergne-rhone-alpes/savoie nouvelle-aquitaine/pyrenees-atlantiques bourgogne-franche-comte/saone-et-loire auvergne-rhone-alpes/haute-savoie grand-est/haut-rhin normandie/seine-maritime occitanie/tarn ile-de-france/seine-et-marne ile-de-france/paris ile-de-france/yvelines occitanie/tarn-et-garonne provence-alpes-cote-d-azur/var nouvelle-aquitaine/deux-sevres provence-alpes-cote-d-azur/vaucluse hauts-de-france/somme grand-est/vosges pays-de-la-loire/vendee bourgogne-franche-comte/yonne bourgogne-franche-comte/territoire-de-belfort nouvelle-aquitaine/haute-vienne nouvelle-aquitaine/vienne ile-de-france/essonne ile-de-france/hauts-de-seine ile-de-france/val-d-oise ile-de-france/seine-saint-denis ile-de-france/val-de-marne".split(" ");
+for (const path of F3_DEPTS) {
+  const d = DEPS.find((x) => slug(x.nom) === path.split("/")[1]);
+  if (d) FEEDS.push({ id: "f3d-" + path, name: "France 3 " + d.nom, url: "https://france3-regions.francetvinfo.fr/" + path + "/rss", dep: d.nom });
+}
 
 const norm = (s) =>
   s
@@ -160,7 +177,7 @@ async function readFeed(feed) {
 
 const category = (text) => {
   const n = norm(text) + " ";
-  if (EXCLUS.test(n)) return null;
+  if (EXCLUS.test(n) || PAS_UN_EVENEMENT.test(n) || SIGNATURE.test(text)) return null;
   for (const [cat, re] of CATS) if (re.test(n)) return cat;
   return null;
 };
@@ -224,6 +241,8 @@ const locate = (item) => {
   const m = item.title.match(DEP_RE);
   const d = m && DEPS.find((x) => x.nom === m[1]);
   if (d) return { place: d.nom, dep: d.nom, lat: d.lat, lon: d.lon, prec: "dep" };
+  const f = item.feed.dep && DEPS.find((x) => x.nom === item.feed.dep);
+  if (f) return { place: f.nom, dep: f.nom, lat: f.lat, lon: f.lon, prec: "dep" };
   return null;
 };
 
@@ -266,6 +285,34 @@ async function firms() {
   }));
 }
 
+// Même catégorie et même titre : un seul événement, placé là où la position est la plus précise.
+// Les autres départements restent dans « also » : ils comptent dans la carte et dans la recherche.
+function mergeStories(list) {
+  const groups = new Map();
+  for (const e of list) {
+    const k = e.sat ? e.id : e.cat + "|" + norm(e.items[0].title).slice(0, 80);
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(e);
+  }
+  const out = [];
+  for (const g of groups.values()) {
+    if (g.length === 1) { out.push(g[0]); continue; }
+    g.sort((a, b) => (b.prec === "commune") - (a.prec === "commune") || b.items.length - a.items.length || (a.t < b.t ? 1 : -1));
+    const main = g[0];
+    const also = new Set(main.also || []);
+    for (const o of g.slice(1)) {
+      if (o.dep && o.dep !== main.dep) also.add(o.dep);
+      (o.also || []).forEach((d) => { if (d !== main.dep) also.add(d); });
+      for (const i of o.items) if (!main.items.some((x) => x.link === i.link)) main.items.push(i);
+      if (!main.img && o.img) main.img = o.img;
+      if (o.t > main.t) main.t = o.t;
+    }
+    if (also.size) main.also = [...also];
+    out.push(main);
+  }
+  return out;
+}
+
 async function main() {
   let events = [];
   if (PREV) {
@@ -274,10 +321,23 @@ async function main() {
   const byId = new Map(events.map((e) => [e.id, e]));
   const stats = { lus: 0, tries: 0, places: 0, sansLieu: 0, flux: {} };
 
-  const results = await Promise.allSettled(FEEDS.map(readFeed));
+  const results = new Array(FEEDS.length);
+  const queue = FEEDS.map((f, i) => i);
+  await Promise.all(
+    Array.from({ length: 12 }, async () => {
+      while (queue.length) {
+        const i = queue.shift();
+        try {
+          results[i] = { status: "fulfilled", value: await readFeed(FEEDS[i]) };
+        } catch (e) {
+          results[i] = { status: "rejected", reason: e };
+        }
+      }
+    }),
+  );
   const items = [];
   results.forEach((r, i) => {
-    if (r.status === "fulfilled") { items.push(...r.value); stats.flux[FEEDS[i].id] = r.value.length; }
+    if (r.status === "fulfilled") items.push(...r.value);
     else stats.flux[FEEDS[i].id] = "échec : " + r.reason.message;
   });
   stats.lus = items.length;
@@ -316,7 +376,10 @@ async function main() {
   } catch (e) { stats.firms = "échec : " + e.message; }
 
   const limit = Date.now() - KEEP_DAYS * 864e5;
-  const out = [...byId.values()].filter((e) => +new Date(e.t) > limit).sort((a, b) => (a.t < b.t ? 1 : -1));
+  const out = mergeStories([...byId.values()])
+    .filter((e) => +new Date(e.t) > limit)
+    .sort((a, b) => (a.t < b.t ? 1 : -1))
+    .slice(0, 3000);
   mkdirSync(dirname(OUT), { recursive: true });
   writeFileSync(OUT, JSON.stringify({ generated: new Date().toISOString(), events: out }));
   console.log(JSON.stringify({ ...stats, evenements: out.length }, null, 2));

@@ -62,6 +62,12 @@ a {
   color: var(--muted);
 }
 
+.mark .fresh {
+  margin-left: 6px;
+  font-size: 12px;
+  color: var(--dim);
+}
+
 .mark::before {
   content: ">> ";
   color: var(--pink);
@@ -146,8 +152,15 @@ main {
   margin: 4px 0 14px;
 }
 
+.acts {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
 .bigrow .btn {
-  margin-bottom: 6px;
   white-space: nowrap;
 }
 
@@ -410,6 +423,19 @@ main {
   color: var(--dim);
 }
 
+.more button {
+  width: 100%;
+  padding: 7px 0;
+  border: 1px solid var(--line-strong);
+  background: none;
+  color: var(--muted);
+}
+
+.more button:hover {
+  color: var(--pink);
+  border-color: var(--pink);
+}
+
 .note {
   margin: 10px 0 0;
   font-size: 11px;
@@ -446,6 +472,18 @@ main {
   stroke: var(--line-strong);
   stroke-width: var(--sw, 1);
   stroke-linejoin: round;
+}
+
+#dc text {
+  fill: var(--text);
+  stroke: var(--bg);
+  stroke-width: calc(var(--u, 1) * 3px);
+  paint-order: stroke;
+  font: 700 calc(var(--u, 1) * 12px) var(--font);
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+  opacity: 0.7;
 }
 
 #deps path:hover {
@@ -504,6 +542,11 @@ main {
 
 .pt[data-prec="dep"] .sh {
   opacity: 0.7;
+}
+
+/* placé au centre d'un département : contour en pointillé */
+.pt.dp .rim {
+  stroke-dasharray: 3 3;
 }
 
 /* une pastille ronde avec la photo de l'article, la forme de la catégorie en badge dans le coin */
@@ -695,6 +738,83 @@ body.shapes .pt .photo {
 
 .only-small {
   display: none;
+}
+
+.skip {
+  position: absolute;
+  left: -9999px;
+  top: 8px;
+}
+
+.skip:focus {
+  left: 12px;
+  z-index: 60;
+  padding: 6px 12px;
+  border: 1px solid var(--pink);
+  background: #16080d;
+  color: #fff;
+}
+
+.legend.hov {
+  color: var(--text);
+  background: rgba(13, 13, 13, 0.92);
+  max-width: calc(100% - 80px);
+}
+
+.legend {
+  position: absolute;
+  left: 12px;
+  bottom: 10px;
+  max-width: calc(100% - 80px);
+  margin: 0;
+  padding: 2px 6px;
+  background: rgba(13, 13, 13, 0.75);
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--dim);
+  pointer-events: none;
+}
+
+.paper .also {
+  margin: 10px 0 0;
+  padding-top: 9px;
+  border-top: 1px solid var(--line-strong);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.paper .pile {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line-strong);
+}
+
+.paper .pile .mark {
+  margin-bottom: 6px;
+  font-size: 12px;
+}
+
+.paper .pile li {
+  padding: 0;
+  border: 0;
+}
+
+.paper .pile button {
+  display: block;
+  width: 100%;
+  padding: 5px 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+  text-align: left;
+}
+
+.paper .pile button:hover,
+.paper .pile button[aria-current="true"] {
+  color: #fff;
 }
 
 .about {

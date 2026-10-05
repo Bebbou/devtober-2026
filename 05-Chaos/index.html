@@ -11,9 +11,19 @@
       name="description"
       content="Une carte de France des incendies, accidents, intempéries, mobilisations et violences rapportés par la presse, sur 1, 7 ou 30 jours."
     />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Devtober 2026" />
+    <meta property="og:title" content="Chaos · jour 05" />
+    <meta
+      property="og:description"
+      content="Une carte de France des incendies, accidents, intempéries, mobilisations et violences rapportés par la presse, sur 1, 7 ou 30 jours."
+    />
+    <meta property="og:image" content="https://bebbou.github.io/devtober-2026/docs/og/chaos.jpg" />
+    <meta name="twitter:card" content="summary_large_image" />
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
+    <a class="skip" id="skipMap" href="#zin">aller à la carte</a>
     <header class="top">
       <a class="logo" href="#"><i></i>chaos</a>
       <div class="right">
@@ -26,10 +36,13 @@
 
     <main id="stage">
       <section class="side" aria-label="Filtres et liste">
-        <p class="mark">en france</p>
+        <p class="mark">en france <span class="fresh" id="fresh"></span></p>
         <div class="bigrow">
           <p class="big" aria-live="polite"><span id="total">0</span> <span id="unit"></span></p>
-          <button class="btn" id="replay" type="button" aria-label="Rejouer la période : les événements apparaissent dans l'ordre">▶ rejouer</button>
+          <div class="acts">
+            <button class="btn" id="replay" type="button" aria-label="Rejouer la période : les événements apparaissent dans l'ordre">▶ rejouer</button>
+            <button class="btn" id="tidy" type="button" aria-pressed="false" aria-label="Ranger : regrouper les pastilles proches en bulles">ranger</button>
+          </div>
         </div>
 
         <input class="q" id="q" type="search" placeholder="chercher : ville, département, mot" aria-label="Rechercher un lieu ou un mot" autocomplete="off" />
@@ -52,6 +65,7 @@
           <button id="depClear" type="button" aria-label="Retirer le filtre sur le département">×</button>
         </div>
 
+        <a class="skip" id="skipList" href="#zin">passer la liste</a>
         <ol class="list" id="list"></ol>
       </section>
 
@@ -65,6 +79,7 @@
         >
           <defs><clipPath id="cp"><circle r="13"></circle></clipPath></defs>
           <g id="deps"></g>
+          <g id="dc"></g>
           <g id="pts"></g>
           <g id="cl"></g>
         </svg>
@@ -77,6 +92,8 @@
           <button class="btn" id="zreset" type="button" aria-label="Voir toute la France">⌂</button>
         </div>
 
+        <p class="legend" id="legend">rose : moins de 3 h · pointillé : placé au département · chiffre : événements du département</p>
+
         <p class="empty" id="empty" hidden></p>
 
         <div class="paper" id="card" role="dialog" aria-labelledby="cPlace" hidden>
@@ -88,6 +105,11 @@
           <h2 id="cPlace"></h2>
           <p class="when" id="cWhen"></p>
           <ul id="cItems"></ul>
+          <p class="also" id="cAlso" hidden></p>
+          <div class="pile" id="cPileBox" hidden>
+            <p class="mark">sous ce point</p>
+            <ul id="cPile"></ul>
+          </div>
         </div>
       </section>
     </main>
@@ -114,16 +136,20 @@
       </p>
       <p>
         Un mot-clé range le titre dans une catégorie, et la commune citée dans le titre place le
-        point. Si le titre ne cite qu'un département, le point est au centre du département. Le tri
-        se trompe parfois.
+        point. Si le titre ne cite qu'un département, le point est au centre du département. Les
+        flux France 3 de chaque département situent un fait au département quand le titre ne cite pas de
+        commune. Le tri se trompe parfois.
       </p>
       <p>
         La teinte des départements compte les articles, pas les faits : un département très couvert
         paraît plus touché.
       </p>
       <p>
-        Les violences sexuelles et les suicides sont écartés. Les photos appartiennent aux journaux
-        et se chargent depuis leurs serveurs.
+        Les procès, les tribunes et les mises à jour sans fait sont écartés, ainsi que les violences
+        sexuelles et les suicides. Une même histoire reprise par plusieurs journaux forme un seul
+        événement, et « aussi dans » liste les autres départements. Les points en pointillé sont
+        placés au centre d'un département. Les violences et les accidents n'ont pas de photo. Les
+        autres photos appartiennent aux journaux et se chargent depuis leurs serveurs.
       </p>
       <p class="src">
         Titres : franceinfo, Le Monde, Le Figaro, Ouest-France, Midi Libre, La Dépêche,
