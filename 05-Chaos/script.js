@@ -41,6 +41,11 @@
   let active = new Set(Object.keys(CATS));
   let sel = null;
   let shown = [];
+  let shownAll = []; // sans le filtre département : la teinte de la carte s'appuie dessus
+  let q = "";
+  let depSel = "";
+  let loaded = false;
+  let hashEvent = "";
   const nodes = new Map(); // id -> { g, row, e }
   const vb = { x: 0, y: 0, w: F.w, h: F.h };
 
@@ -53,20 +58,57 @@
   } catch (e) {
     /* on s'en passe */
   }
+  // l'adresse prime sur la mémoire du navigateur : elle sert à partager une vue
+  const hash = new URLSearchParams(location.hash.slice(1));
+  if ([1, 7, 30].includes(+hash.get("p"))) days = +hash.get("p");
+  if (hash.has("off")) {
+    active = new Set(Object.keys(CATS));
+    hash.get("off").split(",").forEach((c) => active.delete(c));
+  }
+  q = hash.get("q") || "";
+  depSel = hash.get("d") || "";
+  hashEvent = hash.get("e") || "";
+
+  function syncHash() {
+    const p = new URLSearchParams();
+    p.set("p", days);
+    const off = Object.keys(CATS).filter((c) => !active.has(c));
+    if (off.length) p.set("off", off.join(","));
+    if (q) p.set("q", q);
+    if (depSel) p.set("d", depSel);
+    if (sel) p.set("e", sel);
+    try {
+      history.replaceState(null, "", "#" + p.toString());
+    } catch (e) {
+      /* aperçu sans adresse modifiable */
+    }
+  }
   const save = () => {
     try {
       localStorage.setItem(KEY, JSON.stringify({ days, off: Object.keys(CATS).filter((c) => !active.has(c)), shapes: document.body.classList.contains("shapes") }));
     } catch (e) {
       /* on s'en passe */
     }
+    syncHash();
   };
 
   /* ---------- Le fond de carte ---------- */
-  gDeps.innerHTML = F.deps.map((d) => `<path d="${d.d}"><title>${d.n}</title></path>`).join("");
   const key = (s) => String(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  gDeps.innerHTML = F.deps.map((d) => `<path d="${d.d}" data-k="${key(d.n)}"><title>${d.n}</title></path>`).join("");
+  const depBox = new Map(
+    F.deps.map((d) => {
+      const n = d.d.match(/-?\d+\.?\d*/g).map(Number);
+      let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+      for (let i = 0; i < n.length; i += 2) {
+        x0 = Math.min(x0, n[i]); x1 = Math.max(x1, n[i]);
+        y0 = Math.min(y0, n[i + 1]); y1 = Math.max(y1, n[i + 1]);
+      }
+      return [key(d.n), { x0, y0, x1, y1 }];
+    }),
+  );
   const depEls = new Map(F.deps.map((d, i) => [key(d.n), { el: gDeps.children[i], name: d.n }]));
 
-  const heat = (list = shown) => {
+  const heat = (list = shownAll) => {
     const count = (l) => {
       const m = new Map();
       l.forEach((e) => m.set(key(e.dep), (m.get(key(e.dep)) || 0) + 1));
@@ -74,7 +116,7 @@
     };
     const n = count(list);
     // la référence est toujours la période entière : pendant le rejeu, la teinte monte vers elle
-    const max = Math.max(1, ...count(shown).values());
+    const max = Math.max(1, ...count(shownAll).values());
     depEls.forEach((d, k) => {
       const c = n.get(k) || 0;
       // échelle en racine : quelques événements se voient déjà, le plus touché est franchement rose
@@ -104,7 +146,11 @@
           return c ? `<rect class="${live[i] ? "live" : "on"}" x="${(i * w + 0.5).toFixed(1)}" y="${(55 - h).toFixed(1)}" width="${Math.max(1, w - 1).toFixed(1)}" height="${h.toFixed(1)}"><title>${c} événement${c > 1 ? "s" : ""}</title></rect>` : "";
         })
         .join("");
-    $("#hFrom").textContent = days === 1 ? "il y a 24 h" : "il y a " + days + " j";
+    const oldest = events.length ? Math.min(...events.map((e) => e.ms)) : now;
+    $("#hFrom").textContent =
+      oldest > now - days * DAY + 3 * HOUR
+        ? "depuis le " + new Date(oldest).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })
+        : days === 1 ? "il y a 24 h" : "il y a " + days + " j";
     $("#hMax").textContent = "pic : " + max;
   };
 
@@ -185,6 +231,7 @@
       e.uy = p[1];
       e.ms = new Date(e.t).getTime();
       e.inside = e.ux > 0 && e.ux < F.w && e.uy > 0 && e.uy < F.h;
+      e.hay = key([e.place, e.dep, ...e.items.map((i) => i.title)].join(" "));
       const k = e.lat + "|" + e.lon;
       e.slot = slots.get(k) || 0;
       slots.set(k, e.slot + 1);
@@ -196,17 +243,25 @@
 
   const render = () => {
     const now = Date.now();
-    const inPeriod = events.filter((e) => e.inside && now - e.ms <= days * DAY);
+    const nq = key(q);
+    const inPeriod = events.filter((e) => e.inside && now - e.ms <= days * DAY && (!nq || e.hay.includes(nq)));
+    const depOk = (e) => !depSel || key(e.dep) === depSel;
     const counts = {};
-    inPeriod.forEach((e) => (counts[e.cat] = (counts[e.cat] || 0) + 1));
+    inPeriod.filter(depOk).forEach((e) => (counts[e.cat] = (counts[e.cat] || 0) + 1));
     document.querySelectorAll(".cat").forEach((b) => {
+      // une catégorie sans événement disparaît, sauf si elle est masquée : on doit pouvoir la rallumer
+      b.hidden = !counts[b.dataset.cat] && active.has(b.dataset.cat);
       b.setAttribute("aria-pressed", active.has(b.dataset.cat));
       b.querySelector(".n").textContent = counts[b.dataset.cat] || 0;
       b.style.setProperty("--p", Math.round(((counts[b.dataset.cat] || 0) / Math.max(1, ...Object.values(counts))) * 100) + "%");
     });
     document.querySelectorAll("#periods button").forEach((b) => b.setAttribute("aria-pressed", +b.dataset.days === days));
 
-    shown = inPeriod.filter((e) => active.has(e.cat)).sort((a, b) => b.ms - a.ms);
+    shownAll = inPeriod.filter((e) => active.has(e.cat)).sort((a, b) => b.ms - a.ms);
+    shown = shownAll.filter(depOk);
+    depEls.forEach((d, k) => d.el.classList.toggle("on", k === depSel));
+    $("#depbar").hidden = !depSel;
+    if (depSel && depEls.has(depSel)) $("#depName").textContent = depEls.get(depSel).name + " : " + shown.length;
     $("#total").textContent = shown.length;
     $("#unit").textContent = (shown.length === 1 ? "événement" : "événements") + " sur " + (days === 1 ? "24 h" : days + " jours");
 
@@ -235,7 +290,7 @@
     const byId = new Map(shown.map((e) => [e.id, e]));
     const rank = new Map(shown.map((e, i) => [e.id, i]));
     gPts.querySelectorAll(".pt").forEach((g) =>
-      nodes.set(g.dataset.id, { g, e: byId.get(g.dataset.id), n: +g.dataset.n, im: g.querySelector(".im"), rank: rank.get(g.dataset.id) }),
+      nodes.set(g.dataset.id, { g, e: byId.get(g.dataset.id), n: +g.dataset.n, im: g.querySelector(".im"), rank: rank.get(g.dataset.id), hide: false, inCl: false }),
     );
 
     list.innerHTML = shown
@@ -260,7 +315,11 @@
 
     const empty = $("#empty");
     empty.hidden = shown.length > 0;
-    if (!shown.length) empty.textContent = events.length ? "Rien dans cette période avec ces catégories." : "Les données ne sont pas encore publiées.";
+    if (!shown.length) {
+      empty.textContent = !loaded
+        ? "Chargement des événements…"
+        : events.length ? "Rien avec ces filtres." : "Les données ne sont pas encore publiées.";
+    }
 
     if (sel && !nodes.has(sel)) closeCard();
     else if (sel) mark(sel, true);
@@ -276,7 +335,7 @@
   const loadPhotos = () => {
     const zoomed = vb.w < 520;
     nodes.forEach((n) => {
-      if (n.loaded || !n.im || !n.e) return;
+      if (n.loaded || !n.im || !n.e || n.inCl) return;
       if (n.rank >= 40 && !zoomed) return;
       if (n.e.ux < vb.x - 30 || n.e.ux > vb.x + vb.w + 30 || n.e.uy < vb.y - 30 || n.e.uy > vb.y + vb.h + 30) return;
       n.loaded = true;
@@ -295,16 +354,63 @@
 
   // taille constante à l'écran : on convertit les pixels en unités de la carte
   const SPREAD = 15;
+  const CELL = 30; // en pixels : sous cette distance, deux pastilles se regroupent
+  const MAX_ZOOM_W = 150; // au zoom maximal on ne regroupe plus : on écarte en spirale
+  let groups = [];
+  const gCl = $("#cl");
+  const clEls = [];
+  const clAt = (i) => {
+    while (clEls.length <= i) {
+      gCl.insertAdjacentHTML("beforeend", '<g class="cl" aria-hidden="true"><circle class="pulse" r="18"/><circle class="disc" r="16"/><text class="num" y="5" text-anchor="middle"></text><title></title></g>');
+      clEls.push(gCl.lastElementChild);
+    }
+    return clEls[i];
+  };
+
   const place = () => {
     const u = 1 / scale();
+    const now = Date.now();
+    groups = [];
+    nodes.forEach((n) => { n.inCl = false; });
+    if (vb.w > MAX_ZOOM_W) {
+      const reach = CELL * u;
+      for (const e of shown) {
+        const n = nodes.get(e.id);
+        // l'événement ouvert et ceux du rejeu pas encore apparus ne comptent pas
+        if (!n || n.hide || e.id === sel) continue;
+        const g = groups.find((c) => Math.abs(c.ax - e.ux) < reach && Math.hypot(c.ax - e.ux, c.ay - e.uy) < reach);
+        if (g) g.m.push(e);
+        else groups.push({ ax: e.ux, ay: e.uy, m: [e] });
+      }
+      groups = groups.filter((g) => g.m.length > 1);
+      groups.forEach((g) => g.m.forEach((e) => { nodes.get(e.id).inCl = true; }));
+    }
+
     nodes.forEach((n) => {
+      n.g.classList.toggle("in", n.inCl);
       const e = n.e;
-      if (!e) return;
+      if (!e || n.inCl) return;
       // plusieurs faits dans la même commune : on les écarte en spirale
       const a = e.slot * 2.4, r = e.slot ? SPREAD * Math.sqrt(e.slot) : 0;
       const s = u * (1 + 0.2 * n.n);
       n.g.setAttribute("transform", `translate(${(e.ux + Math.cos(a) * r * u).toFixed(2)} ${(e.uy + Math.sin(a) * r * u).toFixed(2)}) scale(${s.toFixed(4)})`);
     });
+
+    groups.forEach((g, i) => {
+      const el = clAt(i), c = el.children, n = g.m.length;
+      const cx = g.m.reduce((s, e) => s + e.ux, 0) / n, cy = g.m.reduce((s, e) => s + e.uy, 0) / n;
+      const r = Math.min(36, 15 + 3.2 * Math.sqrt(n));
+      el.setAttribute("transform", `translate(${cx.toFixed(2)} ${cy.toFixed(2)}) scale(${u.toFixed(4)})`);
+      el.dataset.i = i;
+      el.dataset.live = g.m.some((e) => now - e.ms < 3 * HOUR) ? "1" : "0";
+      el.style.display = "";
+      c[0].setAttribute("r", r + 3);
+      c[1].setAttribute("r", r);
+      c[2].textContent = n;
+      c[3].textContent = n + " événements : cliquer pour zoomer";
+    });
+    for (let i = groups.length; i < clEls.length; i++) clEls[i].style.display = "none";
+
     loadPhotos();
     if (sel && !card.hidden) putCard();
   };
@@ -366,18 +472,43 @@
       flyTo(e.ux + Math.cos(a) * r * u, e.uy + Math.sin(a) * r * u, Math.min(vb.w, 380));
       if (matchMedia("(max-width: 820px)").matches) wrap.scrollIntoView({ block: "nearest", behavior: calm ? "auto" : "smooth" });
     }
-    putCard();
+    syncHash();
+    place();
   };
 
   function closeCard() {
+    const had = sel;
     if (sel) mark(sel, false);
     sel = null;
     card.hidden = true;
+    if (had) { syncHash(); place(); }
   }
+
+  // un clic sur une bulle : la carte s'approche de ce qu'elle contient
+  const expand = (i) => {
+    const g = groups[i];
+    if (!g) return;
+    const xs = g.m.map((e) => e.ux), ys = g.m.map((e) => e.uy);
+    const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+    const w = Math.min(vb.w * 0.55, Math.max(110, (x1 - x0) * 2.4, (y1 - y0) * 2.4 * (F.w / F.h)));
+    flyTo((x0 + x1) / 2, (y0 + y1) / 2, w);
+  };
+
+  // un clic sur un département : la liste et la carte ne gardent que lui. Un second clic le relâche.
+  const pickDep = (k) => {
+    stopReplay();
+    depSel = depSel === k ? "" : k;
+    render();
+    syncHash();
+    if (depSel) {
+      const b = depBox.get(k);
+      flyTo((b.x0 + b.x1) / 2, (b.y0 + b.y1) / 2, Math.max(b.x1 - b.x0, (b.y1 - b.y0) * (F.w / F.h)) * 1.35);
+    } else flyTo(F.w / 2, F.h / 2, F.w);
+  };
 
   /* ---------- Les gestes sur la carte ---------- */
   const ptrs = new Map();
-  let moved = false, downPt = null, pinch = 0;
+  let moved = false, downPt = null, downCl = -1, downDep = "", pinch = 0;
 
   svg.addEventListener("pointerdown", (e) => {
     svg.setPointerCapture(e.pointerId);
@@ -386,6 +517,10 @@
       moved = false;
       const t = e.target.closest(".pt");
       downPt = t ? t.dataset.id : null;
+      const c = e.target.closest(".cl");
+      downCl = c ? +c.dataset.i : -1;
+      const d = e.target.closest("#deps path");
+      downDep = d ? d.dataset.k : "";
     }
     if (ptrs.size === 2) {
       const [a, b] = [...ptrs.values()];
@@ -423,6 +558,8 @@
     pinch = 0;
     if (!ptrs.size && !moved && e.type === "pointerup") {
       if (downPt) openCard(downPt, false);
+      else if (downCl >= 0) expand(downCl);
+      else if (downDep) { closeCard(); pickDep(downDep); }
       else closeCard();
     }
   };
@@ -490,8 +627,44 @@
     zimg.setAttribute("aria-pressed", !on);
     save();
   });
+  const zfull = $("#zfull");
+  const setFull = (on) => {
+    document.body.classList.toggle("mapfull", on);
+    zfull.setAttribute("aria-pressed", on);
+    zfull.textContent = on ? "×" : "⤢";
+    zfull.setAttribute("aria-label", on ? "Quitter le plein écran" : "Carte en plein écran");
+    setTimeout(place, 60);
+  };
+  zfull.addEventListener("click", () => setFull(!document.body.classList.contains("mapfull")));
   addEventListener("keydown", (e) => {
-    if (e.key === "Escape") closeCard();
+    if (e.key !== "Escape") return;
+    if (!card.hidden) closeCard();
+    else if (document.body.classList.contains("mapfull")) setFull(false);
+  });
+
+  // la recherche, le département, la fenêtre « i » et le lien
+  const qi = $("#q");
+  qi.value = q;
+  qi.addEventListener("input", () => {
+    stopReplay();
+    q = qi.value.trim();
+    render();
+    syncHash();
+  });
+  $("#depClear").addEventListener("click", () => pickDep(depSel));
+  const about = $("#about");
+  $("#info").addEventListener("click", () => (about.showModal ? about.showModal() : about.setAttribute("open", "")));
+  $("#aClose").addEventListener("click", () => (about.close ? about.close() : about.removeAttribute("open")));
+  about.addEventListener("click", (e) => { if (e.target === about && about.close) about.close(); });
+  $("#share").addEventListener("click", async () => {
+    const b = $("#share");
+    try {
+      await navigator.clipboard.writeText(location.href);
+      b.textContent = "copié";
+    } catch (e) {
+      b.textContent = "dans la barre";
+    }
+    setTimeout(() => (b.textContent = "lien"), 1800);
   });
   const mid = () => {
     const r = box();
@@ -508,7 +681,7 @@
     if (!replaying) return;
     cancelAnimationFrame(replaying);
     replaying = 0;
-    nodes.forEach((n) => { n.g.style.visibility = ""; n.g.classList.remove("pop"); });
+    nodes.forEach((n) => { n.g.style.visibility = ""; n.g.classList.remove("pop"); n.hide = false; });
     $("#replay").setAttribute("aria-pressed", "false");
     $("#replay").textContent = "▶ rejouer";
     render();
@@ -521,8 +694,9 @@
     const from = seq[0].ms, span = Math.max(1, Date.now() - from);
     const dur = calm ? 1 : clamp(3500 + seq.length * 90, 5000, 16000);
     let shownN = 0;
-    nodes.forEach((n) => { n.g.style.visibility = "hidden"; });
+    nodes.forEach((n) => { n.g.style.visibility = "hidden"; n.hide = true; });
     heat([]);
+    place();
     $("#replay").setAttribute("aria-pressed", "true");
     $("#replay").textContent = "■ stop";
     const t0 = performance.now();
@@ -532,6 +706,7 @@
         const n = nodes.get(seq[shownN].id);
         if (n) {
           n.g.style.visibility = "";
+          n.hide = false;
           if (!calm) {
             n.g.classList.add("pop");
             setTimeout(() => n.g.classList.remove("pop"), 1300);
@@ -539,7 +714,7 @@
         }
         shownN++;
       }
-      if (shownN !== before) heat(seq.slice(0, shownN));
+      if (shownN !== before) { heat(seq.slice(0, shownN)); place(); }
       $("#total").textContent = shownN;
       $("#unit").textContent = new Date(virtual).toLocaleString("fr-FR", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
       if (p < 1) replaying = requestAnimationFrame(step);
@@ -586,6 +761,8 @@
       .filter((g) => g.status === "fulfilled" && g.value && Array.isArray(g.value.events))
       .map((g) => g.value)
       .sort((a, b) => new Date(b.generated) - new Date(a.generated))[0];
+    const first = !loaded;
+    loaded = true;
     if (best && new Date(best.generated).getTime() !== generated) {
       events = best.events;
       generated = new Date(best.generated).getTime();
@@ -593,7 +770,12 @@
       prepare();
       render();
       setView();
-    }
+      if (hashEvent) {
+        const id = hashEvent;
+        hashEvent = "";
+        if (nodes.has(id)) openCard(id, true);
+      }
+    } else if (first) render();
     stamp();
   };
 
@@ -606,7 +788,7 @@
   const TOUR = [
     { text: "Chaque pastille est un événement rapporté par la presse, avec la photo de l'article. La forme dans son coin donne le type : incendie, intempérie, accident, mobilisation, violence. Un contour rose date de moins de 3 h.", el: () => $("#cats") },
     { text: "Choisis la période : les dernières 24 h, 7 jours ou 30 jours.", el: () => $("#periods") },
-    { text: "Clique une ligne de la liste ou un point : la carte s'approche et le titre s'ouvre, avec un lien vers l'article.", el: () => $(".row") || $("#list") },
+    { text: "Clique une bulle pour zoomer, un département pour ne voir que lui, une ligne de la liste ou une pastille pour lire le titre et ouvrir l'article.", el: () => $(".row") || $("#list") },
   ];
   const tourShow = () => {
     tour.hidden = tourStep < 0;

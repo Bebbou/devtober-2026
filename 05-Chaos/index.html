@@ -18,6 +18,8 @@
       <a class="logo" href="#"><i></i>chaos</a>
       <div class="right">
         <span class="stamp" id="stamp"></span>
+        <button class="btn" id="share" type="button" aria-label="Copier le lien de cette vue">lien</button>
+        <button class="btn" id="info" type="button" aria-label="À propos : sources et limites">i</button>
         <button class="btn" id="help" type="button" aria-label="revoir la visite guidée">?</button>
       </div>
     </header>
@@ -29,6 +31,8 @@
           <p class="big" aria-live="polite"><span id="total">0</span> <span id="unit"></span></p>
           <button class="btn" id="replay" type="button" aria-label="Rejouer la période : les événements apparaissent dans l'ordre">▶ rejouer</button>
         </div>
+
+        <input class="q" id="q" type="search" placeholder="chercher : ville, département, mot" aria-label="Rechercher un lieu ou un mot" autocomplete="off" />
 
         <div class="seg" id="periods" role="group" aria-label="Période">
           <button type="button" data-days="1">1 j</button>
@@ -43,14 +47,12 @@
           <p class="axis"><span id="hFrom"></span><span id="hMax"></span><span>maintenant</span></p>
         </div>
 
-        <ol class="list" id="list"></ol>
+        <div class="depbar" id="depbar" hidden>
+          <span id="depName"></span>
+          <button id="depClear" type="button" aria-label="Retirer le filtre sur le département">×</button>
+        </div>
 
-        <p class="note">
-          Chaque point est placé sur la commune citée dans le titre, pas sur le lieu exact. Le tri
-          se fait par mots-clés et se trompe parfois. Les violences sexuelles et les suicides ne
-          figurent pas sur la carte. Les images appartiennent aux journaux : elles restent chez eux
-          et se chargent depuis leurs serveurs.
-        </p>
+        <ol class="list" id="list"></ol>
       </section>
 
       <section class="mapwrap" aria-label="Carte">
@@ -64,9 +66,11 @@
           <defs><clipPath id="cp"><circle r="13"></circle></clipPath></defs>
           <g id="deps"></g>
           <g id="pts"></g>
+          <g id="cl"></g>
         </svg>
 
         <div class="zoom">
+          <button class="btn only-small" id="zfull" type="button" aria-pressed="false" aria-label="Carte en plein écran">⤢</button>
           <button class="btn" id="zimg" type="button" aria-pressed="true" aria-label="Afficher les photos" title="Photos ou formes">▣</button>
           <button class="btn" id="zin" type="button" aria-label="Zoomer">+</button>
           <button class="btn" id="zout" type="button" aria-label="Dézoomer">−</button>
@@ -91,9 +95,8 @@
     <footer class="foot">
       <p>
         <span class="mark">crédits</span> Conçu par
-        <a href="https://github.com/Bebbou">Lino Volle</a>. Titres : flux RSS de franceinfo, Le
-        Monde, Le Figaro, Ouest-France, Midi Libre, La Dépêche, ICI et France 3 régions. Feux :
-        NASA FIRMS. Communes : geo.api.gouv.fr. Contours : france-geojson (IGN, Licence Ouverte).
+        <a href="https://github.com/Bebbou">Lino Volle</a>. Sources, limites et contours : bouton « i »
+        en haut de la page.
       </p>
       <nav aria-label="Liens">
         <a href="../docs/05-chaos.html">doc</a>
@@ -101,6 +104,35 @@
         <a href="https://github.com/Bebbou">github</a>
       </nav>
     </footer>
+
+    <dialog class="about" id="about" aria-labelledby="aTitle">
+      <button class="x" id="aClose" type="button" aria-label="Fermer">×</button>
+      <p class="mark" id="aTitle">à propos</p>
+      <p>
+        Chaque point est un fait rapporté par la presse : incendie, intempérie, accident,
+        mobilisation, violence ou panne. Les titres viennent de flux RSS, relus toutes les heures.
+      </p>
+      <p>
+        Un mot-clé range le titre dans une catégorie, et la commune citée dans le titre place le
+        point. Si le titre ne cite qu'un département, le point est au centre du département. Le tri
+        se trompe parfois.
+      </p>
+      <p>
+        La teinte des départements compte les articles, pas les faits : un département très couvert
+        paraît plus touché.
+      </p>
+      <p>
+        Les violences sexuelles et les suicides sont écartés. Les photos appartiennent aux journaux
+        et se chargent depuis leurs serveurs.
+      </p>
+      <p class="src">
+        Titres : franceinfo, Le Monde, Le Figaro, Ouest-France, Midi Libre, La Dépêche,
+        L'Indépendant, Nice-Matin, Sud Ouest, Le Progrès, Le Dauphiné libéré, L'Est républicain,
+        DNA, Le Républicain lorrain, BFM, Libération, L'Express, Europe 1, ICI et France 3 régions.
+        Feux : NASA FIRMS. Communes : geo.api.gouv.fr. Contours : france-geojson (IGN, Licence
+        Ouverte).
+      </p>
+    </dialog>
 
     <!-- La visite guidée -->
     <svg class="tourfx" id="tourfx" aria-hidden="true" hidden><rect id="tRing" rx="6" fill="none"></rect><path id="tArrow"></path></svg>

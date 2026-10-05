@@ -8,7 +8,8 @@
   --surface: #111111;
   --text: #e0e0e0;
   --muted: #8c8c8c;
-  --dim: #5a5a5a;
+  --dim: #7a7a7a;
+  --faint: #5a5a5a;
   --line: #1f1f1f;
   --line-strong: #333333;
   --pink: #ff0055;
@@ -170,6 +171,51 @@ main {
   color: var(--muted);
 }
 
+.q {
+  width: 100%;
+  margin: 0 0 12px;
+  padding: 7px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+}
+
+.q::placeholder {
+  color: var(--dim);
+}
+
+.q:focus {
+  border-color: var(--pink);
+}
+
+.depbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 0 0 10px;
+  padding: 4px 6px 4px 10px;
+  border: 1px solid var(--pink);
+  color: var(--pink);
+  font-size: 13px;
+}
+
+.depbar[hidden],
+.cat[hidden] {
+  display: none;
+}
+
+.depbar button {
+  padding: 0 6px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font-size: 20px;
+  line-height: 1;
+}
+
 .seg {
   display: flex;
   margin-bottom: 14px;
@@ -252,7 +298,7 @@ main {
 }
 
 #hist rect {
-  fill: var(--dim);
+  fill: var(--faint);
 }
 
 #hist rect.on {
@@ -390,11 +436,61 @@ main {
 }
 
 #deps path {
+  cursor: pointer;
   fill: var(--surface);
   stroke: var(--line-strong);
   stroke-width: 1;
   vector-effect: non-scaling-stroke;
   stroke-linejoin: round;
+}
+
+#deps path:hover {
+  stroke: var(--muted);
+}
+
+#deps path.on {
+  stroke: var(--pink);
+  stroke-width: 2;
+}
+
+/* plusieurs pastilles proches : une bulle avec leur nombre */
+.pt.in {
+  display: none;
+}
+
+.cl {
+  cursor: pointer;
+  color: var(--text);
+}
+
+.cl[data-live="1"] {
+  color: var(--pink);
+}
+
+.cl .disc {
+  fill: rgba(13, 13, 13, 0.92);
+  stroke: currentColor;
+  stroke-width: 2;
+}
+
+.cl .num {
+  fill: currentColor;
+  font: 700 14px var(--font);
+  pointer-events: none;
+}
+
+.cl .pulse {
+  display: none;
+}
+
+.cl[data-live="1"] .pulse {
+  display: inline;
+  fill: none;
+  stroke: var(--pink);
+  stroke-width: 1;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: pulse 2.4s ease-out infinite;
 }
 
 .pt {
@@ -545,7 +641,7 @@ body.shapes .pt .photo {
 }
 
 .pt[data-age="3"] {
-  color: var(--dim);
+  color: var(--faint);
 }
 
 .pt .g {
@@ -627,6 +723,70 @@ body.shapes .pt .photo {
   background: var(--bg);
   font-size: 18px;
   line-height: 1;
+}
+
+.only-small {
+  display: none;
+}
+
+.about {
+  position: fixed;
+  width: min(560px, calc(100% - 32px));
+  max-height: calc(100% - 32px);
+  padding: 22px 26px 12px;
+  border: 1px solid var(--pink);
+  border-left-width: 5px;
+  background: #16080d;
+  color: #fff;
+  font: inherit;
+  line-height: 1.6;
+  overflow-y: auto;
+}
+
+.about::backdrop {
+  background: rgba(13, 13, 13, 0.85);
+}
+
+.about p {
+  margin: 0 0 12px;
+}
+
+.about .mark {
+  margin-bottom: 14px;
+}
+
+.about .src {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.about .x {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  background: none;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--muted);
+}
+
+.about .x:hover {
+  color: var(--pink);
+}
+
+body.mapfull {
+  overflow: hidden;
+}
+
+body.mapfull .mapwrap {
+  position: fixed;
+  inset: 0;
+  z-index: 25;
+  height: auto;
+  border: 0;
 }
 
 .empty {
@@ -881,6 +1041,18 @@ body.shapes .pt .photo {
     flex-direction: column;
     height: auto;
     min-height: 0;
+  }
+
+  .only-small {
+    display: block;
+  }
+
+  #map {
+    touch-action: pan-y;
+  }
+
+  body.mapfull #map {
+    touch-action: none;
   }
 
   .mapwrap {
