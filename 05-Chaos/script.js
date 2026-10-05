@@ -78,13 +78,14 @@
   };
   const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 
+  let queued = 0;
   const setView = () => {
     vb.w = clamp(vb.w, 90, F.w);
     vb.h = (vb.w * F.h) / F.w;
     vb.x = clamp(vb.x, -60, F.w - vb.w + 60);
     vb.y = clamp(vb.y, -60, F.h - vb.h + 60);
     svg.setAttribute("viewBox", [vb.x, vb.y, vb.w, vb.h].map((n) => +n.toFixed(2)).join(" "));
-    place();
+    if (!queued) queued = requestAnimationFrame(() => { queued = 0; place(); });
   };
 
   const zoomAt = (cx, cy, k) => {
@@ -175,7 +176,8 @@
         );
       })
       .join("");
-    gPts.querySelectorAll(".pt").forEach((g) => nodes.set(g.dataset.id, { g }));
+    const byId = new Map(shown.map((e) => [e.id, e]));
+    gPts.querySelectorAll(".pt").forEach((g) => nodes.set(g.dataset.id, { g, e: byId.get(g.dataset.id), n: +g.dataset.n }));
 
     list.innerHTML = shown
       .slice(0, LIST_MAX)
@@ -211,13 +213,12 @@
   // taille constante à l'écran : on convertit les pixels en unités de la carte
   const place = () => {
     const u = 1 / scale();
-    const byId = new Map(shown.map((e) => [e.id, e]));
-    nodes.forEach((n, id) => {
-      const e = byId.get(id);
+    nodes.forEach((n) => {
+      const e = n.e;
       if (!e) return;
       // plusieurs faits dans la même commune : on les écarte en spirale
       const a = e.slot * 2.4, r = e.slot ? 9 * Math.sqrt(e.slot) : 0;
-      const s = u * (1 + 0.1 * +n.g.dataset.n);
+      const s = u * (1 + 0.1 * n.n);
       n.g.setAttribute("transform", `translate(${(e.ux + Math.cos(a) * r * u).toFixed(2)} ${(e.uy + Math.sin(a) * r * u).toFixed(2)}) scale(${s.toFixed(4)})`);
     });
     if (sel && !card.hidden) putCard();
@@ -234,7 +235,7 @@
   };
 
   /* ---------- Le papier ---------- */
-  const find = (id) => events.find((e) => e.id === id);
+  const find = (id) => (nodes.get(id) || {}).e;
 
   const putCard = () => {
     const e = find(sel);
@@ -422,14 +423,14 @@
       .filter((g) => g.status === "fulfilled" && g.value && Array.isArray(g.value.events))
       .map((g) => g.value)
       .sort((a, b) => new Date(b.generated) - new Date(a.generated))[0];
-    if (best) {
+    if (best && new Date(best.generated).getTime() !== generated) {
       events = best.events;
       generated = new Date(best.generated).getTime();
+      prepare();
+      render();
+      setView();
     }
-    prepare();
     stamp();
-    render();
-    setView();
   };
 
   /* ---------- La visite guidée ----------
@@ -497,8 +498,10 @@
   setView();
   load();
   if (!seenTour) { tourStep = 0; tourShow(); }
+  // les couleurs d'âge se rafraîchissent toutes les 5 min, les données toutes les 15 min
   setInterval(() => {
     stamp();
     render();
   }, 5 * 60 * 1000);
+  setInterval(load, 15 * 60 * 1000);
 })();

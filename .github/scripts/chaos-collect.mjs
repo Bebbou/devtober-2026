@@ -157,15 +157,23 @@ async function commune(nom) {
   return res;
 }
 
-async function locate(item) {
-  for (const text of [item.title, item.desc]) {
-    for (const c of candidates(text)) {
-      const r = await commune(c);
-      if (r) return r;
-    }
+// Les communes sont cherchées par lots, avant le tri : une requête par nom, pas une par titre
+async function resolveAll(names, size = 8) {
+  const queue = [...names];
+  await Promise.all(
+    Array.from({ length: size }, async () => {
+      while (queue.length) await commune(queue.shift());
+    }),
+  );
+}
+
+const locate = (item) => {
+  for (const c of item.cands) {
+    const r = communeCache.get(norm(c));
+    if (r) return r;
   }
   return null;
-}
+};
 
 const hash = (s) => createHash("sha1").update(s).digest("hex").slice(0, 10);
 const round = (n) => Math.round(n * 1e4) / 1e4;
@@ -223,12 +231,20 @@ async function main() {
   stats.lus = items.length;
 
   const known = new Set(events.flatMap((e) => e.items.map((i) => i.link)));
+  const todo = [];
   for (const it of items) {
     if (known.has(it.link)) continue;
-    const cat = category(it.title);
-    if (!cat) continue;
+    it.cat = category(it.title);
+    if (!it.cat) continue;
+    it.cands = [...candidates(it.title), ...candidates(it.desc)];
+    todo.push(it);
+  }
+  await resolveAll(new Set(todo.flatMap((it) => it.cands)));
+
+  for (const it of todo) {
+    const cat = it.cat;
     stats.tries++;
-    const lieu = await locate(it);
+    const lieu = locate(it);
     if (!lieu) { stats.sansLieu++; continue; }
     stats.places++;
     // un même fait repris par plusieurs titres : même catégorie, même commune, même jour
