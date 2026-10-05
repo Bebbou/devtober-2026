@@ -536,6 +536,45 @@ main {
   display: none;
 }
 
+/* l'écran de chargement : il couvre la carte jusqu'aux premières photos */
+.loading {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 12px;
+  background: var(--bg);
+  transition: opacity 0.35s, visibility 0s 0.35s;
+}
+
+.loading.off {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.loading .bar {
+  width: 200px;
+  height: 1px;
+  background: var(--line-strong);
+}
+
+.loading .bar i {
+  display: block;
+  width: 0;
+  height: 1px;
+  background: var(--pink);
+  transition: width 0.3s;
+}
+
+.loading .sub {
+  margin: 0;
+  font-size: 12px;
+  color: var(--dim);
+}
+
 .skip {
   position: absolute;
   left: -9999px;

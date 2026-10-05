@@ -305,7 +305,7 @@
     depEls.forEach((d, k) => d.el.classList.toggle("on", k === depSel));
     $("#depbar").hidden = !depSel;
     if (depSel && depEls.has(depSel)) $("#depName").textContent = depEls.get(depSel).name + " : " + shown.length;
-    $("#total").textContent = shown.length;
+    $("#total").textContent = loaded ? shown.length : "…";
     $("#unit").textContent = (shown.length === 1 ? "événement" : "événements") + " sur " + (days === 1 ? "24 h" : days + " jours") + (shown.length > MAX_PTS ? " (" + MAX_PTS + " sur la carte)" : "");
 
     nodes.clear();
@@ -339,6 +339,7 @@
     clearTimeout(growT);
     loadLimit = 80;
     growT = setTimeout(growPhotos, 800);
+    bootCheck();
   };
 
   let listN = 30, lastSig = "";
@@ -408,10 +409,12 @@
         n.state = 3;
       }
       queueDraw();
+      bootCheck();
     };
     im.onerror = () => {
       bad.add(url);
       n.state = 3;
+      bootCheck();
     };
     im.src = url;
   };
@@ -431,6 +434,33 @@
     loadLimit += 40;
     loadPhotos();
     growT = setTimeout(growPhotos, 800);
+  };
+
+  // L'écran de chargement s'efface quand les 80 premières photos sont prêtes, au plus tard après 6 s.
+  // La visite guidée attend qu'il soit parti.
+  let bootDone = false, tourPending = false;
+  const finishBoot = () => {
+    if (bootDone) return;
+    bootDone = true;
+    $("#loading").classList.add("off");
+    if (tourPending) {
+      tourPending = false;
+      tourStep = 0;
+      tourShow();
+    }
+  };
+  const bootCheck = () => {
+    if (bootDone) return;
+    if (!loaded) {
+      $("#bar").style.width = "12%";
+      return;
+    }
+    $("#loadSub").textContent = "photos";
+    const want = order.filter((n) => n.rank < 80 && n.e.pic && !n.inCl);
+    if (document.body.classList.contains("shapes") || !want.length) return finishBoot();
+    const ready = want.filter((n) => n.state >= 2).length;
+    if (ready >= want.length) return finishBoot();
+    $("#bar").style.width = Math.round(12 + (88 * ready) / want.length) + "%";
   };
 
   const SPREAD = 12;
@@ -1140,7 +1170,8 @@
   render();
   setView();
   load();
-  if (!seenTour) { tourStep = 0; tourShow(); }
+  tourPending = !seenTour;
+  setTimeout(finishBoot, 6000);
   // les couleurs d'âge se rafraîchissent toutes les 5 min, les données toutes les 15 min
   setInterval(() => {
     stamp();
