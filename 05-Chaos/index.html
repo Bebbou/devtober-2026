@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#0d0d0d" />
+    <meta name="referrer" content="no-referrer" />
+    <title>Chaos · jour 05</title>
+    <meta
+      name="description"
+      content="Une carte de France des incendies, accidents, intempéries, mobilisations et violences rapportés par la presse, sur 1, 7 ou 30 jours."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Devtober 2026" />
+    <meta property="og:title" content="Chaos · jour 05" />
+    <meta
+      property="og:description"
+      content="Une carte de France des incendies, accidents, intempéries, mobilisations et violences rapportés par la presse, sur 1, 7 ou 30 jours."
+    />
+    <meta property="og:image" content="https://bebbou.github.io/devtober-2026/docs/og/chaos.jpg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <a class="skip" id="skipMap" href="#zin">aller à la carte</a>
+    <header class="top">
+      <a class="logo" href="#"><i></i>chaos</a>
+      <div class="right">
+        <span class="stamp" id="stamp"></span>
+        <button class="btn" id="share" type="button" aria-label="Copier le lien de cette vue">lien</button>
+        <button class="btn" id="info" type="button" aria-label="À propos : sources et limites">i</button>
+        <button class="btn" id="help" type="button" aria-label="revoir la visite guidée">?</button>
+      </div>
+    </header>
+
+    <main id="stage">
+      <section class="side" aria-label="Filtres et liste">
+        <p class="mark">en france <span class="fresh" id="fresh"></span></p>
+        <div class="bigrow">
+          <p class="big" aria-live="polite"><span id="total">0</span> <span id="unit"></span></p>
+          <div class="acts">
+            <button class="btn" id="replay" type="button" aria-label="Rejouer la période : les événements apparaissent dans l'ordre">▶ rejouer</button>
+            <button class="btn" id="tidy" type="button" aria-pressed="false" aria-label="Ranger : regrouper les pastilles proches en bulles">ranger</button>
+          </div>
+        </div>
+
+        <input class="q" id="q" type="search" placeholder="chercher : ville, département, mot" aria-label="Rechercher un lieu ou un mot" autocomplete="off" />
+
+        <div class="seg" id="periods" role="group" aria-label="Période">
+          <button type="button" data-days="1">1 j</button>
+          <button type="button" data-days="7">7 j</button>
+          <button type="button" data-days="30">30 j</button>
+        </div>
+
+        <div class="cats" id="cats" role="group" aria-label="Catégories"></div>
+
+        <div class="hist" id="histbox">
+          <svg id="hist" viewBox="0 0 300 56" preserveAspectRatio="none" role="img" aria-label="Nombre d'événements dans le temps"></svg>
+          <p class="axis"><span id="hFrom"></span><span id="hMax"></span><span>maintenant</span></p>
+        </div>
+
+        <div class="depbar" id="depbar" hidden>
+          <span id="depName"></span>
+          <button id="depClear" type="button" aria-label="Retirer le filtre sur le département">×</button>
+        </div>
+
+        <a class="skip" id="skipList" href="#zin">passer la liste</a>
+        <ol class="list" id="list"></ol>
+      </section>
+
+      <section class="mapwrap" aria-label="Carte">
+        <svg
+          id="map"
+          viewBox="0 0 1000 966"
+          preserveAspectRatio="xMidYMid meet"
+          role="img"
+          aria-label="Carte de la France métropolitaine avec un point par événement rapporté par la presse. La liste à côté donne les mêmes événements, utilisable au clavier."
+        >
+          <g id="deps"></g>
+          <g id="dc"></g>
+        </svg>
+        <canvas id="cv" aria-hidden="true"></canvas>
+
+        <div class="zoom">
+          <button class="btn only-small" id="zfull" type="button" aria-pressed="false" aria-label="Carte en plein écran">⤢</button>
+          <button class="btn" id="zimg" type="button" aria-pressed="true" aria-label="Afficher les photos" title="Photos ou formes">▣</button>
+          <button class="btn" id="zin" type="button" aria-label="Zoomer">+</button>
+          <button class="btn" id="zout" type="button" aria-label="Dézoomer">−</button>
+          <button class="btn" id="zreset" type="button" aria-label="Voir toute la France">⌂</button>
+        </div>
+
+        <p class="legend" id="legend">rose : moins de 3 h · pointillé : placé au département · chiffre : événements du département</p>
+
+        <p class="empty" id="empty" hidden></p>
+
+        <div class="paper" id="card" role="dialog" aria-labelledby="cPlace" hidden>
+          <a class="shot" id="cShot" target="_blank" rel="noopener" hidden>
+            <img id="cImg" alt="" referrerpolicy="no-referrer" />
+          </a>
+          <button class="x" id="cClose" type="button" aria-label="Fermer">×</button>
+          <p class="mark" id="cCat"></p>
+          <h2 id="cPlace"></h2>
+          <p class="when" id="cWhen"></p>
+          <ul id="cItems"></ul>
+          <p class="also" id="cAlso" hidden></p>
+          <div class="pile" id="cPileBox" hidden>
+            <p class="mark">sous ce point</p>
+            <ul id="cPile"></ul>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="foot">
+      <p>
+        <span class="mark">crédits</span> Conçu par
+        <a href="https://github.com/Bebbou">Lino Volle</a>. Sources, limites et contours : bouton « i »
+        en haut de la page.
+      </p>
+      <nav aria-label="Liens">
+        <a href="../docs/05-chaos.html">doc</a>
+        <a href="https://github.com/Bebbou/devtober-2026/tree/main/05-Chaos">code</a>
+        <a href="https://github.com/Bebbou">github</a>
+      </nav>
+    </footer>
+
+    <dialog class="about" id="about" aria-labelledby="aTitle">
+      <button class="x" id="aClose" type="button" aria-label="Fermer">×</button>
+      <p class="mark" id="aTitle">à propos</p>
+      <p>
+        Chaque point est un fait rapporté par la presse : incendie, intempérie, accident,
+        mobilisation, violence ou panne. Les titres viennent de flux RSS, relus toutes les heures.
+      </p>
+      <p>
+        Un mot-clé range le titre dans une catégorie, et la commune citée dans le titre place le
+        point. Si le titre ne cite qu'un département, le point est au centre du département. Les
+        flux France 3 de chaque département situent un fait au département quand le titre ne cite pas de
+        commune. Le tri se trompe parfois.
+      </p>
+      <p>
+        La teinte des départements compte les articles, pas les faits : un département très couvert
+        paraît plus touché.
+      </p>
+      <p>
+        Les procès, les tribunes et les mises à jour sans fait sont écartés, ainsi que les violences
+        sexuelles et les suicides. Une même histoire reprise par plusieurs journaux forme un seul
+        événement, et « aussi dans » liste les autres départements. Les points en pointillé sont
+        placés au centre d'un département. Les photos appartiennent aux journaux et se chargent
+        depuis leurs serveurs.
+      </p>
+      <p class="src">
+        Titres : franceinfo, Le Monde, Le Figaro, Ouest-France, Midi Libre, La Dépêche,
+        L'Indépendant, Nice-Matin, Sud Ouest, Le Progrès, Le Dauphiné libéré, L'Est républicain,
+        DNA, Le Républicain lorrain, BFM, Libération, L'Express, Europe 1, ICI et France 3 régions.
+        Feux : NASA FIRMS. Communes : geo.api.gouv.fr. Contours : france-geojson (IGN, Licence
+        Ouverte).
+      </p>
+    </dialog>
+
+    <!-- La visite guidée -->
+    <svg class="tourfx" id="tourfx" aria-hidden="true" hidden><rect id="tRing" rx="6" fill="none"></rect><path id="tArrow"></path></svg>
+    <div class="tour" id="tour" hidden>
+      <p class="mark" id="tStep"></p>
+      <p id="tText"></p>
+      <div class="row2">
+        <button class="tnext" id="tNext" type="button">suivant</button>
+        <button class="tskip" id="tSkip" type="button">passer</button>
+      </div>
+    </div>
+
+    <script src="france.js"></script>
+    <script src="script.js"></script>
+  </body>
+</html>

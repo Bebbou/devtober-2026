@@ -10,6 +10,7 @@ Un projet par jour pendant le **Devtober 2026**
 | 02 | Loop | [`02-Loop`](02-Loop)
 | 03 | Bloom | [`03-Bloom`](03-Bloom)
 | 04 | Drift | [`04-Drift`](04-Drift)
+| 05 | Chaos | [`05-Chaos`](05-Chaos)
 
 ## Documentation
 

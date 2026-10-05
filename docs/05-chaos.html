@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0d0d0d">
+<title>Chaos · Jour 05 · Devtober 2026</title>
+<meta name="description" content="Jour 05 du Devtober 2026 : Chaos, une carte de France des incendies, accidents, intempéries, mobilisations, violences et pannes rapportés par la presse.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Devtober 2026">
+<meta property="og:title" content="Chaos · Jour 05 · Devtober 2026">
+<meta property="og:description" content="Jour 05 du Devtober 2026 : Chaos, une carte de France des incendies, accidents, intempéries, mobilisations, violences et pannes rapportés par la presse.">
+<meta property="og:image" content="https://bebbou.github.io/devtober-2026/docs/og/chaos.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="top">
+  <a class="logo" href="index.html"><i></i>devtober 2026</a>
+</header>
+
+<div class="shell">
+  <aside class="side">
+    <nav id="docNav">
+      <p class="mark">documents</p>
+      <a href="index.html">accueil</a>
+    </nav>
+    <nav id="secNav">
+      <p class="mark">sur cette page</p>
+    </nav>
+  </aside>
+
+  <main>
+    <header>
+      <h1>Chaos</h1>
+      <p class="lead">Jour 05. Une carte de France où chaque pastille est un fait rapporté par la presse : incendie, intempérie, accident, mobilisation, violence ou panne. On choisit 1, 7 ou 30 jours, on zoome, on lit l'article.</p>
+      <p class="links">
+        <a href="../05-Chaos/">ouvrir le projet</a>
+        <a href="https://github.com/Bebbou/devtober-2026/tree/main/05-Chaos">code source</a>
+      </p>
+    </header>
+
+    <section id="apercu" data-name="aperçu">
+      <h2>aperçu</h2>
+      <p>Le thème est « Chaos ». Plutôt que d'inventer du désordre, j'ai voulu montrer celui que les journaux racontent aujourd'hui. La carte est volontairement chargée : les pastilles se recouvrent, les départements rosissent là où il y a le plus d'articles. Un bouton « ranger » regroupe tout en bulles quand on veut lire.</p>
+      <div class="frame">
+        <iframe src="../05-Chaos/index.html" title="Chaos, en direct" loading="lazy"></iframe>
+      </div>
+      <p class="cap">Version en direct. <a href="../05-Chaos/">L'ouvrir en plein écran</a></p>
+    </section>
+
+    <section id="commandes" data-name="commandes">
+      <h2>commandes</h2>
+      <div class="tblwrap">
+        <table class="tbl">
+          <thead><tr><th>geste</th><th>effet</th></tr></thead>
+          <tbody>
+            <tr><td>survoler une pastille ou une ligne</td><td>Écrit dans la ligne du bas de la carte : lieu, catégorie, âge et titre.</td></tr>
+            <tr><td>cliquer une pastille ou une ligne</td><td>La carte s'approche et le papier s'ouvre : photo, titres avec lien vers l'article, autres départements concernés, et les événements posés au même endroit.</td></tr>
+            <tr><td>cliquer une bulle</td><td>Zoome sur ce qu'elle contient.</td></tr>
+            <tr><td>cliquer un département</td><td>Ne garde que lui, dans la liste et sur la carte. Un second clic le relâche.</td></tr>
+            <tr><td>glisser, molette, pincer</td><td>Déplace et zoome la carte (de la vue d'ensemble jusqu'à environ 11 fois).</td></tr>
+            <tr><td>1 j, 7 j, 30 j</td><td>Choisit la période. 30 jours par défaut.</td></tr>
+            <tr><td>filtres de catégorie</td><td>Masquent ou rallument une catégorie. La part de chacune se lit dans le fond du bouton.</td></tr>
+            <tr><td>≈ au département</td><td>Masque les points placés au centre d'un département, quand le titre ne cite pas de commune.</td></tr>
+            <tr><td>chercher</td><td>Filtre sur la commune, le département et les mots des titres.</td></tr>
+            <tr><td>ranger, désordre</td><td>Regroupe les pastilles proches en bulles, ou les remet en tas. Rangé par défaut sur téléphone.</td></tr>
+            <tr><td>▶ rejouer</td><td>Les événements de la période reviennent dans l'ordre, au rythme où ils sont arrivés.</td></tr>
+            <tr><td>▣</td><td>Photos ou formes seules.</td></tr>
+            <tr><td>⌂, +, −</td><td>Vue d'ensemble, zoom avant, zoom arrière.</td></tr>
+            <tr><td>⤢</td><td>Carte en plein écran (téléphone). Échap ou × pour en sortir.</td></tr>
+            <tr><td>lien</td><td>Copie l'adresse : elle contient la période, les filtres, la recherche, le département et l'événement ouvert.</td></tr>
+            <tr><td>i, ?</td><td>Sources et limites, et la visite guidée.</td></tr>
+            <tr><td>Échap</td><td>Ferme le papier ouvert.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="donnees" data-name="les données">
+      <h2>d'où viennent les données</h2>
+      <p>Aucune API de presse n'est utilisée : seulement les flux RSS que les journaux publient eux-mêmes. Un script Node (<code>.github/scripts/chaos-collect.mjs</code>, sans dépendance) en lit 129, par groupes de 12 :</p>
+      <ul class="bul">
+        <li>20 flux nationaux et régionaux : franceinfo (deux flux), Le Monde, Le Figaro, Ouest-France, Midi Libre, La Dépêche, ICI, BFM, Libération, L'Express, Europe 1, Sud Ouest, L'Indépendant, Nice-Matin, Le Progrès, Le Dauphiné libéré, L'Est républicain, DNA et Le Républicain lorrain ;</li>
+        <li>13 flux de France 3 régions ;</li>
+        <li>96 flux de France 3 par département, qui remontent jusqu'à un mois en arrière.</li>
+      </ul>
+      <p>De chaque titre, le script garde le titre, le lien, la date de publication et l'adresse de l'image quand le flux en donne une. Il ne copie jamais l'image : la page la charge depuis le serveur du journal. Un lancement du 5 octobre a lu 3 847 titres, en a classé 997, placé 817, et laissé 488 événements après regroupement, en 40 à 80 secondes.</p>
+    </section>
+
+    <section id="classement" data-name="classement et lieu">
+      <h2>classement et lieu</h2>
+      <p>Un fait entre dans une catégorie quand son titre contient certains mots (comparés sans accents ni majuscules). La première catégorie qui correspond l'emporte.</p>
+      <div class="tblwrap">
+        <table class="tbl">
+          <thead><tr><th>catégorie</th><th>forme</th><th>exemples de mots</th></tr></thead>
+          <tbody>
+            <tr><td>incendies</td><td>triangle plein</td><td>incendie, feu de, flammes, départ de feu</td></tr>
+            <tr><td>intempéries</td><td>losange plein</td><td>vigilance orange, inondation, crue, tempête, orages, séisme, canicule, verglas, rafales</td></tr>
+            <tr><td>pannes</td><td>hexagone</td><td>panne, coupure d'électricité, cyberattaque, pénurie, évacuation, effondrement</td></tr>
+            <tr><td>accidents</td><td>carré plein</td><td>accident, collision, déraillement, naufrage, choc frontal, noyade, explosion de gaz</td></tr>
+            <tr><td>mobilisations</td><td>cercle</td><td>manifestation, blocus, blocage, grève, émeute, heurts, affrontements, lacrymogène</td></tr>
+            <tr><td>violences</td><td>croix</td><td>fusillade, coups de feu, attentat, meurtre, agression, braquage, rixe, garde à vue</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Sont écartés : les violences sexuelles et les suicides, les procès et les affaires, les tribunes signées et les mises à jour du type « situation calme ». Pour les deux premiers, un point sur une carte pourrait désigner la victime ou sa famille, et les rédactions s'en abstiennent ou anonymisent. Le reste n'est pas un événement.</p>
+      <p>Le lieu se cherche dans cet ordre :</p>
+      <ul class="bul">
+        <li>d'abord une commune citée dans le titre après « à », « au », « aux », « près de », « dans », « vers » ou « sur » : le nom doit correspondre exactement à une commune de l'API <code>geo.api.gouv.fr</code> (la plus peuplée l'emporte), et le point est placé à son centre ;</li>
+        <li>sinon un département cité dans le titre (« dans l'Aude », « en Haute-Garonne ») : le point est au centre de son contour ;</li>
+        <li>à défaut, le département du flux France 3 d'où vient le titre : même chose.</li>
+      </ul>
+      <div class="code" data-label-js="chaos-collect.mjs">
+<script type="text/plain" data-lang="js">
+const locate = (item) => {
+  for (const c of item.cands) {
+    const r = communeCache.get(norm(c));
+    if (r) return { ...r, prec: "commune" };
+  }
+  // pas de commune : le département cité, au centre de son contour
+  const m = item.title.match(DEP_RE);
+  const d = m && DEPS.find((x) => x.nom === m[1]);
+  if (d) return { place: d.nom, dep: d.nom, lat: d.lat, lon: d.lon, prec: "dep" };
+  const f = item.feed.dep && DEPS.find((x) => x.nom === item.feed.dep);
+  if (f) return { place: f.nom, dep: f.nom, lat: f.lat, lon: f.lon, prec: "dep" };
+  return null;
+};
+</script>
+      </div>
+      <p>Le « centre » d'un département est la moyenne des sommets de son contour, lu dans <code>05-Chaos/france.js</code>. Les points placés ainsi portent <code>prec: "dep"</code> : la carte les dessine avec un contour en pointillé.</p>
+      <p>Un même fait repris par plusieurs journaux (même catégorie, même titre) devient un seul événement, placé là où la position est la plus précise. Les autres départements restent dans <code>also</code> : ils comptent dans la teinte et dans la recherche, et le papier les liste sous « aussi dans ».</p>
+    </section>
+
+    <section id="carte" data-name="la carte">
+      <h2>la carte</h2>
+      <p>Le fond est fait de deux couches. Dessous, un SVG de 96 départements métropolitains : leurs contours viennent de <code>france-geojson</code>, simplifiés à 82 Ko et projetés à la main (longitude corrigée par le cosinus de 46,2°). Dessus, un canevas dessine les pastilles et les bulles.</p>
+      <ul class="bul">
+        <li>La teinte d'un département est <code>rgba(255, 0, 85, 0.12 + 0.5 × √(n / max))</code>, avec <code>n</code> le nombre d'événements qui le concernent. Ce nombre est écrit au centre de son cadre.</li>
+        <li>Le canevas dessine au plus 500 pastilles, les plus récentes. Les autres comptent dans les totaux, la liste et les départements.</li>
+        <li>Une pastille porte la photo de l'article en rond, avec la forme de sa catégorie en badge. Le contour dit l'âge : rose en dessous de 3 h, clair en dessous de 24 h, gris en dessous de 7 jours, gris foncé au-delà. Il est en pointillé pour un point placé au département.</li>
+        <li>La taille grandit avec le nombre d'articles (jusqu'à 2,2 fois), et de 20 % en désordre. Plusieurs faits au même endroit s'écartent en spirale de 12 pixels.</li>
+        <li>« ranger » regroupe en une bulle les pastilles à moins de 30 pixels les unes des autres. La bulle est rose si l'une d'elles a moins de 3 h. Au zoom maximal on ne regroupe plus.</li>
+        <li>Le rejeu dure 3,5 secondes plus 90 millisecondes par événement, entre 5 et 16 secondes. La date affichée avance proportionnellement au temps réel, donc les rafales d'articles se voient.</li>
+      </ul>
+      <p>Une photo est réduite une seule fois en vignette ronde de 72 pixels, puis posée telle quelle à chaque image :</p>
+      <div class="code" data-label-js="script.js">
+<script type="text/plain" data-lang="js">
+const makeSprite = (img) => {
+  const c = document.createElement("canvas");
+  c.width = c.height = SP;
+  const g = c.getContext("2d");
+  g.beginPath();
+  g.arc(SP / 2, SP / 2, SP / 2, 0, 7);
+  g.clip(); // le rond : tout ce qui est dessiné ensuite y reste
+  const k = Math.max(SP / img.naturalWidth, SP / img.naturalHeight);
+  g.drawImage(img, (SP - img.naturalWidth * k) / 2, (SP - img.naturalHeight * k) / 2, img.naturalWidth * k, img.naturalHeight * k);
+  return c;
+};
+</script>
+      </div>
+      <p>Les photos arrivent par lots : 80 d'abord, puis 40 de plus toutes les 0,8 seconde (toutes en désordre, 260 au plus en mode rangé). Au zoom, celles qui entrent dans la vue se chargent. Une photo en panne retombe sur la forme.</p>
+      <p>Ce passage au canevas est venu d'un premier essai en SVG : avec environ 5 400 éléments à redessiner à chaque geste, la carte était très lente. Le canevas laisse 290 éléments SVG, et le calcul d'un déplacement tombe à environ 3 millisecondes.</p>
+    </section>
+
+    <section id="publication" data-name="la publication">
+      <h2>la publication</h2>
+      <p>Une GitHub Action (<code>chaos-data</code>) tourne toutes les heures, à la minute 17, comme celle de Pulse. Elle reprend l'<code>events.json</code> précédent, lui ajoute les nouveaux événements, garde les 30 derniers jours (3 000 événements au plus) et publie le fichier dans un seul commit réécrit sur la branche <code>chaos-data</code>. Les flux ne gardent que quelques heures à un mois de titres : c'est cette reprise du fichier précédent qui construit l'historique.</p>
+      <p>La page lit ce fichier sur <code>raw.githubusercontent.com</code> et, en secours, la copie <code>05-Chaos/events.json</code> du dossier. La plus récente des deux l'emporte. Elle se recharge toutes les 15 minutes, et la fraîcheur des données est écrite à côté de « en france ».</p>
+      <p>Les feux détectés par satellite (NASA FIRMS, détections VIIRS sur deux jours, confiance normale ou haute, regroupées par carrés d'environ 5 kilomètres) s'ajoutent si une clé gratuite est rangée dans les secrets du dépôt sous le nom <code>FIRMS_KEY</code>. Sans clé, ils sont ignorés.</p>
+      <p>Premier lancement : après la fusion dans <code>main</code>, onglet Actions, <code>chaos-data</code>, « Run workflow ».</p>
+    </section>
+
+    <section id="visite" data-name="visite guidée">
+      <h2>la visite guidée</h2>
+      <p>À la première visite, trois bulles : les formes et le contour rose, les périodes, puis les gestes (pastille, ligne, bulle, département). Un cadre en pointillé et une flèche montrent chaque cible. « passer » l'arrête, et le « ? » en haut la relance.</p>
+    </section>
+
+    <section id="acces" data-name="accessibilité">
+      <h2>accessibilité et petits écrans</h2>
+      <ul class="bul">
+        <li>La liste donne tout au clavier : 30 lignes d'abord et « voir plus » pour la suite, avec le focus sur la première nouvelle ligne. Deux liens d'évitement (« aller à la carte », « passer la liste ») apparaissent au focus.</li>
+        <li>Le texte gris le plus discret est à <code>#7a7a7a</code> sur <code>#0d0d0d</code> : environ 4,5 pour 1 de contraste.</li>
+        <li>Si le navigateur demande de réduire les animations, le rejeu n'anime plus l'apparition des pastilles, les déplacements de la vue sont immédiats, et la visite apparaît sans glisser.</li>
+        <li>Sur téléphone, la carte démarre rangée, passe sous le panneau, et un bouton la met en plein écran. Hors plein écran, un doigt sur la carte fait défiler la page.</li>
+      </ul>
+    </section>
+
+    <section id="limites" data-name="limites">
+      <h2>limites</h2>
+      <ul class="bul">
+        <li>Le tri se fait par mots-clés et se trompe : « pénurie de main-d'œuvre » est rangé en pannes, un pont effondré il y a sept ans en pannes aussi. J'ai resserré les mots-clés après avoir relu un échantillon à la main, mais il reste des erreurs.</li>
+        <li>Plus de la moitié des points (271 sur 486 sur 30 jours) sont placés au centre d'un département, pas au lieu du fait. Ils sont en pointillé et un bouton les masque.</li>
+        <li>La teinte compte des articles, pas des faits : un département très couvert paraît plus touché.</li>
+        <li>La date est celle de la publication de l'article, pas celle du fait.</li>
+        <li>Les titres sont repris tels que les journaux les publient, noms de victimes compris. Les violences sexuelles et les suicides sont écartés, le reste est montré, photos comprises.</li>
+        <li>Les photos appartiennent aux journaux. Elles ne sont pas copiées, mais chaque visiteur les charge depuis leurs serveurs, qui voient donc passer son adresse IP. La page ne transmet pas la page d'origine (<code>no-referrer</code>).</li>
+        <li>J'ai testé dans le panneau intégré de l'application, avec des gestes simulés. Je n'ai pas mesuré la fluidité sur un écran réel, ni testé un téléphone physique, Firefox ou Safari. Les 5 400 éléments SVG de la première version étaient très lents ; la version actuelle devrait l'être bien moins, sans mesure à l'appui.</li>
+        <li>Les pastilles ne se parcourent pas au clavier : la liste donne les mêmes événements.</li>
+        <li>La partie FIRMS (satellite) n'a pas été testée : il manquait la clé.</li>
+        <li>Rien n'est mis à jour tant que l'Action n'a pas tourné : jusque-là, la page affiche la copie du dossier.</li>
+      </ul>
+      <h3>Pistes</h3>
+      <ul class="bul">
+        <li>Remettre le tremblement et la pulsation des 8 pastilles les plus récentes, sur une petite couche à part pour ne pas redessiner le reste.</li>
+        <li>Mettre le rejeu en pause et choisir sa vitesse.</li>
+        <li>Filtrer par journal.</li>
+        <li>Un tri qui lit le texte de l'article plutôt que le titre seul.</li>
+      </ul>
+    </section>
+
+    <section id="credits" data-name="crédits">
+      <h2>crédits</h2>
+      <ul class="bul">
+        <li>Titres et photos : flux RSS des journaux cités plus haut. Les images restent la propriété de leurs auteurs.</li>
+        <li>Communes : <code>geo.api.gouv.fr</code> (données ouvertes de l'État).</li>
+        <li>Contours des départements : <code>gregoiredavid/france-geojson</code>, d'après des données de l'IGN, Licence Ouverte Etalab.</li>
+        <li>Feux par satellite : NASA FIRMS.</li>
+        <li>Le code, la collecte et le dessin sont à moi, sans bibliothèque. La collecte reprend le principe de Pulse (une Action qui publie un JSON sur une branche).</li>
+      </ul>
+    </section>
+
+    <footer class="foot">
+      <span>devtober 2026 · jour 05 · par Lino Volle</span>
+      <a href="index.html">retour à l'accueil</a>
+    </footer>
+  </main>
+</div>
+
+<script src="pages.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
