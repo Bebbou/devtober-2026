@@ -161,7 +161,8 @@ const makeSprite = (img) => {
 };
 </script>
       </div>
-      <p>Les photos arrivent par lots : 80 d'abord, puis 40 de plus toutes les 0,8 seconde (toutes en désordre, 260 au plus en mode rangé). Au zoom, celles qui entrent dans la vue se chargent. Une photo en panne retombe sur la forme.</p>
+      <p>Un écran de chargement couvre la carte jusqu'à ce que toutes les photos de la vue soient prêtes, avec une barre qui compte « photos 120 / 480 ». Il s'efface au bout de 15 secondes au plus, et les photos manquantes continuent d'arriver derrière. En mode rangé, on ne précharge que les 260 plus récentes ; au zoom, celles qui entrent dans la vue se chargent. Une photo en panne retombe sur la forme.</p>
+      <p>Cela représente environ 30 Mo de photos à la première visite avec les 480 événements de 30 jours (60 Ko en moyenne sur un échantillon de 16). Elles sont ensuite en cache.</p>
       <p>Ce passage au canevas est venu d'un premier essai en SVG : avec environ 5 400 éléments à redessiner à chaque geste, la carte était très lente. Le canevas laisse 290 éléments SVG, et le calcul d'un déplacement tombe à environ 3 millisecondes.</p>
     </section>
 
@@ -169,7 +170,6 @@ const makeSprite = (img) => {
       <h2>la publication</h2>
       <p>Une GitHub Action (<code>chaos-data</code>) tourne toutes les heures, à la minute 17, comme celle de Pulse. Elle reprend l'<code>events.json</code> précédent, lui ajoute les nouveaux événements, garde les 30 derniers jours (3 000 événements au plus) et publie le fichier dans un seul commit réécrit sur la branche <code>chaos-data</code>. Les flux ne gardent que quelques heures à un mois de titres : c'est cette reprise du fichier précédent qui construit l'historique.</p>
       <p>La page lit ce fichier sur <code>raw.githubusercontent.com</code> et, en secours, la copie <code>05-Chaos/events.json</code> du dossier. La plus récente des deux l'emporte. Elle se recharge toutes les 15 minutes, et la fraîcheur des données est écrite à côté de « en france ».</p>
-      <p>Les feux détectés par satellite (NASA FIRMS, détections VIIRS sur deux jours, confiance normale ou haute, regroupées par carrés d'environ 5 kilomètres) s'ajoutent si une clé gratuite est rangée dans les secrets du dépôt sous le nom <code>FIRMS_KEY</code>. Sans clé, ils sont ignorés.</p>
       <p>Premier lancement : après la fusion dans <code>main</code>, onglet Actions, <code>chaos-data</code>, « Run workflow ».</p>
     </section>
 
@@ -199,7 +199,6 @@ const makeSprite = (img) => {
         <li>Les photos appartiennent aux journaux. Elles ne sont pas copiées, mais chaque visiteur les charge depuis leurs serveurs, qui voient donc passer son adresse IP. La page ne transmet pas la page d'origine (<code>no-referrer</code>).</li>
         <li>J'ai testé dans le panneau intégré de l'application, avec des gestes simulés. Je n'ai pas mesuré la fluidité sur un écran réel, ni testé un téléphone physique, Firefox ou Safari. Les 5 400 éléments SVG de la première version étaient très lents ; la version actuelle devrait l'être bien moins, sans mesure à l'appui.</li>
         <li>Les pastilles ne se parcourent pas au clavier : la liste donne les mêmes événements.</li>
-        <li>La partie FIRMS (satellite) n'a pas été testée : il manquait la clé.</li>
         <li>Rien n'est mis à jour tant que l'Action n'a pas tourné : jusque-là, la page affiche la copie du dossier.</li>
       </ul>
       <h3>Pistes</h3>
@@ -217,7 +216,6 @@ const makeSprite = (img) => {
         <li>Titres et photos : flux RSS des journaux cités plus haut. Les images restent la propriété de leurs auteurs.</li>
         <li>Communes : <code>geo.api.gouv.fr</code> (données ouvertes de l'État).</li>
         <li>Contours des départements : <code>gregoiredavid/france-geojson</code>, d'après des données de l'IGN, Licence Ouverte Etalab.</li>
-        <li>Feux par satellite : NASA FIRMS.</li>
         <li>Le code, la collecte et le dessin sont à moi, sans bibliothèque. La collecte reprend le principe de Pulse (une Action qui publie un JSON sur une branche).</li>
       </ul>
     </section>

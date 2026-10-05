@@ -2,7 +2,6 @@
 // et les place sur la carte de France d'après la commune citée dans le titre.
 //
 // Usage : node chaos-collect.mjs sortie.json [precedent.json]
-// Variable facultative : FIRMS_KEY (clé NASA FIRMS) pour ajouter les feux détectés par satellite.
 //
 // Les flux ne gardent que quelques heures de titres : le fichier précédent est repris
 // et complété, pour garder 30 jours d'historique.
@@ -249,48 +248,12 @@ const locate = (item) => {
 const hash = (s) => createHash("sha1").update(s).digest("hex").slice(0, 10);
 const round = (n) => Math.round(n * 1e4) / 1e4;
 
-// Feux détectés par satellite (NASA FIRMS), regroupés par carré d'environ 5 km
-async function firms() {
-  const key = process.env.FIRMS_KEY;
-  if (!key) return [];
-  const csv = await get(
-    "https://firms.modaps.eosdis.nasa.gov/api/area/csv/" + key + "/VIIRS_SNPP_NRT/-5.5,41.2,9.8,51.2/2",
-    30000,
-  );
-  const [head, ...rows] = csv.trim().split("\n");
-  const cols = head.split(",");
-  const ix = (n) => cols.indexOf(n);
-  const groups = new Map();
-  for (const row of rows) {
-    const v = row.split(",");
-    const conf = v[ix("confidence")];
-    if (conf !== "n" && conf !== "h") continue;
-    const lat = +v[ix("latitude")], lon = +v[ix("longitude")];
-    const k = Math.round(lat * 20) + ":" + Math.round(lon * 20);
-    const t = new Date(v[ix("acq_date")] + "T" + v[ix("acq_time")].padStart(4, "0").replace(/(..)(..)/, "$1:$2") + ":00Z");
-    const g = groups.get(k) || { lat: 0, lon: 0, n: 0, t: 0 };
-    g.lat += lat; g.lon += lon; g.n++; g.t = Math.max(g.t, +t);
-    groups.set(k, g);
-  }
-  return [...groups.entries()].map(([k, g]) => ({
-    id: "firms-" + k,
-    t: new Date(g.t).toISOString(),
-    cat: "feu",
-    sat: true,
-    place: "",
-    dep: "",
-    lat: round(g.lat / g.n),
-    lon: round(g.lon / g.n),
-    items: [{ title: "Chaleur détectée par satellite (" + g.n + " point" + (g.n > 1 ? "s" : "") + ")", source: "NASA FIRMS", link: "https://firms.modaps.eosdis.nasa.gov/map/" }],
-  }));
-}
-
 // Même catégorie et même titre : un seul événement, placé là où la position est la plus précise.
 // Les autres départements restent dans « also » : ils comptent dans la carte et dans la recherche.
 function mergeStories(list) {
   const groups = new Map();
   for (const e of list) {
-    const k = e.sat ? e.id : e.cat + "|" + norm(e.items[0].title).slice(0, 80);
+    const k = e.cat + "|" + norm(e.items[0].title).slice(0, 80);
     if (!groups.has(k)) groups.set(k, []);
     groups.get(k).push(e);
   }
@@ -316,7 +279,7 @@ function mergeStories(list) {
 async function main() {
   let events = [];
   if (PREV) {
-    try { events = JSON.parse(readFileSync(PREV, "utf8")).events || []; } catch (e) { /* premier lancement */ }
+    try { events = (JSON.parse(readFileSync(PREV, "utf8")).events || []).filter((e) => !e.sat); } catch (e) { /* premier lancement */ }
   }
   const byId = new Map(events.map((e) => [e.id, e]));
   const stats = { lus: 0, tries: 0, places: 0, sansLieu: 0, flux: {} };
@@ -370,10 +333,6 @@ async function main() {
       if (!e.img && entry.img) e.img = entry.img;
     } else byId.set(id, { img: entry.img || "", id, t: it.date.toISOString(), cat, place: lieu.place, dep: lieu.dep, prec: lieu.prec, lat: round(lieu.lat), lon: round(lieu.lon), items: [entry] });
   }
-
-  try {
-    for (const e of await firms()) byId.set(e.id, e);
-  } catch (e) { stats.firms = "échec : " + e.message; }
 
   const limit = Date.now() - KEEP_DAYS * 864e5;
   const out = mergeStories([...byId.values()])

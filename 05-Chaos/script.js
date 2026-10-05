@@ -336,9 +336,6 @@
     heat();
     histo();
     place();
-    clearTimeout(growT);
-    loadLimit = 80;
-    growT = setTimeout(growPhotos, 800);
     bootCheck();
   };
 
@@ -348,7 +345,7 @@
       .slice(0, listN)
       .map((e) => {
         const age = now - e.ms;
-        const where = e.sat ? "Détection satellite" : e.place + (e.prec === "dep" ? " · département" : "") + (e.also ? " +" + e.also.length : "");
+        const where = e.place + (e.prec === "dep" ? " · département" : "") + (e.also ? " +" + e.also.length : "");
         return (
           `<li><button class="row" type="button" data-id="${e.id}">` +
           (e.pic ? `<img class="thumb" src="${esc(e.pic)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : glyph(e.cat)) +
@@ -376,8 +373,7 @@
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 
   // Une vignette ronde de 72 px par photo, préparée au chargement : le dessin ne fait ensuite que
-  // la poser. 80 photos d'abord, puis 40 de plus toutes les 0,8 s : toutes en désordre, 260 au plus rangé.
-  let loadLimit = 80, growT = 0;
+  // la poser. Toutes les photos de la vue sont chargées avant d'afficher la carte (écran de chargement).
   const SP = 72;
   const makeSprite = (img) => {
     const c = document.createElement("canvas");
@@ -418,25 +414,16 @@
     };
     im.src = url;
   };
+  const inView = (n) => n.e.ux >= vb.x - 30 && n.e.ux <= vb.x + vb.w + 30 && n.e.uy >= vb.y - 30 && n.e.uy <= vb.y + vb.h + 30;
+  // Photos à avoir : celles de la vue qui ne sont pas dans une bulle. Rangé, on se limite aux 260 plus
+  // récentes tant qu'on n'a pas zoomé, car le reste est en bulles.
+  const needed = (n) => n.e.pic && !n.inCl && inView(n) && (!tidy || n.rank < 260 || vb.w < 520);
   const loadPhotos = () => {
     if (document.body.classList.contains("shapes")) return;
-    const zoomed = vb.w < 520;
-    for (const n of order) {
-      if (n.state !== 0 || !n.e.pic || n.inCl || bad.has(n.e.pic)) continue;
-      if (n.rank >= loadLimit && !zoomed) continue;
-      if (n.e.ux < vb.x - 30 || n.e.ux > vb.x + vb.w + 30 || n.e.uy < vb.y - 30 || n.e.uy > vb.y + vb.h + 30) continue;
-      loadImg(n);
-    }
-  };
-  const growPhotos = () => {
-    // en désordre toutes les photos finissent par charger ; rangé, les pastilles sont en bulles : 260 suffisent
-    if (loadLimit >= (tidy ? 260 : MAX_PTS)) return;
-    loadLimit += 40;
-    loadPhotos();
-    growT = setTimeout(growPhotos, 800);
+    for (const n of order) if (n.state === 0 && needed(n) && !bad.has(n.e.pic)) loadImg(n);
   };
 
-  // L'écran de chargement s'efface quand les 80 premières photos sont prêtes, au plus tard après 6 s.
+  // L'écran de chargement s'efface quand toutes les photos de la vue sont prêtes, au plus tard après 15 s.
   // La visite guidée attend qu'il soit parti.
   let bootDone = false, tourPending = false;
   const finishBoot = () => {
@@ -455,11 +442,11 @@
       $("#bar").style.width = "12%";
       return;
     }
-    $("#loadSub").textContent = "photos";
-    const want = order.filter((n) => n.rank < 80 && n.e.pic && !n.inCl);
+    const want = order.filter(needed);
     if (document.body.classList.contains("shapes") || !want.length) return finishBoot();
-    const ready = want.filter((n) => n.state >= 2).length;
+    const ready = want.filter((n) => n.state >= 2 || bad.has(n.e.pic)).length;
     if (ready >= want.length) return finishBoot();
+    $("#loadSub").textContent = "photos " + ready + " / " + want.length;
     $("#bar").style.width = Math.round(12 + (88 * ready) / want.length) + "%";
   };
 
@@ -679,11 +666,7 @@
     const e = find(id);
     mark(id, true);
     $("#cCat").innerHTML = glyph(e.cat) + CATS[e.cat].label;
-    $("#cPlace").textContent = e.sat
-      ? "Chaleur détectée par satellite"
-      : e.prec === "dep"
-        ? e.place + " (département)"
-        : e.place + (e.dep ? " (" + e.dep + ")" : "");
+    $("#cPlace").textContent = e.prec === "dep" ? e.place + " (département)" : e.place + (e.dep ? " (" + e.dep + ")" : "");
     $("#cWhen").textContent =
       new Date(e.ms).toLocaleString("fr-FR", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }) +
       " · " + ago(Date.now() - e.ms) +
@@ -699,7 +682,7 @@
     $("#cPileBox").hidden = near.length < 2;
     $("#cPile").innerHTML = near
       .slice(0, 10)
-      .map((x) => `<li><button type="button" data-id="${x.id}"${x.id === e.id ? ' aria-current="true"' : ""}>${esc(x.sat ? "satellite" : x.place)} · ${esc(x.items[0].title)}</button></li>`)
+      .map((x) => `<li><button type="button" data-id="${x.id}"${x.id === e.id ? ' aria-current="true"' : ""}>${esc(x.place)} · ${esc(x.items[0].title)}</button></li>`)
       .join("");
     const shot = $("#cShot");
     const first = e.items.find((i) => i.img === e.pic) || e.items[0];
@@ -788,7 +771,7 @@
     legend.classList.toggle("hov", !!text);
   };
   const describe = (e) =>
-    (e.sat ? "satellite" : e.place + (e.prec === "dep" ? " (département)" : "")) + " · " + CATS[e.cat].label + " · " + ago(Date.now() - e.ms) + " · " + e.items[0].title.slice(0, 120);
+    e.place + (e.prec === "dep" ? " (département)" : "") + " · " + CATS[e.cat].label + " · " + ago(Date.now() - e.ms) + " · " + e.items[0].title.slice(0, 120);
   const hot = (id, on) => {
     const n = nodes.get(id);
     if (!n) return;
@@ -1091,7 +1074,7 @@
     const first = !loaded;
     loaded = true;
     if (best && new Date(best.generated).getTime() !== generated) {
-      events = best.events;
+      events = best.events.filter((e) => !e.sat);
       generated = new Date(best.generated).getTime();
       stopReplay();
       prepare();
@@ -1171,7 +1154,7 @@
   setView();
   load();
   tourPending = !seenTour;
-  setTimeout(finishBoot, 6000);
+  setTimeout(finishBoot, 15000);
   // les couleurs d'âge se rafraîchissent toutes les 5 min, les données toutes les 15 min
   setInterval(() => {
     stamp();

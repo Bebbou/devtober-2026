@@ -5,8 +5,6 @@
 # c'est ainsi que la carte garde 30 jours d'historique.
 #
 # Premier lancement : onglet Actions > chaos-data > Run workflow.
-# Les feux par satellite demandent une clé NASA FIRMS gratuite, à ranger dans les secrets du dépôt
-# sous le nom FIRMS_KEY (Settings > Secrets and variables > Actions). Sans clé, les feux sont ignorés.
 
 name: chaos-data
 
@@ -43,8 +41,6 @@ jobs:
           curl -fsSL "https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/chaos-data/events.json" -o previous.json || rm -f previous.json
 
       - name: Collecter et classer les titres
-        env:
-          FIRMS_KEY: ${{ secrets.FIRMS_KEY }}
         run: |
           if [ -f previous.json ]; then
             node .github/scripts/chaos-collect.mjs out/events.json previous.json

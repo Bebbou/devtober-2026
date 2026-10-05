@@ -76,7 +76,7 @@ Lino commite et pousse lui-même. Ne pas faire de commit, de push ni de branche 
 - Les catégories sont des mots-clés sur le titre (`CATS`) : les resserrer plutôt que les élargir, un mot trop large range des procès en « violences ». `EXCLUS` (violences sexuelles, suicides) et `PAS_UN_EVENEMENT` (procès, affaires, tribunes) écartent des titres.
 - Le lieu vient de la commune du titre (API `geo.api.gouv.fr`), sinon d'un département cité, sinon du département du flux France 3. Les contours sont dans `05-Chaos/france.js` (générés depuis `gregoiredavid/france-geojson`, Licence Ouverte) et servent aussi à la collecte.
 - Le fond est un SVG (départements et nombres), les pastilles et les bulles sont sur un canevas (`#cv`). Ne pas remettre un élément SVG par pastille : 5 400 éléments rendaient la carte inutilisable. Les photos sont réduites une fois en vignettes rondes (`makeSprite`), jamais copiées dans le dépôt.
-- `MAX_PTS` (500) et `loadLimit` règlent le poids de la carte. `NOPHOTO` liste les catégories sans photo (vide : Lino veut montrer l'information).
+- `MAX_PTS` (500) règle le poids de la carte, et `needed()` dit quelles photos précharger (l'écran de chargement attend toutes celles de la vue, 15 s au plus). `NOPHOTO` liste les catégories sans photo (vide : Lino veut montrer l'information).
 - Mémoire : `localStorage` clé `devtober-chaos-5` (drapeau de visite `-vu`). L'adresse porte la vue (`p`, `off`, `t`, `x`, `q`, `d`, `e`) et prime sur la mémoire.
 - Tests dans le panneau intégré : même consigne que pour Drift (`requestAnimationFrame` s'arrête quand il est masqué). Pour le déroulé : cliquer sur « Run workflow » de `chaos-data` après la fusion dans `main`.
 
