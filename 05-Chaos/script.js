@@ -22,6 +22,7 @@
     accident: { label: "accidents", g: '<path class="g" d="M-5 -5H5V5H-5Z"/>' },
     manif: { label: "mobilisations", g: '<circle class="o" r="5.5"/>' },
     violence: { label: "violences", g: '<path class="o" d="M-5 -5L5 5M5 -5L-5 5"/>' },
+    panne: { label: "pannes", g: '<path class="o" d="M-6 0L-3 -5.2H3L6 0L3 5.2H-3Z"/>' },
   };
   const HOUR = 3600e3;
   const DAY = 24 * HOUR;
@@ -46,13 +47,15 @@
   try {
     const saved = JSON.parse(localStorage.getItem(KEY) || "{}");
     if ([1, 7, 30].includes(saved.days)) days = saved.days;
-    if (Array.isArray(saved.cats)) active = new Set(saved.cats.filter((c) => CATS[c]));
+    // on retient ce que la personne a masqué : une catégorie ajoutée plus tard reste visible
+    if (Array.isArray(saved.off)) saved.off.forEach((c) => active.delete(c));
+    if (saved.shapes) document.body.classList.add("shapes");
   } catch (e) {
     /* on s'en passe */
   }
   const save = () => {
     try {
-      localStorage.setItem(KEY, JSON.stringify({ days, cats: [...active] }));
+      localStorage.setItem(KEY, JSON.stringify({ days, off: Object.keys(CATS).filter((c) => !active.has(c)), shapes: document.body.classList.contains("shapes") }));
     } catch (e) {
       /* on s'en passe */
     }
@@ -60,6 +63,50 @@
 
   /* ---------- Le fond de carte ---------- */
   gDeps.innerHTML = F.deps.map((d) => `<path d="${d.d}"><title>${d.n}</title></path>`).join("");
+  const key = (s) => String(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  const depEls = new Map(F.deps.map((d, i) => [key(d.n), { el: gDeps.children[i], name: d.n }]));
+
+  const heat = (list = shown) => {
+    const count = (l) => {
+      const m = new Map();
+      l.forEach((e) => m.set(key(e.dep), (m.get(key(e.dep)) || 0) + 1));
+      return m;
+    };
+    const n = count(list);
+    // la référence est toujours la période entière : pendant le rejeu, la teinte monte vers elle
+    const max = Math.max(1, ...count(shown).values());
+    depEls.forEach((d, k) => {
+      const c = n.get(k) || 0;
+      // échelle en racine : quelques événements se voient déjà, le plus touché est franchement rose
+      d.el.style.fill = c ? "rgba(255, 0, 85, " + (0.09 + 0.4 * Math.sqrt(c / max)).toFixed(3) + ")" : "";
+      d.el.firstChild.textContent = d.name + (c ? " : " + c : "");
+    });
+  };
+
+  // une barre par heure (24 h), par tranche de 6 h (7 jours) ou par jour (30 jours)
+  const histo = () => {
+    const now = Date.now();
+    const step = days === 1 ? HOUR : days === 7 ? 6 * HOUR : DAY;
+    const nb = (days * DAY) / step;
+    const b = new Array(nb).fill(0), live = new Array(nb).fill(false);
+    shown.forEach((e) => {
+      const i = nb - 1 - Math.floor((now - e.ms) / step);
+      if (i < 0 || i >= nb) return;
+      b[i]++;
+      if (now - e.ms < 3 * HOUR) live[i] = true;
+    });
+    const max = Math.max(1, ...b), w = 300 / nb;
+    $("#hist").innerHTML =
+      '<line x1="0" x2="300" y1="55.5" y2="55.5"/>' +
+      b
+        .map((c, i) => {
+          const h = c ? Math.max(2, (c / max) * 52) : 0;
+          return c ? `<rect class="${live[i] ? "live" : "on"}" x="${(i * w + 0.5).toFixed(1)}" y="${(55 - h).toFixed(1)}" width="${Math.max(1, w - 1).toFixed(1)}" height="${h.toFixed(1)}"><title>${c} événement${c > 1 ? "s" : ""}</title></rect>` : "";
+        })
+        .join("");
+    $("#hFrom").textContent = days === 1 ? "il y a 24 h" : "il y a " + days + " j";
+    $("#hMax").textContent = "pic : " + max;
+  };
 
   const proj = (lon, lat) => [(lon - F.lon0) * F.cos * F.k, (F.lat1 - lat) * F.k];
   const box = () => svg.getBoundingClientRect();
@@ -155,6 +202,7 @@
     document.querySelectorAll(".cat").forEach((b) => {
       b.setAttribute("aria-pressed", active.has(b.dataset.cat));
       b.querySelector(".n").textContent = counts[b.dataset.cat] || 0;
+      b.style.setProperty("--p", Math.round(((counts[b.dataset.cat] || 0) / Math.max(1, ...Object.values(counts))) * 100) + "%");
     });
     document.querySelectorAll("#periods button").forEach((b) => b.setAttribute("aria-pressed", +b.dataset.days === days));
 
@@ -168,25 +216,36 @@
       .reverse()
       .map((e) => {
         const n = Math.min(e.items.length - 1, 6);
+        // un tremblement différent pour chacun : ils ne battent pas en même temps
+        const sh = `--sd:${(0.38 + (e.slot % 5) * 0.07 + (e.ms % 7) * 0.02).toFixed(2)}s;--dl:-${((e.ms % 11) * 0.09).toFixed(2)}s`;
+        const g = CATS[e.cat].g;
+        const photo = e.img
+          ? '<g class="photo"><circle class="bgc" r="13"/><g transform="scale(.8)">' + g + "</g>" +
+            `<image class="im" data-src="${esc(e.img)}" x="-13" y="-13" width="26" height="26" preserveAspectRatio="xMidYMid slice" clip-path="url(#cp)"/>` +
+            '<circle class="rim" r="13"/><g class="badge" transform="translate(10 10)"><circle r="7.5"/><g transform="scale(.6)">' + g + "</g></g></g>"
+          : "";
         return (
-          `<g class="pt" data-id="${e.id}" data-age="${level(now - e.ms)}" data-n="${n}" aria-hidden="true">` +
-          '<circle class="hit" r="13"/><circle class="pulse" r="8"/><circle class="ring" r="11"/>' +
-          CATS[e.cat].g +
+          `<g class="pt${e.img ? " has" : ""}" data-id="${e.id}" data-age="${level(now - e.ms)}" data-n="${n}" data-prec="${e.prec || ""}" aria-hidden="true">` +
+          '<circle class="hit" r="16"/><circle class="pulse" r="14"/><circle class="shock" r="14"/><circle class="ring" r="17"/>' +
+          `<g class="sh" style="${sh}">` + photo + '<g class="sym">' + g + "</g></g>" +
           "</g>"
         );
       })
       .join("");
     const byId = new Map(shown.map((e) => [e.id, e]));
-    gPts.querySelectorAll(".pt").forEach((g) => nodes.set(g.dataset.id, { g, e: byId.get(g.dataset.id), n: +g.dataset.n }));
+    const rank = new Map(shown.map((e, i) => [e.id, i]));
+    gPts.querySelectorAll(".pt").forEach((g) =>
+      nodes.set(g.dataset.id, { g, e: byId.get(g.dataset.id), n: +g.dataset.n, im: g.querySelector(".im"), rank: rank.get(g.dataset.id) }),
+    );
 
     list.innerHTML = shown
       .slice(0, LIST_MAX)
       .map((e) => {
         const age = now - e.ms;
-        const where = e.place || "Détection satellite";
+        const where = e.sat ? "Détection satellite" : e.place + (e.prec === "dep" ? " · département" : "");
         return (
           `<li><button class="row" type="button" data-id="${e.id}">` +
-          glyph(e.cat) +
+          (e.img ? `<img class="thumb" src="${esc(e.img)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : glyph(e.cat)) +
           `<span class="place">${esc(where)}</span>` +
           `<span class="age${age < 3 * HOUR ? " live" : ""}">${ago(age)}</span>` +
           `<span class="title">${esc(e.items[0].title)}</span></button></li>`
@@ -205,22 +264,48 @@
 
     if (sel && !nodes.has(sel)) closeCard();
     else if (sel) mark(sel, true);
+    heat();
+    histo();
     place();
   };
 
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 
+  // Une centaine de photos d'un coup pèserait des Mo : on charge les 40 plus récentes,
+  // puis les autres quand elles entrent dans la vue après un zoom.
+  const loadPhotos = () => {
+    const zoomed = vb.w < 520;
+    nodes.forEach((n) => {
+      if (n.loaded || !n.im || !n.e) return;
+      if (n.rank >= 40 && !zoomed) return;
+      if (n.e.ux < vb.x - 30 || n.e.ux > vb.x + vb.w + 30 || n.e.uy < vb.y - 30 || n.e.uy > vb.y + vb.h + 30) return;
+      n.loaded = true;
+      n.im.setAttribute("href", n.im.dataset.src);
+    });
+  };
+  // une image en panne (adresse expirée) : la pastille retombe sur la forme
+  gPts.addEventListener(
+    "error",
+    (ev) => {
+      const g = ev.target.closest && ev.target.closest(".pt");
+      if (g) g.classList.add("noimg");
+    },
+    true,
+  );
+
   // taille constante à l'écran : on convertit les pixels en unités de la carte
+  const SPREAD = 15;
   const place = () => {
     const u = 1 / scale();
     nodes.forEach((n) => {
       const e = n.e;
       if (!e) return;
       // plusieurs faits dans la même commune : on les écarte en spirale
-      const a = e.slot * 2.4, r = e.slot ? 9 * Math.sqrt(e.slot) : 0;
-      const s = u * (1 + 0.1 * n.n);
+      const a = e.slot * 2.4, r = e.slot ? SPREAD * Math.sqrt(e.slot) : 0;
+      const s = u * (1 + 0.2 * n.n);
       n.g.setAttribute("transform", `translate(${(e.ux + Math.cos(a) * r * u).toFixed(2)} ${(e.uy + Math.sin(a) * r * u).toFixed(2)}) scale(${s.toFixed(4)})`);
     });
+    loadPhotos();
     if (sel && !card.hidden) putCard();
   };
 
@@ -240,7 +325,7 @@
   const putCard = () => {
     const e = find(sel);
     if (!e) return;
-    const a = e.slot * 2.4, r = e.slot ? 9 * Math.sqrt(e.slot) : 0, u = 1 / scale();
+    const a = e.slot * 2.4, r = e.slot ? SPREAD * Math.sqrt(e.slot) : 0, u = 1 / scale();
     const p = toWrap(e.ux + Math.cos(a) * r * u, e.uy + Math.sin(a) * r * u);
     const W = wrap.clientWidth, H = wrap.clientHeight, cw = card.offsetWidth, ch = card.offsetHeight;
     let left = p[0] + 20;
@@ -254,17 +339,30 @@
     sel = id;
     const e = find(id);
     mark(id, true);
-    $("#cCat").textContent = CATS[e.cat].label;
-    $("#cPlace").textContent = e.place ? e.place + (e.dep ? " (" + e.dep + ")" : "") : "Chaleur détectée par satellite";
+    $("#cCat").innerHTML = glyph(e.cat) + CATS[e.cat].label;
+    $("#cPlace").textContent = e.sat
+      ? "Chaleur détectée par satellite"
+      : e.prec === "dep"
+        ? e.place + " (département)"
+        : e.place + (e.dep ? " (" + e.dep + ")" : "");
     $("#cWhen").textContent =
-      new Date(e.ms).toLocaleString("fr-FR", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }) + " · " + ago(Date.now() - e.ms);
+      new Date(e.ms).toLocaleString("fr-FR", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }) +
+      " · " + ago(Date.now() - e.ms) +
+      (e.items.length > 1 ? " · " + e.items.length + " articles" : "");
     $("#cItems").innerHTML = e.items
       .slice(0, 6)
       .map((i) => `<li><a href="${esc(i.link)}" target="_blank" rel="noopener">${esc(i.title)}</a><span>${esc(i.source)}</span></li>`)
       .join("");
+    const shot = $("#cShot");
+    const first = e.items.find((i) => i.img === e.img) || e.items[0];
+    shot.hidden = !e.img;
+    if (e.img) {
+      $("#cImg").src = e.img;
+      shot.href = first.link;
+    }
     card.hidden = false;
     if (fly) {
-      const a = e.slot * 2.4, r = e.slot ? 9 * Math.sqrt(e.slot) : 0, u = 1 / scale();
+      const a = e.slot * 2.4, r = e.slot ? SPREAD * Math.sqrt(e.slot) : 0, u = 1 / scale();
       flyTo(e.ux + Math.cos(a) * r * u, e.uy + Math.sin(a) * r * u, Math.min(vb.w, 380));
       if (matchMedia("(max-width: 820px)").matches) wrap.scrollIntoView({ block: "nearest", behavior: calm ? "auto" : "smooth" });
     }
@@ -370,12 +468,28 @@
     const r = e.target.closest(".row");
     if (r) hot(r.dataset.id, false);
   });
+  list.addEventListener(
+    "error",
+    (ev) => {
+      if (ev.target.classList && ev.target.classList.contains("thumb")) ev.target.style.visibility = "hidden";
+    },
+    true,
+  );
   list.addEventListener("click", (e) => {
     const r = e.target.closest(".row");
     if (r) openCard(r.dataset.id, true);
   });
 
   $("#cClose").addEventListener("click", closeCard);
+  $("#cImg").addEventListener("error", () => { $("#cShot").hidden = true; putCard(); });
+  $("#cImg").addEventListener("load", putCard);
+  const zimg = $("#zimg");
+  zimg.setAttribute("aria-pressed", !document.body.classList.contains("shapes"));
+  zimg.addEventListener("click", () => {
+    const on = document.body.classList.toggle("shapes");
+    zimg.setAttribute("aria-pressed", !on);
+    save();
+  });
   addEventListener("keydown", (e) => {
     if (e.key === "Escape") closeCard();
   });
@@ -388,6 +502,53 @@
   $("#zreset").addEventListener("click", () => flyTo(F.w / 2, F.h / 2, F.w));
   addEventListener("resize", place);
 
+  /* ---------- Le rejeu ---------- */
+  let replaying = 0;
+  const stopReplay = () => {
+    if (!replaying) return;
+    cancelAnimationFrame(replaying);
+    replaying = 0;
+    nodes.forEach((n) => { n.g.style.visibility = ""; n.g.classList.remove("pop"); });
+    $("#replay").setAttribute("aria-pressed", "false");
+    $("#replay").textContent = "▶ rejouer";
+    render();
+  };
+  const replay = () => {
+    if (replaying) return stopReplay();
+    if (!shown.length) return;
+    closeCard();
+    const seq = [...shown].sort((a, b) => a.ms - b.ms);
+    const from = seq[0].ms, span = Math.max(1, Date.now() - from);
+    const dur = calm ? 1 : clamp(3500 + seq.length * 90, 5000, 16000);
+    let shownN = 0;
+    nodes.forEach((n) => { n.g.style.visibility = "hidden"; });
+    heat([]);
+    $("#replay").setAttribute("aria-pressed", "true");
+    $("#replay").textContent = "■ stop";
+    const t0 = performance.now();
+    const step = (t) => {
+      const p = Math.min(1, (t - t0) / dur), virtual = from + p * span, before = shownN;
+      while (shownN < seq.length && seq[shownN].ms <= virtual) {
+        const n = nodes.get(seq[shownN].id);
+        if (n) {
+          n.g.style.visibility = "";
+          if (!calm) {
+            n.g.classList.add("pop");
+            setTimeout(() => n.g.classList.remove("pop"), 1300);
+          }
+        }
+        shownN++;
+      }
+      if (shownN !== before) heat(seq.slice(0, shownN));
+      $("#total").textContent = shownN;
+      $("#unit").textContent = new Date(virtual).toLocaleString("fr-FR", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+      if (p < 1) replaying = requestAnimationFrame(step);
+      else setTimeout(stopReplay, 1400);
+    };
+    replaying = requestAnimationFrame(step);
+  };
+  $("#replay").addEventListener("click", replay);
+
   /* ---------- Les filtres ---------- */
   $("#cats").innerHTML = Object.keys(CATS)
     .map((c) => `<button class="cat" type="button" data-cat="${c}" aria-pressed="true">${glyph(c)}${CATS[c].label} <span class="n">0</span></button>`)
@@ -396,6 +557,7 @@
     const b = e.target.closest(".cat");
     if (!b) return;
     const c = b.dataset.cat;
+    stopReplay();
     if (active.has(c)) active.delete(c);
     else active.add(c);
     save();
@@ -404,6 +566,7 @@
   $("#periods").addEventListener("click", (e) => {
     const b = e.target.closest("button");
     if (!b) return;
+    stopReplay();
     days = +b.dataset.days;
     save();
     render();
@@ -426,6 +589,7 @@
     if (best && new Date(best.generated).getTime() !== generated) {
       events = best.events;
       generated = new Date(best.generated).getTime();
+      stopReplay();
       prepare();
       render();
       setView();
@@ -440,7 +604,7 @@
   const SEEN = KEY + "-vu";
   let tourStep = -1, tourLoopOn = false;
   const TOUR = [
-    { text: "Chaque forme est un type d'événement rapporté par la presse : incendie, intempérie, accident, mobilisation, violence. Un point rose date de moins de 3 h.", el: () => $("#cats") },
+    { text: "Chaque pastille est un événement rapporté par la presse, avec la photo de l'article. La forme dans son coin donne le type : incendie, intempérie, accident, mobilisation, violence. Un contour rose date de moins de 3 h.", el: () => $("#cats") },
     { text: "Choisis la période : les dernières 24 h, 7 jours ou 30 jours.", el: () => $("#periods") },
     { text: "Clique une ligne de la liste ou un point : la carte s'approche et le titre s'ouvre, avec un lien vers l'article.", el: () => $(".row") || $("#list") },
   ];
@@ -501,7 +665,7 @@
   // les couleurs d'âge se rafraîchissent toutes les 5 min, les données toutes les 15 min
   setInterval(() => {
     stamp();
-    render();
+    if (!replaying) render();
   }, 5 * 60 * 1000);
   setInterval(load, 15 * 60 * 1000);
 })();

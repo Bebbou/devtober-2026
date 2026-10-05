@@ -137,15 +137,36 @@ main {
   border-right: 1px solid var(--line);
 }
 
-.big {
+.bigrow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 10px;
   margin: 4px 0 14px;
+}
+
+.bigrow .btn {
+  margin-bottom: 6px;
+  white-space: nowrap;
+}
+
+.bigrow .btn[aria-pressed="true"] {
+  color: var(--pink);
+  border-color: var(--pink);
+}
+
+.big {
+  margin: 0;
   font-size: 56px;
   line-height: 1;
   color: var(--text);
 }
 
 .big #unit {
-  font-size: 14px;
+  display: block;
+  margin-top: 4px;
+  font-size: 13px;
+  line-height: 1.3;
   color: var(--muted);
 }
 
@@ -187,12 +208,13 @@ main {
 }
 
 .cat {
+  --p: 0%;
+  background: linear-gradient(90deg, #2a2a2a var(--p), transparent var(--p));
   display: inline-flex;
   align-items: center;
   gap: 7px;
   padding: 2px 9px;
   border: 1px solid var(--line-strong);
-  background: none;
   color: var(--text);
   font-size: 13px;
 }
@@ -217,6 +239,44 @@ main {
   color: var(--dim);
 }
 
+/* ---------- Le temps : une barre par heure ou par jour ---------- */
+.hist {
+  margin-bottom: 14px;
+}
+
+#hist {
+  display: block;
+  width: 100%;
+  height: 56px;
+  shape-rendering: crispEdges;
+}
+
+#hist rect {
+  fill: var(--dim);
+}
+
+#hist rect.on {
+  fill: var(--muted);
+}
+
+#hist rect.live {
+  fill: var(--pink);
+}
+
+#hist line {
+  stroke: var(--line-strong);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.axis {
+  display: flex;
+  justify-content: space-between;
+  margin: 3px 0 0;
+  font-size: 11px;
+  color: var(--dim);
+}
+
 /* ---------- La liste ---------- */
 .list {
   flex: 1;
@@ -232,7 +292,7 @@ main {
 
 .row {
   display: grid;
-  grid-template-columns: 14px 1fr auto;
+  grid-template-columns: 46px 1fr auto;
   gap: 2px 10px;
   align-items: start;
   width: 100%;
@@ -256,8 +316,17 @@ main {
 .row svg {
   width: 11px;
   height: 11px;
-  margin-top: 6px;
+  margin: 6px auto 0;
   overflow: visible;
+}
+
+.row .thumb {
+  grid-row: 1 / 3;
+  width: 46px;
+  height: 46px;
+  object-fit: cover;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
 }
 
 .row .place {
@@ -333,6 +402,136 @@ main {
   color: var(--muted);
 }
 
+.pt[data-prec="dep"] .sh {
+  opacity: 0.7;
+}
+
+/* une pastille ronde avec la photo de l'article, la forme de la catégorie en badge dans le coin */
+.pt.has .sym {
+  display: none;
+}
+
+.pt.has.noimg .photo {
+  display: none;
+}
+
+.pt.has.noimg .sym,
+body.shapes .pt.has .sym {
+  display: inline;
+}
+
+body.shapes .pt .photo {
+  display: none;
+}
+
+.pt .bgc {
+  fill: #1a1a1a;
+}
+
+.pt .rim {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.5;
+}
+
+.pt .badge circle {
+  fill: var(--bg);
+  stroke: currentColor;
+  stroke-width: 1.2;
+}
+
+.pt .badge .g {
+  stroke: none;
+}
+
+.pt .sh {
+  animation-duration: var(--sd, 0.5s);
+  animation-delay: var(--dl, 0s);
+  animation-timing-function: steps(1);
+  animation-iteration-count: infinite;
+}
+
+.pt[data-age="0"] .sh {
+  animation-name: shake;
+}
+
+.pt[data-age="1"] .sh {
+  animation-name: shake-lent;
+  animation-duration: calc(var(--sd, 0.5s) * 2.4);
+}
+
+@keyframes shake {
+  0% {
+    transform: translate(0, 0);
+  }
+  20% {
+    transform: translate(-1.6px, 1.1px);
+  }
+  40% {
+    transform: translate(1.2px, -1.5px);
+  }
+  60% {
+    transform: translate(-1px, -1.2px);
+  }
+  80% {
+    transform: translate(1.6px, 0.8px);
+  }
+}
+
+@keyframes shake-lent {
+  0% {
+    transform: translate(0, 0);
+  }
+  33% {
+    transform: translate(-0.8px, 0.6px);
+  }
+  66% {
+    transform: translate(0.7px, -0.7px);
+  }
+}
+
+/* l'événement qui surgit pendant le rejeu : il grossit d'un coup, une onde part de lui */
+.pt.pop .sh {
+  animation: pop 0.7s cubic-bezier(0.2, 0.9, 0.3, 1) 1 both;
+}
+
+.pt.pop .shock {
+  fill: none;
+  stroke: var(--pink);
+  stroke-width: 1.5;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: shock 1.2s ease-out 1 both;
+}
+
+.shock {
+  display: none;
+}
+
+.pt.pop .shock {
+  display: inline;
+}
+
+@keyframes pop {
+  from {
+    transform: scale(3.2);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+@keyframes shock {
+  from {
+    transform: scale(0.8);
+    opacity: 1;
+  }
+  to {
+    transform: scale(6);
+    opacity: 0;
+  }
+}
+
 .pt[data-age="0"] {
   color: var(--pink);
 }
@@ -351,7 +550,9 @@ main {
 
 .pt .g {
   fill: currentColor;
-  stroke: none;
+  stroke: var(--bg);
+  stroke-width: 1.5;
+  paint-order: stroke;
 }
 
 .pt .o {
@@ -459,6 +660,15 @@ main {
   color: #fff;
 }
 
+.paper .mark svg {
+  width: 11px;
+  height: 11px;
+  margin-right: 8px;
+  vertical-align: -1px;
+  overflow: visible;
+  color: var(--text);
+}
+
 .paper h2 {
   margin: 4px 0 2px;
   font-size: 18px;
@@ -502,6 +712,23 @@ main {
   color: var(--muted);
 }
 
+.paper .shot {
+  display: block;
+  margin: -16px -18px 12px;
+}
+
+.paper .shot[hidden] {
+  display: none;
+}
+
+.paper .shot img {
+  display: block;
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  border-bottom: 1px solid var(--pink);
+}
+
 .paper .x {
   position: absolute;
   top: 8px;
@@ -509,7 +736,7 @@ main {
   width: 28px;
   height: 28px;
   border: 0;
-  background: none;
+  background: rgba(13, 13, 13, 0.75);
   font-size: 22px;
   line-height: 1;
   color: var(--muted);

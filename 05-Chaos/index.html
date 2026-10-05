@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="dark" />
     <meta name="theme-color" content="#0d0d0d" />
+    <meta name="referrer" content="no-referrer" />
     <title>Chaos · jour 05</title>
     <meta
       name="description"
@@ -24,7 +25,10 @@
     <main id="stage">
       <section class="side" aria-label="Filtres et liste">
         <p class="mark">en france</p>
-        <p class="big" aria-live="polite"><span id="total">0</span> <span id="unit"></span></p>
+        <div class="bigrow">
+          <p class="big" aria-live="polite"><span id="total">0</span> <span id="unit"></span></p>
+          <button class="btn" id="replay" type="button" aria-label="Rejouer la période : les événements apparaissent dans l'ordre">▶ rejouer</button>
+        </div>
 
         <div class="seg" id="periods" role="group" aria-label="Période">
           <button type="button" data-days="1">1 j</button>
@@ -34,12 +38,18 @@
 
         <div class="cats" id="cats" role="group" aria-label="Catégories"></div>
 
+        <div class="hist" id="histbox">
+          <svg id="hist" viewBox="0 0 300 56" preserveAspectRatio="none" role="img" aria-label="Nombre d'événements dans le temps"></svg>
+          <p class="axis"><span id="hFrom"></span><span id="hMax"></span><span>maintenant</span></p>
+        </div>
+
         <ol class="list" id="list"></ol>
 
         <p class="note">
           Chaque point est placé sur la commune citée dans le titre, pas sur le lieu exact. Le tri
           se fait par mots-clés et se trompe parfois. Les violences sexuelles et les suicides ne
-          figurent pas sur la carte.
+          figurent pas sur la carte. Les images appartiennent aux journaux : elles restent chez eux
+          et se chargent depuis leurs serveurs.
         </p>
       </section>
 
@@ -51,11 +61,13 @@
           role="img"
           aria-label="Carte de la France métropolitaine avec un point par événement rapporté par la presse. La liste à côté donne les mêmes événements, utilisable au clavier."
         >
+          <defs><clipPath id="cp"><circle r="13"></circle></clipPath></defs>
           <g id="deps"></g>
           <g id="pts"></g>
         </svg>
 
         <div class="zoom">
+          <button class="btn" id="zimg" type="button" aria-pressed="true" aria-label="Afficher les photos" title="Photos ou formes">▣</button>
           <button class="btn" id="zin" type="button" aria-label="Zoomer">+</button>
           <button class="btn" id="zout" type="button" aria-label="Dézoomer">−</button>
           <button class="btn" id="zreset" type="button" aria-label="Voir toute la France">⌂</button>
@@ -64,6 +76,9 @@
         <p class="empty" id="empty" hidden></p>
 
         <div class="paper" id="card" role="dialog" aria-labelledby="cPlace" hidden>
+          <a class="shot" id="cShot" target="_blank" rel="noopener" hidden>
+            <img id="cImg" alt="" referrerpolicy="no-referrer" />
+          </a>
           <button class="x" id="cClose" type="button" aria-label="Fermer">×</button>
           <p class="mark" id="cCat"></p>
           <h2 id="cPlace"></h2>
