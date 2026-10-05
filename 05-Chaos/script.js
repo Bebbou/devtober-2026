@@ -155,7 +155,8 @@
   };
 
   const proj = (lon, lat) => [(lon - F.lon0) * F.cos * F.k, (F.lat1 - lat) * F.k];
-  const box = () => svg.getBoundingClientRect();
+  let rectCache = null;
+  const box = () => rectCache || (rectCache = svg.getBoundingClientRect());
   const scale = () => {
     const r = box();
     return Math.min(r.width / vb.w, r.height / vb.h) || 1;
@@ -171,14 +172,23 @@
   };
   const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 
-  let queued = 0;
+  let queued = 0, lastW = 0, movT = 0;
   const setView = () => {
     vb.w = clamp(vb.w, 90, F.w);
     vb.h = (vb.w * F.h) / F.w;
     vb.x = clamp(vb.x, -60, F.w - vb.w + 60);
     vb.y = clamp(vb.y, -60, F.h - vb.h + 60);
     svg.setAttribute("viewBox", [vb.x, vb.y, vb.w, vb.h].map((n) => +n.toFixed(2)).join(" "));
-    if (!queued) queued = requestAnimationFrame(() => { queued = 0; place(); });
+    svg.classList.add("moving");
+    clearTimeout(movT);
+    movT = setTimeout(() => svg.classList.remove("moving"), 180);
+    if (vb.w !== lastW) {
+      lastW = vb.w;
+      if (!queued) queued = requestAnimationFrame(() => { queued = 0; place(); });
+    } else {
+      loadPhotos();
+      if (sel && !card.hidden) putCard();
+    }
   };
 
   const zoomAt = (cx, cy, k) => {
@@ -269,8 +279,9 @@
     // les plus anciens d'abord : les récents restent au-dessus
     gPts.innerHTML = [...shown]
       .reverse()
-      .map((e) => {
+      .map((e, i, arr) => {
         const n = Math.min(e.items.length - 1, 6);
+        const live = level(now - e.ms) === 0 && arr.length - 1 - i < 8;
         // un tremblement différent pour chacun : ils ne battent pas en même temps
         const sh = `--sd:${(0.38 + (e.slot % 5) * 0.07 + (e.ms % 7) * 0.02).toFixed(2)}s;--dl:-${((e.ms % 11) * 0.09).toFixed(2)}s`;
         const g = CATS[e.cat].g;
@@ -280,8 +291,8 @@
             '<circle class="rim" r="13"/><g class="badge" transform="translate(10 10)"><circle r="7.5"/><g transform="scale(.6)">' + g + "</g></g></g>"
           : "";
         return (
-          `<g class="pt${e.img ? " has" : ""}" data-id="${e.id}" data-age="${level(now - e.ms)}" data-n="${n}" data-prec="${e.prec || ""}" aria-hidden="true">` +
-          '<circle class="hit" r="16"/><circle class="pulse" r="14"/><circle class="shock" r="14"/><circle class="ring" r="17"/>' +
+          `<g class="pt${e.img ? " has" : ""}" data-id="${e.id}" data-age="${level(now - e.ms)}" data-live="${live ? 1 : 0}" data-n="${n}" data-prec="${e.prec || ""}" aria-hidden="true">` +
+          '<circle class="hit" r="16"/>' + (live ? '<circle class="pulse" r="14"/>' : "") + '<circle class="ring" r="17"/>' +
           `<g class="sh" style="${sh}">` + photo + '<g class="sym">' + g + "</g></g>" +
           "</g>"
         );
@@ -371,6 +382,7 @@
     const u = 1 / scale();
     const now = Date.now();
     groups = [];
+    svg.style.setProperty("--sw", u.toFixed(4));
     nodes.forEach((n) => { n.inCl = false; });
     if (vb.w > MAX_ZOOM_W) {
       const reach = CELL * u;
@@ -387,13 +399,20 @@
     }
 
     nodes.forEach((n) => {
-      n.g.classList.toggle("in", n.inCl);
+      if (n.wasIn !== n.inCl) {
+        n.g.classList.toggle("in", n.inCl);
+        n.wasIn = n.inCl;
+      }
       const e = n.e;
       if (!e || n.inCl) return;
       // plusieurs faits dans la même commune : on les écarte en spirale
       const a = e.slot * 2.4, r = e.slot ? SPREAD * Math.sqrt(e.slot) : 0;
       const s = u * (1 + 0.2 * n.n);
-      n.g.setAttribute("transform", `translate(${(e.ux + Math.cos(a) * r * u).toFixed(2)} ${(e.uy + Math.sin(a) * r * u).toFixed(2)}) scale(${s.toFixed(4)})`);
+      const tr = `translate(${(e.ux + Math.cos(a) * r * u).toFixed(2)} ${(e.uy + Math.sin(a) * r * u).toFixed(2)}) scale(${s.toFixed(4)})`;
+      if (n.tr !== tr) {
+        n.g.setAttribute("transform", tr);
+        n.tr = tr;
+      }
     });
 
     groups.forEach((g, i) => {
@@ -673,7 +692,12 @@
   $("#zin").addEventListener("click", () => zoomAt(...mid(), 1.7));
   $("#zout").addEventListener("click", () => zoomAt(...mid(), 1 / 1.7));
   $("#zreset").addEventListener("click", () => flyTo(F.w / 2, F.h / 2, F.w));
-  addEventListener("resize", place);
+  // la taille de la carte change : on relit son rectangle et on replace tout
+  if (window.ResizeObserver) {
+    new ResizeObserver(() => { rectCache = null; place(); }).observe(svg);
+  } else {
+    addEventListener("resize", () => { rectCache = null; place(); });
+  }
 
   /* ---------- Le rejeu ---------- */
   let replaying = 0;
@@ -709,7 +733,12 @@
           n.hide = false;
           if (!calm) {
             n.g.classList.add("pop");
-            setTimeout(() => n.g.classList.remove("pop"), 1300);
+            n.g.insertAdjacentHTML("beforeend", '<circle class="shock" r="14"/>');
+            setTimeout(() => {
+              n.g.classList.remove("pop");
+              const s = n.g.querySelector(".shock");
+              if (s) s.remove();
+            }, 1300);
           }
         }
         shownN++;

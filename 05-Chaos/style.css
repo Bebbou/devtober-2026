@@ -336,6 +336,11 @@ main {
   scrollbar-color: var(--line-strong) transparent;
 }
 
+.list li {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 66px;
+}
+
 .row {
   display: grid;
   grid-template-columns: 46px 1fr auto;
@@ -439,8 +444,7 @@ main {
   cursor: pointer;
   fill: var(--surface);
   stroke: var(--line-strong);
-  stroke-width: 1;
-  vector-effect: non-scaling-stroke;
+  stroke-width: var(--sw, 1);
   stroke-linejoin: round;
 }
 
@@ -450,7 +454,17 @@ main {
 
 #deps path.on {
   stroke: var(--pink);
-  stroke-width: 2;
+  stroke-width: calc(var(--sw, 1) * 2);
+}
+
+/* pendant un geste, tout ce qui bouge tout seul s'arrête et le dessin se simplifie */
+#map.moving .sh,
+#map.moving .pulse {
+  animation-play-state: paused;
+}
+
+#map.moving #deps {
+  shape-rendering: optimizeSpeed;
 }
 
 /* plusieurs pastilles proches : une bulle avec leur nombre */
@@ -481,16 +495,6 @@ main {
 
 .cl .pulse {
   display: none;
-}
-
-.cl[data-live="1"] .pulse {
-  display: inline;
-  fill: none;
-  stroke: var(--pink);
-  stroke-width: 1;
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: pulse 2.4s ease-out infinite;
 }
 
 .pt {
@@ -540,20 +544,8 @@ body.shapes .pt .photo {
   stroke: none;
 }
 
-.pt .sh {
-  animation-duration: var(--sd, 0.5s);
-  animation-delay: var(--dl, 0s);
-  animation-timing-function: steps(1);
-  animation-iteration-count: infinite;
-}
-
-.pt[data-age="0"] .sh {
-  animation-name: shake;
-}
-
-.pt[data-age="1"] .sh {
-  animation-name: shake-lent;
-  animation-duration: calc(var(--sd, 0.5s) * 2.4);
+.pt[data-live="1"] .sh {
+  animation: shake var(--sd, 0.5s) steps(1) var(--dl, 0s) infinite;
 }
 
 @keyframes shake {
@@ -574,38 +566,16 @@ body.shapes .pt .photo {
   }
 }
 
-@keyframes shake-lent {
-  0% {
-    transform: translate(0, 0);
-  }
-  33% {
-    transform: translate(-0.8px, 0.6px);
-  }
-  66% {
-    transform: translate(0.7px, -0.7px);
-  }
-}
-
 /* l'événement qui surgit pendant le rejeu : il grossit d'un coup, une onde part de lui */
 .pt.pop .sh {
   animation: pop 0.7s cubic-bezier(0.2, 0.9, 0.3, 1) 1 both;
 }
 
-.pt.pop .shock {
+.shock {
   fill: none;
   stroke: var(--pink);
   stroke-width: 1.5;
-  transform-box: fill-box;
-  transform-origin: center;
   animation: shock 1.2s ease-out 1 both;
-}
-
-.shock {
-  display: none;
-}
-
-.pt.pop .shock {
-  display: inline;
 }
 
 @keyframes pop {
@@ -675,12 +645,10 @@ body.shapes .pt .photo {
   opacity: 1;
 }
 
-.pt[data-age="0"] .pulse {
+.pt .pulse {
   fill: none;
   stroke: var(--pink);
   stroke-width: 1;
-  transform-box: fill-box;
-  transform-origin: center;
   animation: pulse 2.4s ease-out infinite;
 }
 
