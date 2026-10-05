@@ -72,6 +72,7 @@
             <tr><td>⌂, +, −</td><td>Vue d'ensemble, zoom avant, zoom arrière.</td></tr>
             <tr><td>⤢</td><td>Carte en plein écran (ordinateur). Échap ou × pour en sortir.</td></tr>
             <tr><td>sur téléphone</td><td>Pincer ou toucher deux fois pour zoomer, glisser pour déplacer. La poignée en bas ouvre le tiroir (liste, période, filtres) : un toucher ou un geste vers le haut.</td></tr>
+            <tr><td>↻</td><td>Relit les données tout de suite et dit le résultat : « +12 événements », « mis à jour » ou « déjà à jour ».</td></tr>
             <tr><td>lien</td><td>Copie l'adresse : elle contient la période, les filtres, la recherche, le département et l'événement ouvert.</td></tr>
             <tr><td>i, ?</td><td>Sources et limites, et la visite guidée.</td></tr>
             <tr><td>Échap</td><td>Ferme le papier ouvert.</td></tr>
@@ -170,7 +171,7 @@ const makeSprite = (img) => {
     <section id="publication" data-name="la publication">
       <h2>la publication</h2>
       <p>Une GitHub Action (<code>chaos-data</code>) tourne toutes les heures, à la minute 17, comme celle de Pulse. Elle reprend l'<code>events.json</code> précédent, lui ajoute les nouveaux événements, garde les 30 derniers jours (3 000 événements au plus) et publie le fichier dans un seul commit réécrit sur la branche <code>chaos-data</code>. Les flux ne gardent que quelques heures à un mois de titres : c'est cette reprise du fichier précédent qui construit l'historique.</p>
-      <p>La page lit ce fichier sur <code>raw.githubusercontent.com</code> et, en secours, la copie <code>05-Chaos/events.json</code> du dossier. La plus récente des deux l'emporte. Elle se recharge toutes les 15 minutes, et la fraîcheur des données est écrite à côté de « en france ».</p>
+      <p>La page lit ce fichier sur <code>raw.githubusercontent.com</code> et, en secours, la copie <code>05-Chaos/events.json</code> du dossier. La plus récente des deux l'emporte. Elle se recharge toute seule toutes les 15 minutes et au retour sur l'onglet après 10 minutes d'absence, ou tout de suite avec le bouton ↻. Les données elles-mêmes ne changent qu'une fois par heure, quand l'Action tourne : le bouton relit le fichier, il ne relance pas la collecte. La fraîcheur est écrite à côté de « en france ».</p>
       <p>Premier lancement : après la fusion dans <code>main</code>, onglet Actions, <code>chaos-data</code>, « Run workflow ».</p>
     </section>
 

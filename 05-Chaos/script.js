@@ -1106,16 +1106,23 @@
     $("#fresh").textContent = "· " + ago(age) + (age > 6 * HOUR ? " : pas de mise à jour récente" : "");
   };
 
-  const load = async () => {
-    const got = await Promise.allSettled(URLS.map((u) => fetch(u, { cache: "no-cache" }).then((r) => (r.ok ? r.json() : Promise.reject()))));
+  // `force` : l'adresse change à chaque appel, pour contourner la mémoire du navigateur et du relais de GitHub
+  let lastLoad = 0;
+  const load = async (force) => {
+    const got = await Promise.allSettled(URLS.map((u) => fetch(u + (force ? "?t=" + Date.now() : ""), { cache: "no-cache" }).then((r) => (r.ok ? r.json() : Promise.reject()))));
     const best = got
       .filter((g) => g.status === "fulfilled" && g.value && Array.isArray(g.value.events))
       .map((g) => g.value)
       .sort((a, b) => new Date(b.generated) - new Date(a.generated))[0];
     const first = !loaded;
     loaded = true;
+    lastLoad = Date.now();
+    const result = { failed: !best, changed: false, added: 0 };
     if (best && new Date(best.generated).getTime() !== generated) {
+      const prevN = events.length;
+      result.changed = true;
       events = best.events.filter((e) => !e.sat);
+      result.added = events.length - prevN;
       generated = new Date(best.generated).getTime();
       stopReplay();
       prepare();
@@ -1128,7 +1135,30 @@
       }
     } else if (first) render();
     stamp();
+    return result;
   };
+
+  // Le bouton ↻ : relit les données tout de suite et dit ce qui s'est passé. Sinon la page les relit
+  // toute seule toutes les 15 min, et au retour sur l'onglet après 10 min d'absence.
+  const rb = $("#refresh");
+  rb.addEventListener("click", async () => {
+    if (rb.disabled) return;
+    rb.disabled = true;
+    rb.textContent = "…";
+    const r = await load(true);
+    const note = r.failed ? "hors ligne" : r.changed ? (r.added > 0 ? "+" + r.added + " événements" : "mis à jour") : "déjà à jour";
+    rb.textContent = r.failed ? "!" : "✓";
+    $("#stamp").textContent = "données " + ago(Date.now() - generated) + " · " + note;
+    $("#fresh").textContent = "· " + note;
+    setTimeout(() => {
+      rb.textContent = "↻";
+      rb.disabled = false;
+      stamp();
+    }, 3500);
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && lastLoad && Date.now() - lastLoad > 10 * 60 * 1000) load();
+  });
 
   /* ---------- La visite guidée ----------
      Trois bulles à la première visite : les formes, la période, puis un événement de la liste. */
