@@ -6,20 +6,80 @@
     <meta name="color-scheme" content="dark" />
     <meta name="theme-color" content="#0d0d0d" />
     <title>Chaos · jour 05</title>
-    <meta name="description" content="À COMPLÉTER : une phrase sur le projet." />
+    <meta
+      name="description"
+      content="Une carte de France des incendies, accidents, intempéries, mobilisations et violences rapportés par la presse, sur 1, 7 ou 30 jours."
+    />
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <header class="top">
       <a class="logo" href="#"><i></i>chaos</a>
+      <div class="right">
+        <span class="stamp" id="stamp"></span>
+        <button class="btn" id="help" type="button" aria-label="revoir la visite guidée">?</button>
+      </div>
     </header>
 
     <main id="stage">
-      <!-- À COMPLÉTER : le projet du jour -->
+      <section class="side" aria-label="Filtres et liste">
+        <p class="mark">en france</p>
+        <p class="big" aria-live="polite"><span id="total">0</span> <span id="unit"></span></p>
+
+        <div class="seg" id="periods" role="group" aria-label="Période">
+          <button type="button" data-days="1">1 j</button>
+          <button type="button" data-days="7">7 j</button>
+          <button type="button" data-days="30">30 j</button>
+        </div>
+
+        <div class="cats" id="cats" role="group" aria-label="Catégories"></div>
+
+        <ol class="list" id="list"></ol>
+
+        <p class="note">
+          Chaque point est placé sur la commune citée dans le titre, pas sur le lieu exact. Le tri
+          se fait par mots-clés et se trompe parfois. Les violences sexuelles et les suicides ne
+          figurent pas sur la carte.
+        </p>
+      </section>
+
+      <section class="mapwrap" aria-label="Carte">
+        <svg
+          id="map"
+          viewBox="0 0 1000 966"
+          preserveAspectRatio="xMidYMid meet"
+          role="img"
+          aria-label="Carte de la France métropolitaine avec un point par événement rapporté par la presse. La liste à côté donne les mêmes événements, utilisable au clavier."
+        >
+          <g id="deps"></g>
+          <g id="pts"></g>
+        </svg>
+
+        <div class="zoom">
+          <button class="btn" id="zin" type="button" aria-label="Zoomer">+</button>
+          <button class="btn" id="zout" type="button" aria-label="Dézoomer">−</button>
+          <button class="btn" id="zreset" type="button" aria-label="Voir toute la France">⌂</button>
+        </div>
+
+        <p class="empty" id="empty" hidden></p>
+
+        <div class="paper" id="card" role="dialog" aria-labelledby="cPlace" hidden>
+          <button class="x" id="cClose" type="button" aria-label="Fermer">×</button>
+          <p class="mark" id="cCat"></p>
+          <h2 id="cPlace"></h2>
+          <p class="when" id="cWhen"></p>
+          <ul id="cItems"></ul>
+        </div>
+      </section>
     </main>
 
     <footer class="foot">
-      <p><span class="mark">crédits</span> Conçu par <a href="https://github.com/Bebbou">Lino Volle</a></p>
+      <p>
+        <span class="mark">crédits</span> Conçu par
+        <a href="https://github.com/Bebbou">Lino Volle</a>. Titres : flux RSS de franceinfo, Le
+        Monde, Le Figaro, Ouest-France, Midi Libre, La Dépêche, ICI et France 3 régions. Feux :
+        NASA FIRMS. Communes : geo.api.gouv.fr. Contours : france-geojson (IGN, Licence Ouverte).
+      </p>
       <nav aria-label="Liens">
         <a href="../docs/05-chaos.html">doc</a>
         <a href="https://github.com/Bebbou/devtober-2026/tree/main/05-Chaos">code</a>
@@ -27,6 +87,18 @@
       </nav>
     </footer>
 
+    <!-- La visite guidée -->
+    <svg class="tourfx" id="tourfx" aria-hidden="true" hidden><rect id="tRing" rx="6" fill="none"></rect><path id="tArrow"></path></svg>
+    <div class="tour" id="tour" hidden>
+      <p class="mark" id="tStep"></p>
+      <p id="tText"></p>
+      <div class="row2">
+        <button class="tnext" id="tNext" type="button">suivant</button>
+        <button class="tskip" id="tSkip" type="button">passer</button>
+      </div>
+    </div>
+
+    <script src="france.js"></script>
     <script src="script.js"></script>
   </body>
 </html>
