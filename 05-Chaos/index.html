@@ -77,12 +77,10 @@
           role="img"
           aria-label="Carte de la France métropolitaine avec un point par événement rapporté par la presse. La liste à côté donne les mêmes événements, utilisable au clavier."
         >
-          <defs><clipPath id="cp"><circle r="13"></circle></clipPath></defs>
           <g id="deps"></g>
           <g id="dc"></g>
-          <g id="pts"></g>
-          <g id="cl"></g>
         </svg>
+        <canvas id="cv" aria-hidden="true"></canvas>
 
         <div class="zoom">
           <button class="btn only-small" id="zfull" type="button" aria-pressed="false" aria-label="Carte en plein écran">⤢</button>
@@ -148,8 +146,8 @@
         Les procès, les tribunes et les mises à jour sans fait sont écartés, ainsi que les violences
         sexuelles et les suicides. Une même histoire reprise par plusieurs journaux forme un seul
         événement, et « aussi dans » liste les autres départements. Les points en pointillé sont
-        placés au centre d'un département. Les violences et les accidents n'ont pas de photo. Les
-        autres photos appartiennent aux journaux et se chargent depuis leurs serveurs.
+        placés au centre d'un département. Les photos appartiennent aux journaux et se chargent
+        depuis leurs serveurs.
       </p>
       <p class="src">
         Titres : franceinfo, Le Monde, Le Figaro, Ouest-France, Midi Libre, La Dépêche,

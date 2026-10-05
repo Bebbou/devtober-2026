@@ -24,7 +24,7 @@
     violence: { label: "violences", g: '<path class="o" d="M-5 -5L5 5M5 -5L-5 5"/>' },
     panne: { label: "pannes", g: '<path class="o" d="M-6 0L-3 -5.2H3L6 0L3 5.2H-3Z"/>' },
   };
-  const NOPHOTO = new Set(["violence", "accident"]); // pas de photo : on ne montre pas de victimes
+  const NOPHOTO = new Set(); // catégories sans photo (par exemple "violence", "accident") : aucune, on montre l'information
   const HOUR = 3600e3;
   const DAY = 24 * HOUR;
   const LIST_MAX = 120;
@@ -32,14 +32,15 @@
 
   const svg = $("#map");
   const gDeps = $("#deps");
-  const gPts = $("#pts");
   const wrap = $(".mapwrap");
   const card = $("#card");
   const list = $("#list");
+  const cv = $("#cv");
+  const ctx = cv.getContext("2d");
 
   let events = [];
   let generated = 0;
-  let days = 7;
+  let days = 30;
   let active = new Set(Object.keys(CATS));
   let sel = null;
   let shown = [];
@@ -51,7 +52,9 @@
   let loaded = false;
   let hashEvent = "";
   let showDep = true;
-  const nodes = new Map(); // id -> { g, row, e }
+  const nodes = new Map(); // id -> { e, row, x, y, sx, sy, R, sprite, state, hide, inCl, popT }
+  let order = []; // les mêmes, du plus récent au plus ancien
+  const sprites = new Map(); // adresse de la photo -> vignette ronde déjà préparée
   const vb = { x: 0, y: 0, w: F.w, h: F.h };
 
   try {
@@ -141,7 +144,7 @@
     depEls.forEach((d, k) => {
       const c = n.get(k) || 0;
       // échelle en racine : quelques événements se voient déjà, le plus touché est franchement rose
-      d.el.style.fill = c ? "rgba(255, 0, 85, " + (0.09 + 0.4 * Math.sqrt(c / max)).toFixed(3) + ")" : "";
+      d.el.style.fill = c ? "rgba(255, 0, 85, " + (0.12 + 0.5 * Math.sqrt(c / max)).toFixed(3) + ")" : "";
       d.el.firstChild.textContent = d.name + (c ? " : " + c : "");
       d.lb.textContent = c || "";
     });
@@ -209,6 +212,7 @@
       if (!queued) queued = requestAnimationFrame(() => { queued = 0; place(); });
     } else {
       loadPhotos();
+      queueDraw();
       if (sel && !card.hidden) putCard();
     }
   };
@@ -306,30 +310,14 @@
     $("#unit").textContent = (shown.length === 1 ? "événement" : "événements") + " sur " + (days === 1 ? "24 h" : days + " jours") + (shown.length > MAX_PTS ? " (" + MAX_PTS + " sur la carte)" : "");
 
     nodes.clear();
-    // les plus anciens d'abord : les récents restent au-dessus
+    order = [];
     drawn = shown.slice(0, MAX_PTS);
-    gPts.innerHTML = [...drawn]
-      .reverse()
-      .map((e, i, arr) => {
-        const n = Math.min(e.items.length - 1, 6);
-        const r = arr.length - 1 - i;
-        const live = level(now - e.ms) === 0 && r < 8;
-        // un tremblement différent pour chacun : ils ne battent pas en même temps
-        const sh = `--sd:${(0.38 + (e.slot % 5) * 0.07 + (e.ms % 7) * 0.02).toFixed(2)}s;--dl:-${((e.ms % 11) * 0.09).toFixed(2)}s`;
-        const g = CATS[e.cat].g;
-        return (
-          `<g class="pt${e.prec === "dep" ? " dp" : ""}" data-id="${e.id}" data-c="${e.cat}" data-age="${level(now - e.ms)}" data-live="${live ? 1 : 0}" data-n="${n}" data-prec="${e.prec || ""}" aria-hidden="true">` +
-          '<circle class="hit" r="16"/>' + (live ? '<circle class="pulse" r="14"/>' : "") + '<circle class="ring" r="17"/>' +
-          `<g class="sh" style="${sh}"><g class="sym">` + g + "</g></g>" +
-          "</g>"
-        );
-      })
-      .join("");
-    const byId = new Map(drawn.map((e) => [e.id, e]));
-    const rank = new Map(shown.map((e, i) => [e.id, i]));
-    gPts.querySelectorAll(".pt").forEach((g) =>
-      nodes.set(g.dataset.id, { g, e: byId.get(g.dataset.id), n: +g.dataset.n, rank: rank.get(g.dataset.id), hide: false, inCl: false }),
-    );
+    drawn.forEach((e, rank) => {
+      const sp = e.pic ? sprites.get(e.pic) : null;
+      const n = { id: e.id, e, rank, n: Math.min(e.items.length - 1, 6), age: level(now - e.ms), hide: false, inCl: false, sprite: sp || null, state: sp ? 2 : 0, popT: 0, x: 0, y: 0, sx: -999, sy: -999, R: 13, row: null };
+      nodes.set(e.id, n);
+      order.push(n);
+    });
 
     const sig = [days, nq, depSel, [...active].join(), showDep].join("|");
     if (sig !== lastSig) listN = 30;
@@ -350,8 +338,8 @@
     histo();
     place();
     clearTimeout(growT);
-    loadLimit = 40;
-    growT = setTimeout(growPhotos, 1100);
+    loadLimit = 80;
+    growT = setTimeout(growPhotos, 800);
   };
 
   let listN = 30, lastSig = "";
@@ -387,124 +375,243 @@
 
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 
-  // La photo est ajoutée à la pastille au moment de la charger : 40 d'abord, puis 20 de plus toutes
-  // les 1,1 s jusqu'à 150, les autres seulement quand on zoome dessus. Sans photo, la forme reste.
-  let loadLimit = 40, growT = 0;
-  const ensurePhoto = (n) => {
-    n.g.querySelector(".sh").insertAdjacentHTML(
-      "afterbegin",
-      '<g class="photo"><circle class="bgc" r="13"/>' +
-        `<image class="im" href="${esc(n.e.pic)}" x="-13" y="-13" width="26" height="26" preserveAspectRatio="xMidYMid slice" clip-path="url(#cp)"/>` +
-        '<circle class="rim" r="13"/><g class="badge" transform="translate(10 10)"><circle r="7.5"/><g transform="scale(.6)">' + CATS[n.e.cat].g + "</g></g></g>",
-    );
-    n.g.classList.add("has");
+  // Une vignette ronde de 72 px par photo, préparée au chargement : le dessin ne fait ensuite que
+  // la poser. 80 photos d'abord, puis 40 de plus toutes les 0,8 s : toutes en désordre, 260 au plus rangé.
+  let loadLimit = 80, growT = 0;
+  const SP = 72;
+  const makeSprite = (img) => {
+    const c = document.createElement("canvas");
+    c.width = c.height = SP;
+    const g = c.getContext("2d");
+    g.imageSmoothingQuality = "high";
+    g.beginPath();
+    g.arc(SP / 2, SP / 2, SP / 2, 0, 7);
+    g.clip();
+    const k = Math.max(SP / img.naturalWidth, SP / img.naturalHeight);
+    const w = img.naturalWidth * k, h = img.naturalHeight * k;
+    g.drawImage(img, (SP - w) / 2, (SP - h) / 2, w, h);
+    return c;
+  };
+  const bad = new Set(); // adresses en panne : on ne réessaie pas
+  const loadImg = (n) => {
+    n.state = 1;
+    const url = n.e.pic;
+    const im = new Image();
+    im.referrerPolicy = "no-referrer";
+    im.decoding = "async";
+    im.onload = () => {
+      try {
+        const s = makeSprite(im);
+        sprites.set(url, s);
+        n.sprite = s;
+        n.state = 2;
+      } catch (e) {
+        n.state = 3;
+      }
+      queueDraw();
+    };
+    im.onerror = () => {
+      bad.add(url);
+      n.state = 3;
+    };
+    im.src = url;
   };
   const loadPhotos = () => {
     if (document.body.classList.contains("shapes")) return;
     const zoomed = vb.w < 520;
-    nodes.forEach((n) => {
-      if (n.loaded || !n.e || !n.e.pic || n.inCl) return;
-      if (n.rank >= loadLimit && !zoomed) return;
-      if (n.e.ux < vb.x - 30 || n.e.ux > vb.x + vb.w + 30 || n.e.uy < vb.y - 30 || n.e.uy > vb.y + vb.h + 30) return;
-      n.loaded = true;
-      ensurePhoto(n);
-    });
+    for (const n of order) {
+      if (n.state !== 0 || !n.e.pic || n.inCl || bad.has(n.e.pic)) continue;
+      if (n.rank >= loadLimit && !zoomed) continue;
+      if (n.e.ux < vb.x - 30 || n.e.ux > vb.x + vb.w + 30 || n.e.uy < vb.y - 30 || n.e.uy > vb.y + vb.h + 30) continue;
+      loadImg(n);
+    }
   };
   const growPhotos = () => {
-    if (loadLimit >= 150) return;
-    loadLimit += 20;
+    // en désordre toutes les photos finissent par charger ; rangé, les pastilles sont en bulles : 260 suffisent
+    if (loadLimit >= (tidy ? 260 : MAX_PTS)) return;
+    loadLimit += 40;
     loadPhotos();
-    growT = setTimeout(growPhotos, 1100);
+    growT = setTimeout(growPhotos, 800);
   };
-  // une image en panne (adresse expirée) : la pastille retombe sur sa forme
-  gPts.addEventListener(
-    "error",
-    (ev) => {
-      const g = ev.target.closest && ev.target.closest(".pt");
-      if (g) g.classList.add("noimg");
-    },
-    true,
-  );
 
-  // taille constante à l'écran : on convertit les pixels en unités de la carte
-  const SPREAD = 15;
+  const SPREAD = 12;
   const CELL = 30; // en pixels : sous cette distance, deux pastilles se regroupent
   const MAX_ZOOM_W = 150; // au zoom maximal on ne regroupe plus : on écarte en spirale
   let groups = [];
-  const gCl = $("#cl");
-  const clEls = [];
-  const clAt = (i) => {
-    while (clEls.length <= i) {
-      gCl.insertAdjacentHTML("beforeend", '<g class="cl" aria-hidden="true"><circle class="pulse" r="18"/><circle class="disc" r="16"/><text class="num" y="5" text-anchor="middle"></text><title></title></g>');
-      clEls.push(gCl.lastElementChild);
-    }
-    return clEls[i];
+  let dpr = 1, cw = 0, ch = 0, drawQ = 0, hotId = null;
+
+  // les formes de catégorie : « fill » pleines, « stroke » en trait
+  const GL = {
+    feu: [new Path2D("M0 -7L6.5 5L-6.5 5Z"), "fill"],
+    meteo: [new Path2D("M0 -7L7 0L0 7L-7 0Z"), "fill"],
+    accident: [new Path2D("M-5 -5H5V5H-5Z"), "fill"],
+    manif: [new Path2D("M-5.5 0A5.5 5.5 0 1 0 5.5 0A5.5 5.5 0 1 0 -5.5 0Z"), "stroke"],
+    violence: [new Path2D("M-5 -5L5 5M5 -5L-5 5"), "stroke"],
+    panne: [new Path2D("M-6 0L-3 -5.2H3L6 0L3 5.2H-3Z"), "stroke"],
   };
+  const AGE = ["#ff0055", "#e0e0e0", "#8c8c8c", "#5a5a5a"]; // rose : moins de 3 h
+
+  const sizeCanvas = () => {
+    const r = box();
+    dpr = Math.min(2, window.devicePixelRatio || 1);
+    cw = r.width;
+    ch = r.height;
+    cv.width = Math.round(cw * dpr);
+    cv.height = Math.round(ch * dpr);
+  };
+  const queueDraw = () => {
+    if (!drawQ) drawQ = requestAnimationFrame(draw);
+  };
+
+  const glyphAt = (cat, x, y, s, col) => {
+    const g = GL[cat];
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(s, s);
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+    ctx.strokeStyle = "#0d0d0d";
+    ctx.lineWidth = g[1] === "fill" ? 3 : 4.5;
+    ctx.stroke(g[0]);
+    if (g[1] === "fill") {
+      ctx.fillStyle = col;
+      ctx.fill(g[0]);
+    } else {
+      ctx.strokeStyle = col;
+      ctx.lineWidth = 2;
+      ctx.stroke(g[0]);
+    }
+    ctx.restore();
+  };
+
+  const drawPt = (n, shapes, t) => {
+    const e = n.e, col = AGE[n.age], x = n.sx, y = n.sy;
+    const since = n.popT ? t - n.popT : 1e9;
+    // l'événement qui surgit pendant le rejeu : il grossit d'un coup, une onde part de lui
+    const R = n.R * (since < 700 ? 1 + 2.2 * Math.pow(1 - since / 700, 3) : 1);
+    if (n.sprite && !shapes) {
+      ctx.drawImage(n.sprite, x - R, y - R, R * 2, R * 2);
+      ctx.beginPath();
+      ctx.arc(x, y, R, 0, 7);
+      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = col;
+      if (e.prec === "dep") ctx.setLineDash([3, 3]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      const bx = x + R * 0.78, by = y + R * 0.78, br = R * 0.58;
+      ctx.beginPath();
+      ctx.arc(bx, by, br, 0, 7);
+      ctx.fillStyle = "#0d0d0d";
+      ctx.fill();
+      ctx.lineWidth = 1.2;
+      ctx.strokeStyle = col;
+      ctx.stroke();
+      glyphAt(e.cat, bx, by, (br / 7.5) * 0.6, col);
+    } else {
+      glyphAt(e.cat, x, y, R / 13, col);
+    }
+    if (since < 1200) {
+      ctx.beginPath();
+      ctx.arc(x, y, n.R * (0.8 + (since / 1200) * 5), 0, 7);
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = "rgba(255, 0, 85, " + (1 - since / 1200).toFixed(2) + ")";
+      ctx.stroke();
+    }
+  };
+
+  function draw() {
+    drawQ = 0;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, cw, ch);
+    const sc = scale(), r = box(), ox = (r.width - vb.w * sc) / 2, oy = (r.height - vb.h * sc) / 2;
+    const shapes = document.body.classList.contains("shapes"), t = performance.now();
+    // les plus anciennes d'abord : les récentes restent au-dessus
+    for (let i = order.length - 1; i >= 0; i--) {
+      const n = order[i];
+      if (n.inCl || n.hide) continue;
+      n.sx = ox + (n.x - vb.x) * sc;
+      n.sy = oy + (n.y - vb.y) * sc;
+      if (n.sx < -40 || n.sx > cw + 40 || n.sy < -40 || n.sy > ch + 40) continue;
+      drawPt(n, shapes, t);
+    }
+    ctx.font = '700 14px "Courier New", Courier, monospace';
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    groups.forEach((g) => {
+      g.sx = ox + (g.cx - vb.x) * sc;
+      g.sy = oy + (g.cy - vb.y) * sc;
+      if (g.sx < -50 || g.sx > cw + 50 || g.sy < -50 || g.sy > ch + 50) return;
+      const col = g.live ? "#ff0055" : "#e0e0e0";
+      ctx.beginPath();
+      ctx.arc(g.sx, g.sy, g.R, 0, 7);
+      ctx.fillStyle = "rgba(13, 13, 13, 0.92)";
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = col;
+      ctx.stroke();
+      ctx.fillStyle = col;
+      ctx.fillText(g.m.length, g.sx, g.sy + 1);
+    });
+    const ring = (n, w) => {
+      if (!n || n.inCl || n.hide) return;
+      ctx.beginPath();
+      ctx.arc(n.sx, n.sy, n.R + 4, 0, 7);
+      ctx.lineWidth = w;
+      ctx.strokeStyle = "#ff0055";
+      ctx.stroke();
+    };
+    ring(nodes.get(sel), 2);
+    if (hotId && hotId !== sel) ring(nodes.get(hotId), 1.5);
+  }
 
   const place = () => {
     const u = 1 / scale();
     const now = Date.now();
     groups = [];
     svg.style.setProperty("--sw", u.toFixed(4));
-    svg.style.setProperty("--u", u.toFixed(4));    nodes.forEach((n) => { n.inCl = false; });
+    svg.style.setProperty("--u", u.toFixed(4));
+    for (const n of order) {
+      n.inCl = false;
+      // en désordre, les pastilles sont un peu plus grandes : elles se recouvrent davantage
+      n.R = 13 * (1 + 0.2 * n.n) * (tidy ? 1 : 1.2);
+      // plusieurs faits dans la même commune : on les écarte en spirale
+      const p = posOf(n.e, u);
+      n.x = p[0];
+      n.y = p[1];
+    }
     if (tidy && vb.w > MAX_ZOOM_W) {
       const reach = CELL * u;
-      for (const e of drawn) {
-        const n = nodes.get(e.id);
+      for (const n of order) {
         // l'événement ouvert et ceux du rejeu pas encore apparus ne comptent pas
-        if (!n || n.hide || e.id === sel) continue;
+        if (n.hide || n.id === sel) continue;
+        const e = n.e;
         const g = groups.find((c) => Math.abs(c.ax - e.ux) < reach && Math.hypot(c.ax - e.ux, c.ay - e.uy) < reach);
         if (g) g.m.push(e);
         else groups.push({ ax: e.ux, ay: e.uy, m: [e] });
       }
       groups = groups.filter((g) => g.m.length > 1);
-      groups.forEach((g) => g.m.forEach((e) => { nodes.get(e.id).inCl = true; }));
+      groups.forEach((g) => {
+        const k = g.m.length;
+        g.m.forEach((e) => { nodes.get(e.id).inCl = true; });
+        g.cx = g.m.reduce((s, e) => s + e.ux, 0) / k;
+        g.cy = g.m.reduce((s, e) => s + e.uy, 0) / k;
+        g.R = Math.min(36, 15 + 3.2 * Math.sqrt(k));
+        g.live = g.m.some((e) => now - e.ms < 3 * HOUR);
+      });
     }
-
-    nodes.forEach((n) => {
-      if (n.wasIn !== n.inCl) {
-        n.g.classList.toggle("in", n.inCl);
-        n.wasIn = n.inCl;
-      }
-      const e = n.e;
-      if (!e || n.inCl) return;
-      // plusieurs faits dans la même commune : on les écarte en spirale
-      const a = e.slot * 2.4, r = e.slot ? SPREAD * Math.sqrt(e.slot) : 0;
-      const s = u * (1 + 0.2 * n.n) * (e.prec === "dep" ? 0.82 : 1);
-      const tr = `translate(${(e.ux + Math.cos(a) * r * u).toFixed(2)} ${(e.uy + Math.sin(a) * r * u).toFixed(2)}) scale(${s.toFixed(4)})`;
-      if (n.tr !== tr) {
-        n.g.setAttribute("transform", tr);
-        n.tr = tr;
-      }
-    });
-
-    groups.forEach((g, i) => {
-      const el = clAt(i), c = el.children, n = g.m.length;
-      const cx = g.m.reduce((s, e) => s + e.ux, 0) / n, cy = g.m.reduce((s, e) => s + e.uy, 0) / n;
-      const r = Math.min(36, 15 + 3.2 * Math.sqrt(n));
-      el.setAttribute("transform", `translate(${cx.toFixed(2)} ${cy.toFixed(2)}) scale(${u.toFixed(4)})`);
-      el.dataset.i = i;
-      el.dataset.live = g.m.some((e) => now - e.ms < 3 * HOUR) ? "1" : "0";
-      el.style.display = "";
-      c[0].setAttribute("r", r + 3);
-      c[1].setAttribute("r", r);
-      c[2].textContent = n;
-      c[3].textContent = n + " événements : cliquer pour zoomer";
-    });
-    for (let i = groups.length; i < clEls.length; i++) clEls[i].style.display = "none";
-
     loadPhotos();
+    queueDraw();
     if (sel && !card.hidden) putCard();
   };
 
   const mark = (id, on) => {
     const n = nodes.get(id);
     if (!n) return;
-    n.g.classList.toggle("sel", on);
     if (n.row) {
       if (on) n.row.setAttribute("aria-current", "true");
       else n.row.removeAttribute("aria-current");
     }
+    queueDraw();
   };
 
   /* ---------- Le papier ---------- */
@@ -614,17 +721,28 @@
 
   /* ---------- Les gestes sur la carte ---------- */
   const ptrs = new Map();
-  let moved = false, downPt = null, downCl = -1, downDep = "", pinch = 0;
+  let moved = false, downHit = null, downDep = "", pinch = 0, hovKey = "";
+
+  // ce qui se trouve à cet endroit de l'écran : une bulle, sinon la pastille du dessus
+  const hit = (cx, cy) => {
+    const r = box(), x = cx - r.left, y = cy - r.top;
+    for (let i = groups.length - 1; i >= 0; i--) {
+      const g = groups[i];
+      if (g.sx !== undefined && Math.hypot(g.sx - x, g.sy - y) <= g.R + 2) return { cl: i };
+    }
+    for (const n of order) {
+      if (n.inCl || n.hide) continue;
+      if (Math.hypot(n.sx - x, n.sy - y) <= n.R + 3) return { n };
+    }
+    return null;
+  };
 
   svg.addEventListener("pointerdown", (e) => {
     svg.setPointerCapture(e.pointerId);
     ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (ptrs.size === 1) {
       moved = false;
-      const t = e.target.closest(".pt");
-      downPt = t ? t.dataset.id : null;
-      const c = e.target.closest(".cl");
-      downCl = c ? +c.dataset.i : -1;
+      downHit = hit(e.clientX, e.clientY);
       const d = e.target.closest("#deps path");
       downDep = d ? d.dataset.k : "";
     }
@@ -634,9 +752,49 @@
     }
   });
 
+  const legend = $("#legend");
+  const LEGEND = legend.textContent;
+  const info = (text) => {
+    legend.textContent = text || LEGEND;
+    legend.classList.toggle("hov", !!text);
+  };
+  const describe = (e) =>
+    (e.sat ? "satellite" : e.place + (e.prec === "dep" ? " (département)" : "")) + " · " + CATS[e.cat].label + " · " + ago(Date.now() - e.ms) + " · " + e.items[0].title.slice(0, 120);
+  const hot = (id, on) => {
+    const n = nodes.get(id);
+    if (!n) return;
+    hotId = on ? id : hotId === id ? null : hotId;
+    if (n.row) n.row.classList.toggle("hot", on);
+    info(on ? describe(n.e) : "");
+    queueDraw();
+  };
+
+  // au survol de la carte : la ligne d'information, sans cliquer
+  const hover = (e) => {
+    if (ptrs.size || e.pointerType === "touch") return;
+    const h = hit(e.clientX, e.clientY);
+    const k = !h ? "" : h.n ? "n" + h.n.id : "c" + h.cl;
+    if (k === hovKey) return;
+    if (hovKey[0] === "n") hot(hovKey.slice(1), false);
+    hovKey = k;
+    svg.style.cursor = h ? "pointer" : "";
+    if (h && h.n) hot(h.n.id, true);
+    else if (h) {
+      const m = groups[h.cl].m, by = {};
+      m.forEach((x) => (by[x.cat] = (by[x.cat] || 0) + 1));
+      info(m.length + " événements : " + Object.entries(by).sort((a, b) => b[1] - a[1]).map(([c, v]) => v + " " + CATS[c].label).join(", ") + " · cliquer pour zoomer");
+    } else info("");
+  };
+  svg.addEventListener("pointerleave", () => {
+    if (hovKey[0] === "n") hot(hovKey.slice(1), false);
+    hovKey = "";
+    svg.style.cursor = "";
+    info("");
+  });
+
   svg.addEventListener("pointermove", (e) => {
     const p = ptrs.get(e.pointerId);
-    if (!p) return;
+    if (!p) return hover(e);
     const dx = e.clientX - p.x, dy = e.clientY - p.y;
     p.x = e.clientX;
     p.y = e.clientY;
@@ -663,8 +821,8 @@
     svg.classList.remove("drag");
     pinch = 0;
     if (!ptrs.size && !moved && e.type === "pointerup") {
-      if (downPt) openCard(downPt, false);
-      else if (downCl >= 0) expand(downCl);
+      if (downHit && downHit.n) openCard(downHit.n.id, false);
+      else if (downHit) expand(downHit.cl);
       else if (downDep) { closeCard(); pickDep(downDep); }
       else closeCard();
     }
@@ -681,36 +839,6 @@
     { passive: false },
   );
 
-  const legend = $("#legend");
-  const LEGEND = legend.textContent;
-  const info = (text) => {
-    legend.textContent = text || LEGEND;
-    legend.classList.toggle("hov", !!text);
-  };
-  const describe = (e) =>
-    (e.sat ? "satellite" : e.place + (e.prec === "dep" ? " (département)" : "")) + " · " + CATS[e.cat].label + " · " + ago(Date.now() - e.ms) + " · " + e.items[0].title.slice(0, 120);
-  const hot = (id, on) => {
-    const n = nodes.get(id);
-    if (!n) return;
-    n.g.classList.toggle("hot", on);
-    if (n.row) n.row.classList.toggle("hot", on);
-    info(on ? describe(n.e) : "");
-  };
-  svg.addEventListener("pointerover", (e) => {
-    const t = e.target.closest(".pt");
-    if (t && !ptrs.size) hot(t.dataset.id, true);
-    const c = e.target.closest(".cl");
-    if (c && !ptrs.size && groups[+c.dataset.i]) {
-      const m = groups[+c.dataset.i].m, by = {};
-      m.forEach((x) => (by[x.cat] = (by[x.cat] || 0) + 1));
-      info(m.length + " événements : " + Object.entries(by).sort((a, b) => b[1] - a[1]).map(([k, v]) => v + " " + CATS[k].label).join(", ") + " · cliquer pour zoomer");
-    }
-  });
-  svg.addEventListener("pointerout", (e) => {
-    const t = e.target.closest(".pt");
-    if (t) hot(t.dataset.id, false);
-    if (e.target.closest(".cl")) info("");
-  });
   list.addEventListener("pointerover", (e) => {
     const r = e.target.closest(".row");
     if (r) hot(r.dataset.id, true);
@@ -831,9 +959,9 @@
   $("#zreset").addEventListener("click", () => flyTo(F.w / 2, F.h / 2, F.w));
   // la taille de la carte change : on relit son rectangle et on replace tout
   if (window.ResizeObserver) {
-    new ResizeObserver(() => { rectCache = null; place(); }).observe(svg);
+    new ResizeObserver(() => { rectCache = null; sizeCanvas(); place(); }).observe(svg);
   } else {
-    addEventListener("resize", () => { rectCache = null; place(); });
+    addEventListener("resize", () => { rectCache = null; sizeCanvas(); place(); });
   }
 
   /* ---------- Le rejeu ---------- */
@@ -842,7 +970,7 @@
     if (!replaying) return;
     cancelAnimationFrame(replaying);
     replaying = 0;
-    nodes.forEach((n) => { n.g.style.visibility = ""; n.g.classList.remove("pop"); n.hide = false; });
+    nodes.forEach((n) => { n.hide = false; n.popT = 0; });
     $("#replay").setAttribute("aria-pressed", "false");
     $("#replay").textContent = "▶ rejouer";
     render();
@@ -855,7 +983,7 @@
     const from = seq[0].ms, span = Math.max(1, Date.now() - from);
     const dur = calm ? 1 : clamp(3500 + seq.length * 90, 5000, 16000);
     let shownN = 0;
-    nodes.forEach((n) => { n.g.style.visibility = "hidden"; n.hide = true; });
+    nodes.forEach((n) => { n.hide = true; });
     heat([]);
     place();
     $("#replay").setAttribute("aria-pressed", "true");
@@ -866,21 +994,13 @@
       while (shownN < seq.length && seq[shownN].ms <= virtual) {
         const n = nodes.get(seq[shownN].id);
         if (n) {
-          n.g.style.visibility = "";
           n.hide = false;
-          if (!calm) {
-            n.g.classList.add("pop");
-            n.g.insertAdjacentHTML("beforeend", '<circle class="shock" r="14"/>');
-            setTimeout(() => {
-              n.g.classList.remove("pop");
-              const s = n.g.querySelector(".shock");
-              if (s) s.remove();
-            }, 1300);
-          }
+          if (!calm) n.popT = performance.now();
         }
         shownN++;
       }
       if (shownN !== before) { heat(seq.slice(0, shownN)); place(); }
+      queueDraw();
       $("#total").textContent = shownN;
       $("#unit").textContent = new Date(virtual).toLocaleString("fr-FR", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
       if (p < 1) replaying = requestAnimationFrame(step);
