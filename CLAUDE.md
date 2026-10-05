@@ -8,7 +8,7 @@ Site statique sur GitHub Pages : `https://bebbou.github.io/devtober-2026/`. La r
 
 | Chemin | Contenu |
 | :-- | :-- |
-| `NN-Nom/` | le projet du jour (`01-Pulse`, `02-Loop`, `03-Bloom`, `04-Drift`) |
+| `NN-Nom/` | le projet du jour (`01-Pulse`, `02-Loop`, `03-Bloom`, `04-Drift`, `05-Chaos`) |
 | `docs/` | le site de documentation : une page `NN-nom.html` par jour, `pages.js` (THEMES et DOCS), `style.css`, `script.js` |
 | `_template/` | les fichiers de départ d'un jour et de sa page de doc (voir `/new-day`) |
 | `.github/` | la collecte des données de Pulse (`status.json` sur la branche `pulse-data`, ne pas y toucher) |
@@ -70,8 +70,18 @@ Lino commite et pousse lui-même. Ne pas faire de commit, de push ni de branche 
 - Pour tester dans le panneau intégré, qui ne fait pas tourner `requestAnimationFrame` quand il est masqué : copier `index.html` en `_t.html` avec une boucle pilotée par minuteur, et supprimer ce fichier ensuite.
 - Les vignettes de partage sont dans `docs/og/` (une image par jour) et déclarées par des balises `og:` dans chaque page.
 
+## Chaos (jour 5)
+
+- Carte de France des faits rapportés par la presse. La collecte est `.github/scripts/chaos-collect.mjs` (Node sans dépendance, 129 flux RSS) lancée toutes les heures par `.github/workflows/chaos-data.yml`, qui publie `events.json` sur la branche `chaos-data` (ne pas y toucher). `05-Chaos/events.json` est une copie de secours, la plus récente des deux l'emporte.
+- Les catégories sont des mots-clés sur le titre (`CATS`) : les resserrer plutôt que les élargir, un mot trop large range des procès en « violences ». `EXCLUS` (violences sexuelles, suicides) et `PAS_UN_EVENEMENT` (procès, affaires, tribunes) écartent des titres.
+- Le lieu vient de la commune du titre (API `geo.api.gouv.fr`), sinon d'un département cité, sinon du département du flux France 3. Les contours sont dans `05-Chaos/france.js` (générés depuis `gregoiredavid/france-geojson`, Licence Ouverte) et servent aussi à la collecte.
+- Le fond est un SVG (départements et nombres), les pastilles et les bulles sont sur un canevas (`#cv`). Ne pas remettre un élément SVG par pastille : 5 400 éléments rendaient la carte inutilisable. Les photos sont réduites une fois en vignettes rondes (`makeSprite`), jamais copiées dans le dépôt.
+- `MAX_PTS` (500) et `loadLimit` règlent le poids de la carte. `NOPHOTO` liste les catégories sans photo (vide : Lino veut montrer l'information).
+- Mémoire : `localStorage` clé `devtober-chaos-5` (drapeau de visite `-vu`). L'adresse porte la vue (`p`, `off`, `t`, `x`, `q`, `d`, `e`) et prime sur la mémoire.
+- Tests dans le panneau intégré : même consigne que pour Drift (`requestAnimationFrame` s'arrête quand il est masqué). Pour le déroulé : cliquer sur « Run workflow » de `chaos-data` après la fusion dans `main`.
+
 ## À faire plus tard
 
 - Phaser R312 : Lino remet le jeu à jour la semaine du 5 octobre 2026. Quand GitHub Pages sera activé sur ce dépôt, ajouter un lien « jouer » dans son conteneur, refaire l'affiche `img/phaser-r312.png` et mettre à jour « 4 salles » et « en cours ».
-- Visite guidée : Drift a une visite en 3 bulles (première visite seulement, relançable par « ? »). Lino veut la même chose sur Pulse, Loop et Bloom. À lui rappeler après `/finish-day 04`.
+- Visite guidée : chaque jour (Pulse, Loop, Bloom, Drift, Chaos) a une visite en 3 bulles (première visite seulement, relançable par « ? »). Les prochains jours en auront une aussi.
 - D'autres conteneurs viendront (infographie, etc.) : Lino les envoie un par un.
