@@ -12,10 +12,20 @@
   const KEY = "devtober-chaos-5";
   // Les données sont collectées toutes les heures par l'Action GitHub (.github/workflows/chaos-data.yml).
   // La copie du dossier sert tant que la branche chaos-data n'existe pas, ou si elle est hors service.
-  const URLS = [
-    "https://raw.githubusercontent.com/Bebbou/devtober-2026/chaos-data/events.json",
-    "events.json",
-  ];
+  const RAW = "https://raw.githubusercontent.com/Bebbou/devtober-2026/";
+  const URLS = [RAW + "chaos-data/events.json", "events.json"];
+  // raw.githubusercontent.com garde l'adresse de la branche en mémoire et ignore "?t=" : des relances
+  // de la page ont montré des données de 5 h. L'adresse d'un commit ne change jamais, donc on demande
+  // d'abord à l'API quel est le dernier commit de la branche.
+  const latestUrl = async () => {
+    try {
+      const r = await fetch("https://api.github.com/repos/Bebbou/devtober-2026/git/ref/heads/chaos-data", { cache: "no-store" });
+      const sha = r.ok && (await r.json()).object.sha;
+      return sha ? RAW + sha + "/events.json" : null;
+    } catch (e) {
+      return null;
+    }
+  };
 
   // Une forme par catégorie : le rose est réservé à ce qui vient de se passer.
   const CATS = {
@@ -1109,7 +1119,9 @@
   // `force` : l'adresse change à chaque appel, pour contourner la mémoire du navigateur et du relais de GitHub
   let lastLoad = 0;
   const load = async (force) => {
-    const got = await Promise.allSettled(URLS.map((u) => fetch(u + (force ? "?t=" + Date.now() : ""), { cache: "no-cache" }).then((r) => (r.ok ? r.json() : Promise.reject()))));
+    const pinned = await latestUrl();
+    const list = pinned ? [pinned, ...URLS] : URLS;
+    const got = await Promise.allSettled(list.map((u) => fetch(u + (force && !pinned ? "?t=" + Date.now() : ""), { cache: "no-cache" }).then((r) => (r.ok ? r.json() : Promise.reject()))));
     const best = got
       .filter((g) => g.status === "fulfilled" && g.value && Array.isArray(g.value.events))
       .map((g) => g.value)
