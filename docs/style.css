@@ -569,9 +569,59 @@ a.day:hover .t {
     grid-template-columns: minmax(0, 1fr);
     gap: 0;
   }
+  /* le menu devient deux rangées qui défilent, collées en haut */
   .side {
-    position: static;
-    padding-top: 8px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    margin: 0 -18px;
+    padding: 0;
+    background: var(--bg);
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+  .side nav {
+    display: flex;
+    gap: 4px;
+    padding: 0 18px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .side nav::-webkit-scrollbar {
+    display: none;
+  }
+  .side nav + nav {
+    margin-top: 0;
+    border-top: 1px solid var(--line);
+  }
+  .side .mark {
+    display: none;
+  }
+  .side a {
+    flex: none;
+    padding: 11px 10px;
+    border-left: 0;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+  }
+  .side a.on {
+    border-bottom-color: var(--pink);
+  }
+  html {
+    scroll-padding-top: 100px;
+  }
+  main {
+    padding-top: 20px;
+  }
+  .tbl th,
+  .tbl td {
+    padding: 8px 10px;
+  }
+  .tbl td:first-child {
+    white-space: normal;
+  }
+  .foot {
+    flex-direction: column;
   }
   h1 {
     font-size: 1.4rem;

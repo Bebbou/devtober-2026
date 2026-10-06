@@ -122,6 +122,10 @@
       if (d.href === currentPage) a.classList.add("on");
       docNav.appendChild(a);
     });
+    var cur = $("a.on", docNav);
+    if (cur && docNav.scrollWidth > docNav.clientWidth) {
+      docNav.scrollLeft = cur.offsetLeft - (docNav.clientWidth - cur.offsetWidth) / 2;
+    }
   }
 
   /* ---------- Sommaire de la page : une entrée par section nommée ---------- */
@@ -142,7 +146,14 @@
         var cur = named[0].id;
         named.forEach(function (s) { if (s.getBoundingClientRect().top < 140) cur = s.id; });
         if (window.innerHeight + window.scrollY >= document.body.scrollHeight - 4) cur = named[named.length - 1].id;
-        links.forEach(function (a) { a.classList.toggle("on", a.getAttribute("href") === "#" + cur); });
+        links.forEach(function (a) {
+          var on = a.getAttribute("href") === "#" + cur;
+          a.classList.toggle("on", on);
+          // sur téléphone la rangée défile : l'entrée active reste visible
+          if (on && secNav.scrollWidth > secNav.clientWidth) {
+            secNav.scrollLeft = a.offsetLeft - (secNav.clientWidth - a.offsetWidth) / 2;
+          }
+        });
       };
       window.addEventListener("scroll", spy, { passive: true });
       spy();
