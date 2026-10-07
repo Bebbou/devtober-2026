@@ -10,7 +10,7 @@
 
   // pour essayer sans attendre, dans l'adresse : #temps=140 (départ à 2:20), #invincible, #perf (temps de calcul à l'écran)
   const q = new URLSearchParams(location.hash.slice(1));
-  const dbg = { time: Number(q.get("temps")) || 0, god: q.has("invincible"), perf: q.has("perf") };
+  const dbg = { time: Number(q.get("temps")) || 0, god: q.has("invincible"), perf: q.has("perf"), orbs: Number(q.get("lames")) || 0 };
   const PINK = "#ff0055", LIGHT = "#e0e0e0", GREY = "#8c8c8c", DARK = "#5a5a5a", BG = "#0d0d0d";
 
   const ARENA_W = 2200, ARENA_H = 1500; // en pixels du monde
@@ -205,8 +205,8 @@
   const COLS = Math.ceil(ARENA_W / CELL) + 1, ROWS = Math.ceil(ARENA_H / CELL) + 1;
   for (let i = 0; i < COLS * ROWS; i++) cells.push([]);
 
-  // la série de tués multiplie le score : x2 à 10, x3 à 20, jusqu'à x5
-  const comboMult = () => 1 + Math.min(4, Math.floor(combo / 10));
+  // la série de tués multiplie le score : x2 à 15, x3 à 30, pas plus
+  const comboMult = () => 1 + Math.min(2, Math.floor(combo / 15));
   const liveScore = () => score + Math.floor(t) * 5 + level * 50;
 
   const reset = () => {
@@ -507,6 +507,11 @@
     if (m > 0.1) { P.dx = ix / m; P.dy = iy / m; }
     P.dash = DASH_TIME;
     P.dashCd = DASH_CD;
+    // la glissade écarte les ennemis proches : on peut sortir d'un coin
+    enemies.forEach((e) => {
+      const dx = e.x - P.x, dy = e.y - P.y, d = Math.hypot(dx, dy) || 1;
+      if (d < 90 && e.type !== "boss") { e.kx += (dx / d) * 380; e.ky += (dy / d) * 380; }
+    });
     P.inv = Math.max(P.inv, DASH_TIME + 0.12);
     SFX.dash();
   };
@@ -517,6 +522,7 @@
     soundOn();
     reset();
     freeze = 0;
+    if (dbg.orbs) { st.orbs = dbg.orbs; lv.orb = dbg.orbs; } // #lames=3 : essayer les lames tout de suite
     if (dbg.time) {
       t = dbg.time;
       bossAt = bossAt.filter((b) => b > t);
@@ -569,7 +575,7 @@
     const e = enemies[i];
     kills++;
     combo++;
-    comboT = 2.5;
+    comboT = 2;
     score += 10 * comboMult();
     SFX.kill();
     burst(e.x, e.y, e.type === "boss" ? 40 : 6, e.type === "boss" ? PINK : GREY, e.type === "boss" ? 300 : 140);
@@ -953,6 +959,27 @@
     return (h ^ (h >>> 16)) >>> 0;
   };
 
+  // une lame : un losange allongé, tourné dans le sens du mouvement, avec un petit fil gris au centre
+  const blade = (cx, cy, a, alpha, size) => {
+    g.save();
+    g.translate(cx + Math.cos(a) * 52, cy + Math.sin(a) * 52);
+    g.rotate(a + Math.PI / 2);
+    g.globalAlpha = alpha;
+    g.fillStyle = LIGHT;
+    g.beginPath();
+    g.moveTo(0, -11 * size);
+    g.lineTo(4.5 * size, 0);
+    g.lineTo(0, 11 * size);
+    g.lineTo(-4.5 * size, 0);
+    g.closePath();
+    g.fill();
+    if (alpha === 1) {
+      g.fillStyle = GREY;
+      g.fillRect(-1, -6, 2, 12);
+    }
+    g.restore();
+  };
+
   const render = () => {
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.fillStyle = BG;
@@ -1068,10 +1095,20 @@
       g.arc(b.x, b.y, 4, 0, 6.283);
       g.fill();
     }
-    g.fillStyle = LIGHT;
-    for (let o = 0; o < st.orbs; o++) {
-      const a = orbAngle + (o / st.orbs) * 6.283;
-      g.fillRect(P.x + Math.cos(a) * 52 - 5, P.y + Math.sin(a) * 52 - 5, 10, 10);
+    if (st.orbs > 0) {
+      // l'anneau que suivent les lames, puis chaque lame avec sa traînée
+      g.strokeStyle = "#2a2a2a";
+      g.lineWidth = 1;
+      g.setLineDash([3, 7]);
+      g.beginPath();
+      g.arc(P.x, P.y, 52, 0, 6.283);
+      g.stroke();
+      g.setLineDash([]);
+      for (let o = 0; o < st.orbs; o++) {
+        const a = orbAngle + (o / st.orbs) * 6.283;
+        if (!calm) for (let k = 3; k >= 1; k--) blade(P.x, P.y, a - k * 0.16, 0.5 / k, 0.7);
+        blade(P.x, P.y, a, 1, 1);
+      }
     }
 
     // les éclats
