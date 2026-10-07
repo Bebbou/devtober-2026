@@ -129,6 +129,14 @@
       [".mmmmmmm.", "m#######m", "m#o#o#o#m", "m#######m", "m#o#o#o#m", "m#######m", "m#######m", ".m#####m.", "..mmmmm.."],
       [".mmmmmmm.", "m#######m", "m#o#o#o#m", "m#######m", "m#o#o#o#m", "m#######m", ".m#####m.", ".m#####m.", "..mmmmm.."],
     ] },
+    tank: { pal: { "#": DARK, o: BG, m: LIGHT, p: PINK }, frames: [
+      ["mmmmmmmmm", "m#######m", "m#p###p#m", "mmmmmmmmm", "m#######m", "m#######m", "mmmmmmmmm", ".##...##.", "##.....##"],
+      ["mmmmmmmmm", "m#######m", "m#p###p#m", "mmmmmmmmm", "m#######m", "m#######m", "mmmmmmmmm", ".##...##.", ".#.....#."],
+    ] },
+    mage: { pal: { "#": GREY, o: BG, p: PINK }, frames: [
+      ["...#...", "..###..", ".#ooo#.", ".#pop#.", ".#####.", "#######", "#.#.#.#"],
+      ["...#...", "..###..", ".#ooo#.", ".#pop#.", ".#####.", "#######", ".#.#.#."],
+    ] },
     boss: { pal: { "#": "#1a1a1a", o: BG, p: PINK, m: DARK }, frames: [
       ["..ppppppppp..", ".p#########p.", "p###########p", "p#ooo###ooo#p", "p#opo###opo#p", "p#ooo###ooo#p", "p###########p", "p##o#o#o#o##p", ".p#########p.", ".p##.###.##p.", ".p##..#..##p.", "..p.......p..", "..p.......p.."],
       ["..ppppppppp..", ".p#########p.", "p###########p", "p#ooo###ooo#p", "p#opo###opo#p", "p#ooo###ooo#p", "p###########p", "p##o#o#o#o##p", ".p#########p.", ".p##.###.##p.", ".p#..###..#p.", "..p.......p..", "..p.......p.."],
@@ -170,20 +178,35 @@
 
   /* ---------- Les améliorations ---------- */
   // une fiche = un nom, une description du prochain niveau, un effet
+  // quatre raretés : chaque amélioration a une valeur par rareté. Une carte vaut 1 à 4 points, jusqu'à max points.
+  const RARITY = ["commun", "rare", "épique", "légendaire"];
+  const pct = (v) => Math.round(v * 100) + " %";
+  const plural = (v, w) => v + " " + w + (v > 1 ? "s" : "");
   const UPGRADES = [
-    { id: "rate", name: "Cadence", max: 6, desc: () => "tire 15 % plus vite", apply: () => (st.cd *= 0.85) },
-    { id: "dmg", name: "Dégâts", max: 6, desc: () => "+1 dégât par tir", apply: () => (st.dmg += 1) },
-    { id: "multi", name: "Salve", max: 4, desc: () => "+1 projectile", apply: () => (st.count += 1) },
-    { id: "pierce", name: "Perforant", max: 4, desc: () => "le tir traverse +1 ennemi", apply: () => (st.pierce += 1) },
-    { id: "range", name: "Portée", max: 4, desc: () => "+15 % de portée", apply: () => (st.range *= 1.15) },
-    { id: "speed", name: "Vitesse", max: 5, desc: () => "+8 % de vitesse", apply: () => (st.speed *= 1.08) },
-    { id: "magnet", name: "Aimant", max: 4, desc: () => "ramasse de plus loin", apply: () => (st.magnet += 45) },
-    { id: "orb", name: "Lames", max: 5, desc: () => "+1 lame qui tourne autour de toi", apply: () => (st.orbs += 1) },
-    { id: "heart", name: "Cœur", max: 5, desc: () => "+20 PV max et soigne 20", apply: () => { st.maxHp += 20; P.hp = Math.min(st.maxHp, P.hp + 20); } },
-    { id: "crit", name: "Critique", max: 5, desc: () => "+10 % de chances de tir double", apply: () => (st.crit += 0.1) },
-    { id: "wave", name: "Onde", max: 4, desc: () => "une onde repousse et blesse autour de toi", apply: () => (st.wave += 1) },
+    { id: "rate", name: "Cadence", max: 10, vals: [0.1, 0.16, 0.24, 0.36], text: (v) => "tire " + pct(v) + " plus vite", apply: (v) => (st.cd *= 1 - v) },
+    { id: "dmg", name: "Dégâts", max: 10, vals: [1, 1.5, 2.5, 4], text: (v) => "+" + v + " de dégâts par tir", apply: (v) => (st.dmg += v) },
+    { id: "multi", name: "Salve", max: 8, vals: [1, 1, 2, 3], text: (v) => "+" + plural(v, "projectile"), apply: (v) => (st.count = Math.min(9, st.count + v)) },
+    { id: "pierce", name: "Perforant", max: 8, vals: [1, 2, 3, 5], text: (v) => "le tir traverse +" + plural(v, "ennemi"), apply: (v) => (st.pierce += v) },
+    { id: "range", name: "Portée", max: 8, vals: [0.15, 0.25, 0.4, 0.6], text: (v) => "+" + pct(v) + " de portée", apply: (v) => (st.range *= 1 + v) },
+    { id: "speed", name: "Vitesse", max: 8, vals: [0.08, 0.14, 0.22, 0.35], text: (v) => "+" + pct(v) + " de vitesse", apply: (v) => (st.speed *= 1 + v) },
+    { id: "magnet", name: "Aimant", max: 8, vals: [45, 80, 130, 220], text: (v) => "ramasse de +" + v + " px plus loin", apply: (v) => (st.magnet += v) },
+    { id: "orb", name: "Lames", max: 8, vals: [1, 1, 2, 3], text: (v) => "+" + plural(v, "lame") + " qui tourne autour de toi", apply: (v) => (st.orbs = Math.min(12, st.orbs + v)) },
+    { id: "heart", name: "Cœur", max: 8, vals: [20, 35, 55, 90], text: (v) => "+" + v + " PV max et soigne autant", apply: (v) => { st.maxHp += v; P.hp = Math.min(st.maxHp, P.hp + v); } },
+    { id: "crit", name: "Critique", max: 8, vals: [0.1, 0.16, 0.24, 0.4], text: (v) => "+" + pct(v) + " de chances de tir double", apply: (v) => (st.crit = Math.min(0.9, st.crit + v)) },
+    { id: "wave", name: "Onde", max: 8, vals: [1, 1, 2, 3], text: (v) => "l'onde qui repousse grandit et revient plus vite (+" + v + ")", apply: (v) => (st.wave += v) },
+    { id: "regen", name: "Régénération", max: 6, vals: [0.5, 1, 2, 3.5], text: (v) => "rend " + v + " PV par seconde", apply: (v) => (st.regen += v) },
+    { id: "armor", name: "Armure", max: 6, vals: [0.08, 0.14, 0.22, 0.35], text: (v) => "dégâts reçus -" + pct(v), apply: (v) => (st.armor = Math.min(0.6, st.armor + v)) },
+    { id: "blast", name: "Éclat", max: 6, vals: [30, 40, 52, 70], text: (v) => "tes tirs explosent : dégâts de zone sur " + v + " px", apply: (v) => (st.blast = Math.max(st.blast, v)) },
+    { id: "steal", name: "Vol de vie", max: 6, vals: [0.4, 0.8, 1.5, 3], text: (v) => "rend " + v + " PV par ennemi tué", apply: (v) => (st.steal += v) },
+    { id: "dash", name: "Glissade", max: 6, vals: [0.12, 0.2, 0.3, 0.45], text: (v) => "le dash revient " + pct(v) + " plus vite", apply: (v) => (st.dashMul *= 1 - v) },
   ];
-  const HEAL = { id: "heal", name: "Soin", max: 99, desc: () => "rend 40 PV", apply: () => (P.hp = Math.min(st.maxHp, P.hp + 40)) };
+  // une évolution se propose quand deux améliorations ont 3 points chacune ; elle remplace une carte et ne vient qu'une fois
+  const EVOS = [
+    { id: "evoStorm", name: "Tempête", need: ["orb", "wave"], text: "+2 lames plus rapides et plus larges, l'onde revient 40 % plus vite", apply: () => { st.orbs = Math.min(12, st.orbs + 2); st.orbR = 78; st.orbDmg = 1.4; st.waveMul *= 0.6; } },
+    { id: "evoRing", name: "Rafale", need: ["multi", "pierce"], text: "toutes les 3 salves, un cercle de 10 tirs part autour de toi", apply: () => { st.ring = true; } },
+    { id: "evoVamp", name: "Vampire", need: ["heart", "steal"], text: "+40 PV max, vol de vie doublé, rend 1 PV par seconde", apply: () => { st.maxHp += 40; P.hp = Math.min(st.maxHp, P.hp + 40); st.steal *= 2; st.regen += 1; } },
+  ];
+  const HEAL = { id: "heal", name: "Soin", max: 99, vals: [40, 40, 40, 40], text: (v) => "rend " + v + " PV", apply: (v) => (P.hp = Math.min(st.maxHp, P.hp + v)) };
 
   /* ---------- Les ennemis ---------- */
   // r : rayon, s : taille d'un pixel du dessin, hp : vie de départ, sp : vitesse, dmg : contact, xp : cristaux lâchés
@@ -193,13 +216,15 @@
     shooter: { r: 8, s: 2, hp: 4, sp: 56, dmg: 6, xp: 3 },
     dasher: { r: 8, s: 2, hp: 5, sp: 60, dmg: 12, xp: 3 },
     splitter: { r: 10, s: 2, hp: 7, sp: 48, dmg: 10, xp: 3 },
+    tank: { r: 12, s: 2, hp: 26, sp: 34, dmg: 18, xp: 6 },
+    mage: { r: 8, s: 2, hp: 5, sp: 48, dmg: 6, xp: 4 },
     boss: { r: 25, s: 4, hp: 220, sp: 38, dmg: 25, xp: 30 },
   };
 
   /* ---------- L'état d'une partie ---------- */
-  let P, st, lv, enemies, bullets, ebullets, gems, drops, parts, texts, waves, ghosts;
+  let P, st, lv, enemies, bullets, ebullets, gems, drops, zones, parts, texts, waves, ghosts;
   let freeze = 0; // pause d'image à la mort du boss
-  let t, kills, level, xp, need, spawnAcc, nextWave, bossAt, cam, joy, orbAngle, pending, mode, fireCd, waveCd, combo, comboT, shake, score, dm;
+  let t, kills, level, xp, need, spawnAcc, nextWave, bossAt, stormAt, cam, joy, orbAngle, pending, mode, fireCd, waveCd, combo, comboT, shake, score, dm;
   const keys = {};
   mode = "menu"; // menu, play, levelup, pause, over, win
   const cells = [];
@@ -212,12 +237,13 @@
   const liveScore = () => score + Math.floor(t) * 5 + level * 50;
 
   const reset = () => {
-    P = { x: ARENA_W / 2, y: ARENA_H / 2, r: 9, hp: 100, inv: 0, flash: 0, aim: 0, dash: 0, dashCd: 0, dx: 1, dy: 0, face: 1, walk: 0 };
-    st = { cd: 0.42, dmg: 2, count: 1, pierce: 0, range: 440, speed: 170, magnet: 60, maxHp: 100, orbs: 0, crit: 0, wave: 0 };
+    P = { x: ARENA_W / 2, y: ARENA_H / 2, r: 9, hp: 100, inv: 0, flash: 0, aim: 0, dash: 0, dashCd: 0, dashMax: DASH_CD, volley: 0, dx: 1, dy: 0, face: 1, walk: 0 };
+    st = { cd: 0.42, dmg: 2, count: 1, pierce: 0, range: 440, speed: 170, magnet: 60, maxHp: 100, orbs: 0, crit: 0, wave: 0, regen: 0, armor: 0, blast: 0, steal: 0, dashMul: 1, orbR: 52, orbDmg: 0.6, waveMul: 1, ring: false };
     lv = {};
-    enemies = []; bullets = []; ebullets = []; gems = []; drops = []; parts = []; texts = []; waves = []; ghosts = [];
+    enemies = []; bullets = []; ebullets = []; gems = []; drops = []; zones = []; parts = []; texts = []; waves = []; ghosts = [];
     t = 0; kills = 0; level = 1; xp = 0; need = 6; spawnAcc = 0; nextWave = 30;
     bossAt = [150, 255];
+    stormAt = [105, 225];
     cam = { x: P.x, y: P.y };
     joy = null; orbAngle = 0; pending = 0; fireCd = 0; waveCd = 3; combo = 0; comboT = 0; shake = 0; score = 0;
     dm = DIFFS[best.diff] || DIFFS.normal;
@@ -372,8 +398,8 @@
     ["Bouger", "ZQSD, WASD ou les flèches. Au doigt ou à la souris : glisse n'importe où, un joystick apparaît."],
     ["Tirer", "Automatique, sur l'ennemi le plus proche."],
     ["Dash", "Espace, ou le bouton rond sur téléphone. Il te protège un instant, il revient en 2,4 s."],
-    ["Grandir", "Les cristaux blancs remplissent la barre rose : à chaque niveau, une amélioration parmi trois."],
-    ["Danger", "Tout ce qui est rose te blesse : tirs ennemis, ligne de charge. Tes tirs sont blancs."],
+    ["Grandir", "Les cristaux blancs remplissent la barre rose : à chaque niveau, trois améliorations de rareté variable (commun, rare, épique, légendaire). Deux améliorations montées ensemble débloquent une évolution."],
+    ["Danger", "Tout ce qui est rose te blesse : tirs ennemis, ligne de charge, zones au sol qui se remplissent. Tes tirs sont blancs. Le blindé encaisse mal les tirs : utilise lames, onde et explosions."],
     ["Tenir", "5 minutes. Deux boss arrivent à 2:30 et 4:15. P : pause."],
   ];
   // back : où revenir après « compris » (le menu, ou la pause quand on était en partie)
@@ -389,39 +415,62 @@
     }, true);
   };
 
+  // la rareté se tire selon le niveau : les épiques arrivent à partir du niveau 3, les légendaires du niveau 6
+  const rollRarity = () => {
+    const L = level;
+    const w = [Math.max(20, 62 - L * 1.6), 28 + L * 0.5, L >= 3 ? 8 + L * 0.8 : 0, L >= 6 ? 1.5 + L * 0.35 : 0];
+    let r = Math.random() * (w[0] + w[1] + w[2] + w[3]);
+    for (let i = 0; i < 4; i++) {
+      if (r < w[i]) return i;
+      r -= w[i];
+    }
+    return 0;
+  };
+
   const showLevelUp = () => {
     mode = "levelup";
     const pool = UPGRADES.filter((u) => (lv[u.id] || 0) < u.max);
     const picks = [];
-    while (picks.length < 3 && pool.length) picks.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
-    while (picks.length < 3) picks.push(HEAL);
+    while (picks.length < 3 && pool.length) {
+      const u = pool.splice(Math.floor(Math.random() * pool.length), 1)[0];
+      picks.push({ u, r: rollRarity() });
+    }
+    while (picks.length < 3) picks.push({ u: HEAL, r: 0 });
+    // une évolution disponible prend la dernière place
+    const evo = EVOS.find((e) => !lv[e.id] && e.need.every((id) => (lv[id] || 0) >= 3));
+    if (evo) picks[2] = { u: evo, r: 4, evo: true };
     live("Niveau " + level + " : choisis une amélioration");
     SFX.level();
     show("niveau " + level, (b) => {
       const cards = el("div", "cards");
-      picks.forEach((u, i) => {
-        const c = el("button", "card");
+      picks.forEach((p, i) => {
+        const c = el("button", "card r" + p.r);
         c.type = "button";
-        const l = lv[u.id] || 0;
-        const tag = el("span", "lv", u.id === "heal" ? "" : "niv " + (l + 1) + " / " + u.max);
+        const tag = el("span", "lv", p.evo ? "évolution" : p.u === HEAL ? "" : RARITY[p.r]);
         const name = el("b", "");
         name.appendChild(el("kbd", "", String(i + 1)));
-        name.appendChild(document.createTextNode(u.name));
+        name.appendChild(document.createTextNode(p.u.name));
         c.appendChild(tag);
         c.appendChild(name);
-        c.appendChild(el("span", "", u.desc()));
-        c.addEventListener("click", () => choose(u));
+        c.appendChild(el("span", "", p.evo ? p.u.text : p.u.text(p.u.vals[p.r])));
+        c.addEventListener("click", () => choose(p));
         cards.appendChild(c);
       });
       b.appendChild(cards);
-      b.appendChild(el("p", "small", "Z S ou ↑ ↓ pour choisir · Entrée pour valider · ou touches 1 2 3"));
+      b.appendChild(el("p", "small", "Z S ↑ ↓ puis Entrée, ou touches 1 2 3"));
     }, false, true);
     pBody._picks = picks;
   };
-  const choose = (u) => {
+  const choose = (p) => {
     if (mode !== "levelup") return;
-    u.apply();
-    lv[u.id] = (lv[u.id] || 0) + 1;
+    if (p.evo) {
+      p.u.apply();
+      lv[p.u.id] = 1;
+      banner("évolution : " + p.u.name);
+    } else {
+      p.u.apply(p.u.vals[p.r]);
+      lv[p.u.id] = (lv[p.u.id] || 0) + p.r + 1;
+    }
     drawChips();
     if (pending > 0) { pending--; levelUpNext(); return; }
     hidePanel();
@@ -435,11 +484,12 @@
     showLevelUp();
   };
 
-  // les améliorations prises, en petites pastilles sous les jauges
+  // les améliorations prises, en petites pastilles sous les jauges (le nombre est leur total de points)
   const drawChips = () => {
     const box = $("#chips");
     box.textContent = "";
     UPGRADES.forEach((u) => { if (lv[u.id]) box.appendChild(el("span", "", u.name + " " + lv[u.id])); });
+    EVOS.forEach((e) => { if (lv[e.id]) box.appendChild(el("span", "evo", e.name)); });
   };
 
   const showPause = () => {
@@ -560,7 +610,8 @@
     const m = Math.hypot(ix, iy);
     if (m > 0.1) { P.dx = ix / m; P.dy = iy / m; }
     P.dash = DASH_TIME;
-    P.dashCd = DASH_CD;
+    P.dashCd = DASH_CD * st.dashMul;
+    P.dashMax = P.dashCd;
     // la glissade écarte les ennemis proches : on peut sortir d'un coin
     enemies.forEach((e) => {
       const dx = e.x - P.x, dy = e.y - P.y, d = Math.hypot(dx, dy) || 1;
@@ -580,6 +631,7 @@
     if (dbg.time) {
       t = dbg.time;
       bossAt = bossAt.filter((b) => b > t);
+      stormAt = stormAt.filter((b) => b > t);
       nextWave = (Math.floor(t / 30) + 1) * 30;
     }
     hud.hp = hud.xp = hud.dash = hud.boss = -1; // les jauges se redessinent
@@ -633,6 +685,7 @@
     comboT = 2;
     score += 10 * comboMult();
     SFX.kill();
+    if (st.steal > 0) P.hp = Math.min(st.maxHp, P.hp + st.steal);
     burst(e.x, e.y, e.type === "boss" ? 40 : 6, e.type === "boss" ? PINK : GREY, e.type === "boss" ? 300 : 140);
     if (e.type === "boss") {
       for (let k = 0; k < 8; k++) dropGem(e.x, e.y, 4);
@@ -655,6 +708,7 @@
 
   const hurt = (dmg) => {
     if (P.inv > 0 || dbg.god) return;
+    dmg *= 1 - st.armor;
     P.hp -= dmg;
     P.inv = 0.8;
     P.flash = 0.2;
@@ -664,13 +718,23 @@
     if (P.hp <= 0) { P.hp = 0; end(false); }
   };
 
-  const damage = (e, d, crit, kx, ky) => {
+  const damage = (e, d, crit, kx, ky, src) => {
+    if (e.type === "tank" && src === "bullet") d *= 0.5; // le blindé encaisse mal les tirs, mieux les lames, l'onde et les explosions
     e.hp -= d;
     e.hit = 0.06;
     e.kx += kx;
     e.ky += ky;
     floatText(e.x + rnd(-4, 4), e.y - e.r - 4, String(Math.round(d)), crit ? PINK : LIGHT, crit ? 14 : 11);
     SFX.hit();
+  };
+
+  // l'explosion d'un tir : des dégâts de zone autour de l'ennemi touché
+  const splash = (src, r, d) => {
+    for (let i = 0; i < enemies.length; i++) {
+      const o = enemies[i];
+      if (o !== src && o.hp > 0 && Math.hypot(o.x - src.x, o.y - src.y) < r + o.r) damage(o, d, false, 0, 0, "blast");
+    }
+    if (waves.length < 14) waves.push({ x: src.x, y: src.y, r: 0, max: r, life: 0.18, t: 0.18 });
   };
 
   const pickup = (d) => {
@@ -707,6 +771,7 @@
       P.y = clamp(P.y + iy * st.speed * dt, P.r, ARENA_H - P.r);
     }
     P.dashCd = Math.max(0, P.dashCd - dt);
+    if (st.regen > 0) P.hp = Math.min(st.maxHp, P.hp + st.regen * dt);
     P.inv = Math.max(0, P.inv - dt);
     P.flash = Math.max(0, P.flash - dt);
     P.muzzle = Math.max(0, (P.muzzle || 0) - dt);
@@ -724,11 +789,15 @@
       const pShoot = t > 70 ? Math.min(0.08 + (t - 70) / 1500, 0.16) : 0;
       const pDash = t > 100 ? Math.min(0.06 + (t - 100) / 1600, 0.14) : 0;
       const pSplit = t > 150 ? Math.min(0.05 + (t - 150) / 1800, 0.12) : 0;
+      const pMage = t > 90 ? Math.min(0.04 + (t - 90) / 2000, 0.09) : 0;
+      const pTank = t > 120 ? Math.min(0.04 + (t - 120) / 2000, 0.1) : 0;
       let type = "crawler", c = pBrute;
       if (r < c) type = "brute";
       else if (r < (c += pShoot)) type = "shooter";
       else if (r < (c += pDash)) type = "dasher";
       else if (r < (c += pSplit)) type = "splitter";
+      else if (r < (c += pMage)) type = "mage";
+      else if (r < (c += pTank)) type = "tank";
       const [x, y] = edgePoint(40);
       spawn(type, x, y);
     }
@@ -740,6 +809,15 @@
         spawn("crawler", x, y);
       }
       banner("vague");
+    }
+    // l'orage : des zones roses tombent autour de toi, l'une après l'autre
+    if (stormAt.length && t >= stormAt[0]) {
+      stormAt.shift();
+      banner("orage");
+      for (let i = 0; i < 8; i++) {
+        const a = Math.random() * 6.283, d = rnd(40, 260);
+        zones.push({ x: clamp(P.x + Math.cos(a) * d, 40, ARENA_W - 40), y: clamp(P.y + Math.sin(a) * d, 40, ARENA_H - 40), r: 50, t: 1.1 + i * 0.4, max: 1.1 + i * 0.4, dmg: 14 * dm.dmg, fired: false, boom: 0 });
+      }
     }
     if (bossAt.length && t >= bossAt[0]) {
       bossAt.shift();
@@ -770,6 +848,14 @@
         if (e.fire <= 0 && d < 520 && e.age > 0.3) {
           e.fire = 2.2;
           ebullets.push({ x: e.x, y: e.y, vx: (dx / d) * 210, vy: (dy / d) * 210, life: 4, dmg: 10 * dm.dmg });
+        }
+      } else if (e.type === "mage") {
+        // il garde ses distances et marque le sol où tu te trouves : il faut bouger avant que la zone claque
+        if (d < 280) { mx = -mx; my = -my; } else if (d < 340) sp = 0;
+        e.fire -= dt;
+        if (e.fire <= 0 && d < 560 && e.age > 0.3) {
+          e.fire = 3.6;
+          zones.push({ x: P.x + ix * 40, y: P.y + iy * 40, r: 48, t: 1, max: 1, dmg: 14 * dm.dmg, fired: false, boom: 0 });
         }
       } else if (e.type === "dasher") {
         // il avance, vise (ligne rose), puis fonce tout droit et se repose
@@ -813,17 +899,34 @@
     }
     if (mode !== "play") return;
 
+    // les zones au sol : elles claquent une fois leur délai écoulé
+    for (let i = zones.length - 1; i >= 0; i--) {
+      const z = zones[i];
+      if (!z.fired) {
+        z.t -= dt;
+        if (z.t <= 0) {
+          z.fired = true;
+          z.boom = 0.18;
+          if (Math.hypot(z.x - P.x, z.y - P.y) < z.r + P.r) hurt(z.dmg);
+        }
+      } else {
+        z.boom -= dt;
+        if (z.boom <= 0) zones.splice(i, 1);
+      }
+    }
+    if (mode !== "play") return;
+
     // l'onde : un coup qui repousse tout autour
     if (st.wave > 0) {
       waveCd -= dt;
       if (waveCd <= 0) {
-        waveCd = 5.5 - 0.3 * st.wave;
-        const R = 60 + 22 * st.wave;
+        waveCd = Math.max(1.8, (5.5 - 0.3 * Math.min(st.wave, 8)) * st.waveMul);
+        const R = Math.min(280, 60 + 22 * st.wave);
         SFX.wave();
         waves.push({ x: P.x, y: P.y, r: 0, max: R, life: 0.35, t: 0.35 });
         enemies.forEach((e) => {
           const dx = e.x - P.x, dy = e.y - P.y, d = Math.hypot(dx, dy) || 1;
-          if (d < R + e.r) damage(e, 3 + st.wave * 1.5, false, (dx / d) * (e.type === "boss" ? 120 : 420), (dy / d) * (e.type === "boss" ? 120 : 420));
+          if (d < R + e.r) damage(e, 3 + Math.min(st.wave, 10) * 1.5, false, (dx / d) * (e.type === "boss" ? 120 : 420), (dy / d) * (e.type === "boss" ? 120 : 420));
         });
       }
     }
@@ -842,6 +945,13 @@
         P.aim = base;
         P.muzzle = 0.06;
         SFX.shoot();
+        P.volley++;
+        if (st.ring && P.volley % 3 === 0) {
+          for (let k = 0; k < 10; k++) {
+            const a = (k / 10) * 6.283 + base;
+            bullets.push({ x: P.x, y: P.y, vx: Math.cos(a) * 520, vy: Math.sin(a) * 520, life: st.range / 520, pierce: st.pierce, hit: [] });
+          }
+        }
         for (let k = 0; k < st.count; k++) {
           const a = base + (k - (st.count - 1) / 2) * 0.2;
           bullets.push({ x: P.x, y: P.y, vx: Math.cos(a) * 520, vy: Math.sin(a) * 520, life: st.range / 520, pierce: st.pierce, hit: [] });
@@ -870,7 +980,8 @@
               if (dx * dx + dy * dy < (e.r + 3) * (e.r + 3)) {
                 const crit = Math.random() < st.crit;
                 const kb = e.type === "boss" ? 15 : 90;
-                damage(e, st.dmg * (crit ? 2 : 1), crit, (bl.vx / 520) * kb, (bl.vy / 520) * kb);
+                damage(e, st.dmg * (crit ? 2 : 1), crit, (bl.vx / 520) * kb, (bl.vy / 520) * kb, "bullet");
+                if (st.blast > 0) splash(e, st.blast, st.dmg * 0.5);
                 bl.hit.push(e);
                 if (bl.pierce > 0) bl.pierce--; else { gone = true; break; }
               }
@@ -885,7 +996,7 @@
     orbAngle += dt * 3.2;
     for (let o = 0; o < st.orbs; o++) {
       const a = orbAngle + (o / st.orbs) * 6.283;
-      const ox = P.x + Math.cos(a) * 52, oy = P.y + Math.sin(a) * 52;
+      const ox = P.x + Math.cos(a) * st.orbR, oy = P.y + Math.sin(a) * st.orbR;
       const cx = clamp((ox / CELL) | 0, 0, COLS - 1), cy = clamp((oy / CELL) | 0, 0, ROWS - 1);
       for (let yy = Math.max(0, cy - 1); yy <= Math.min(ROWS - 1, cy + 1); yy++) {
         for (let xx = Math.max(0, cx - 1); xx <= Math.min(COLS - 1, cx + 1); xx++) {
@@ -894,7 +1005,7 @@
             const e = enemies[c[k]];
             if (!e || e.orbCd > 0) continue;
             const dx = e.x - ox, dy = e.y - oy;
-            if (dx * dx + dy * dy < (e.r + 6) * (e.r + 6)) { damage(e, Math.max(1, st.dmg * 0.6), false, (dx / (Math.hypot(dx, dy) || 1)) * 120, (dy / (Math.hypot(dx, dy) || 1)) * 120); e.orbCd = 0.3; }
+            if (dx * dx + dy * dy < (e.r + 6) * (e.r + 6)) { damage(e, Math.max(1, st.dmg * st.orbDmg), false, (dx / (Math.hypot(dx, dy) || 1)) * 120, (dy / (Math.hypot(dx, dy) || 1)) * 120); e.orbCd = 0.3; }
           }
         }
       }
@@ -983,7 +1094,7 @@
     if (tm !== hud.time) { hud.time = tm; $("#sTime").textContent = tm; }
     if (lvl !== hud.level) { hud.level = lvl; $("#sLevel").textContent = lvl; }
     if (ks !== hud.kills) { hud.kills = ks; $("#sKills").textContent = ks; }
-    const hp = Math.round((P.hp / st.maxHp) * 100), xpp = Math.round((xp / need) * 100), ds = Math.round((1 - P.dashCd / DASH_CD) * 100);
+    const hp = Math.round((P.hp / st.maxHp) * 100), xpp = Math.round((xp / need) * 100), ds = Math.round((1 - P.dashCd / (P.dashMax || DASH_CD)) * 100);
     const hpt = Math.ceil(P.hp) + " / " + st.maxHp;
     if (hpt !== hud.hpt) { hud.hpt = hpt; $("#hpTxt").textContent = hpt; }
     const sc = liveScore() + " pts";
@@ -1021,7 +1132,7 @@
   // une lame : un losange allongé, tourné dans le sens du mouvement, avec un petit fil gris au centre
   const blade = (cx, cy, a, alpha, size) => {
     g.save();
-    g.translate(cx + Math.cos(a) * 52, cy + Math.sin(a) * 52);
+    g.translate(cx + Math.cos(a) * st.orbR, cy + Math.sin(a) * st.orbR);
     g.rotate(a + Math.PI / 2);
     g.globalAlpha = alpha;
     g.fillStyle = LIGHT;
@@ -1141,6 +1252,31 @@
       blit(d.type, d.x, d.y + (calm ? 0 : Math.sin(t * 5 + d.x) * 2), 2, 0, false, false);
     });
 
+    // les zones au sol : un cercle rose pointillé qui se remplit, puis un éclair plein
+    zones.forEach((z) => {
+      if (!inView(z.x, z.y, z.r + 10)) return;
+      g.fillStyle = PINK;
+      g.strokeStyle = PINK;
+      if (z.fired) {
+        g.globalAlpha = 0.6 * Math.max(0, z.boom / 0.18);
+        g.beginPath();
+        g.arc(z.x, z.y, z.r, 0, 6.283);
+        g.fill();
+      } else {
+        g.lineWidth = 2;
+        g.setLineDash([6, 6]);
+        g.beginPath();
+        g.arc(z.x, z.y, z.r, 0, 6.283);
+        g.stroke();
+        g.setLineDash([]);
+        g.globalAlpha = 0.22;
+        g.beginPath();
+        g.arc(z.x, z.y, z.r * (1 - z.t / z.max), 0, 6.283);
+        g.fill();
+      }
+      g.globalAlpha = 1;
+    });
+
     // les lignes de visée des chargeurs : roses, juste avant la charge
     enemies.forEach((e) => {
       if (e.type === "dasher" && e.st === 1 && inView(e.x, e.y, 400)) {
@@ -1200,7 +1336,7 @@
       g.lineWidth = 1;
       g.setLineDash([3, 7]);
       g.beginPath();
-      g.arc(P.x, P.y, 52, 0, 6.283);
+      g.arc(P.x, P.y, st.orbR, 0, 6.283);
       g.stroke();
       g.setLineDash([]);
       for (let o = 0; o < st.orbs; o++) {

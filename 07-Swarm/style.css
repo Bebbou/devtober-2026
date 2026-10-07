@@ -481,6 +481,40 @@ main {
   color: var(--dim);
 }
 
+/* la rareté se lit à la bordure : grise, claire, rose en pointillé, rose pleine avec fond teinté */
+.card.r1 {
+  border-color: var(--text);
+}
+
+.card.r1 .lv {
+  color: var(--text);
+}
+
+.card.r2 {
+  border: 1px dashed var(--pink);
+}
+
+.card.r2 .lv,
+.card.r3 .lv,
+.card.r4 .lv {
+  color: var(--pink);
+}
+
+.card.r3,
+.card.r4 {
+  border: 2px solid var(--pink);
+  background: #16080d;
+}
+
+.card.r4 b {
+  color: var(--pink);
+}
+
+.chips span.evo {
+  border-color: var(--pink);
+  color: var(--pink);
+}
+
 .card kbd {
   margin-right: 8px;
   color: var(--pink);
