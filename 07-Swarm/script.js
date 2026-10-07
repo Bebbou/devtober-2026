@@ -213,10 +213,10 @@
 
   const reset = () => {
     P = { x: ARENA_W / 2, y: ARENA_H / 2, r: 9, hp: 100, inv: 0, flash: 0, aim: 0, dash: 0, dashCd: 0, dx: 1, dy: 0, face: 1, walk: 0 };
-    st = { cd: 0.5, dmg: 2, count: 1, pierce: 0, range: 440, speed: 170, magnet: 60, maxHp: 100, orbs: 0, crit: 0, wave: 0 };
+    st = { cd: 0.42, dmg: 2, count: 1, pierce: 0, range: 440, speed: 170, magnet: 60, maxHp: 100, orbs: 0, crit: 0, wave: 0 };
     lv = {};
     enemies = []; bullets = []; ebullets = []; gems = []; drops = []; parts = []; texts = []; waves = []; ghosts = [];
-    t = 0; kills = 0; level = 1; xp = 0; need = 8; spawnAcc = 0; nextWave = 30;
+    t = 0; kills = 0; level = 1; xp = 0; need = 6; spawnAcc = 0; nextWave = 30;
     bossAt = [150, 255];
     cam = { x: P.x, y: P.y };
     joy = null; orbAngle = 0; pending = 0; fireCd = 0; waveCd = 3; combo = 0; comboT = 0; shake = 0; score = 0;
@@ -227,7 +227,7 @@
   let seedN = 0;
   const spawn = (type, x, y, instant) => {
     const d = TYPES[type];
-    const m = (1 + t / 200) * dm.hp; // la vie des ennemis monte avec le temps
+    const m = (1 + t / 260) * dm.hp; // la vie des ennemis monte avec le temps
     const hp = d.hp * (type === "boss" ? (1 + t / 150) * dm.hp : m);
     enemies.push({
       type, x, y, r: d.r, hp, max: hp, sp: d.sp * (type === "crawler" ? 1 + Math.min(t / 500, 0.6) : 1), dmg: d.dmg * dm.dmg, xp: d.xp,
@@ -430,7 +430,7 @@
   };
   const levelUpNext = () => {
     level++;
-    need = Math.round(need * 1.28 + 3);
+    need = Math.round(need * 1.25 + 3);
     P.hp = Math.min(st.maxHp, P.hp + 12); // un niveau soigne un peu
     showLevelUp();
   };
@@ -593,7 +593,8 @@
     mode = "play";
     last = performance.now();
     live("C'est parti");
-    if (!raf) raf = requestAnimationFrame(frame);
+    if (dbg.perf && window.__swarmRaf) schedule(frame); // test : une boucle pilotée de l'extérieur
+    else if (!raf) raf = requestAnimationFrame(frame);
   };
 
   const banner = (txt) => {
@@ -714,7 +715,7 @@
     shake = Math.max(0, shake - 40 * dt);
 
     // les ennemis arrivent : plus vite à mesure que le temps passe, et de nouvelles sortes au fil des minutes
-    spawnAcc += (1.4 + t * 0.04) * dm.spawn * dt;
+    spawnAcc += (1.1 + t * 0.04) * dm.spawn * dt;
     while (spawnAcc >= 1) {
       spawnAcc -= 1;
       if (enemies.length >= MAX_ENEMIES) continue;
@@ -848,14 +849,16 @@
       }
     }
 
-    // les tirs touchent
+    // les tirs touchent : trois petits pas par image, pour qu'un tir rapide ne traverse pas un ennemi sans le toucher
     for (let b = bullets.length - 1; b >= 0; b--) {
       const bl = bullets[b];
-      bl.x += bl.vx * dt;
-      bl.y += bl.vy * dt;
-      bl.life -= dt;
-      let gone = bl.life <= 0 || bl.x < 0 || bl.y < 0 || bl.x > ARENA_W || bl.y > ARENA_H;
-      if (!gone) {
+      let gone = false;
+      for (let sub = 0; sub < 3 && !gone; sub++) {
+        const h = dt / 3;
+        bl.x += bl.vx * h;
+        bl.y += bl.vy * h;
+        bl.life -= h;
+        if (bl.life <= 0 || bl.x < 0 || bl.y < 0 || bl.x > ARENA_W || bl.y > ARENA_H) { gone = true; break; }
         const cx = clamp((bl.x / CELL) | 0, 0, COLS - 1), cy = clamp((bl.y / CELL) | 0, 0, ROWS - 1);
         for (let yy = Math.max(0, cy - 1); yy <= Math.min(ROWS - 1, cy + 1) && !gone; yy++) {
           for (let xx = Math.max(0, cx - 1); xx <= Math.min(COLS - 1, cx + 1) && !gone; xx++) {
@@ -1265,9 +1268,11 @@
     }
   };
 
+  // en test (#perf), une page masquée ne reçoit pas requestAnimationFrame : window.__swarmRaf le remplace
+  const schedule = (f) => (dbg.perf && window.__swarmRaf ? window.__swarmRaf(f) : requestAnimationFrame(f));
   let perfAcc = 0, perfN = 0, perfTxt = "";
   const frame = (now) => {
-    raf = requestAnimationFrame(frame);
+    raf = schedule(frame);
     const c0 = dbg.perf ? performance.now() : 0;
     const dt = clamp((now - last) / 1000, 0, 1 / 30);
     last = now;
