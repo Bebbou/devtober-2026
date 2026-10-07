@@ -27,8 +27,8 @@
     cssH = r.height;
     cv.width = Math.round(cssW * dpr);
     cv.height = Math.round(cssH * dpr);
-    // sur petit écran on voit moins de monde, mais pas moins de 0,55 fois sa taille
-    zoom = clamp(Math.min(cssW, cssH) / 700, 0.55, 1.3);
+    // sur petit écran on voit moins de monde, mais pas moins de 0,65 fois sa taille
+    zoom = clamp(Math.min(cssW, cssH) / 560, 0.65, 1.3);
   };
 
   /* ---------- Ce que la personne a enregistré ---------- */
@@ -56,7 +56,7 @@
   /* ---------- Les ennemis ---------- */
   // r : rayon, hp : vie de départ, sp : vitesse, dmg : contact, xp : cristaux lâchés
   const TYPES = {
-    crawler: { r: 6, hp: 2, sp: 70, dmg: 8, xp: 1 },
+    crawler: { r: 6, hp: 2, sp: 66, dmg: 6, xp: 1 },
     brute: { r: 13, hp: 10, sp: 42, dmg: 15, xp: 4 },
     shooter: { r: 8, hp: 4, sp: 56, dmg: 6, xp: 3 },
     boss: { r: 30, hp: 220, sp: 38, dmg: 25, xp: 30 },
@@ -75,7 +75,7 @@
 
   const reset = () => {
     P = { x: ARENA_W / 2, y: ARENA_H / 2, r: 9, hp: 100, inv: 0, flash: 0, aim: 0 };
-    st = { cd: 0.55, dmg: 2, count: 1, pierce: 0, range: 380, speed: 170, magnet: 60, maxHp: 100, orbs: 0 };
+    st = { cd: 0.5, dmg: 2, count: 1, pierce: 0, range: 440, speed: 170, magnet: 60, maxHp: 100, orbs: 0 };
     lv = {};
     enemies = []; bullets = []; ebullets = []; gems = []; parts = [];
     t = 0; kills = 0; level = 1; xp = 0; need = 8; spawnAcc = 0; nextWave = 30;
@@ -94,15 +94,16 @@
     enemies.push({ type, x, y, r: d.r, hp, max: hp, sp: d.sp * (type === "crawler" ? 1 + Math.min(t / 500, 0.6) : 1), dmg: d.dmg, xp: d.xp, fire: rnd(0.5, 2), hit: 0, orbCd: 0, px: 0, py: 0 });
   };
 
-  // un point en dehors de l'écran, autour de la personne, dans l'arène
+  // un point juste en dehors de l'écran, sur un des quatre bords, et dans l'arène
   const edgePoint = (extra) => {
-    const rad = Math.hypot(cssW, cssH) / zoom / 2 + extra;
-    for (let k = 0; k < 6; k++) {
-      const a = Math.random() * Math.PI * 2;
-      const x = P.x + Math.cos(a) * rad, y = P.y + Math.sin(a) * rad;
+    const hw = cssW / zoom / 2 + extra, hh = cssH / zoom / 2 + extra;
+    for (let k = 0; k < 8; k++) {
+      const side = Math.floor(Math.random() * 4);
+      const x = side === 0 ? P.x - hw : side === 1 ? P.x + hw : P.x + rnd(-hw, hw);
+      const y = side === 2 ? P.y - hh : side === 3 ? P.y + hh : P.y + rnd(-hh, hh);
       if (x > 20 && x < ARENA_W - 20 && y > 20 && y < ARENA_H - 20) return [x, y];
     }
-    return [clamp(P.x + (Math.random() < 0.5 ? -rad : rad), 20, ARENA_W - 20), clamp(P.y + rnd(-rad, rad), 20, ARENA_H - 20)];
+    return [clamp(P.x + (Math.random() < 0.5 ? -hw : hw), 20, ARENA_W - 20), clamp(P.y + rnd(-hh, hh), 20, ARENA_H - 20)];
   };
 
   /* ---------- Ecrans ---------- */
@@ -218,7 +219,12 @@
     mode = "play";
     last = performance.now();
   };
-  const levelUpNext = () => { level++; need = Math.round(need * 1.28 + 3); showLevelUp(); };
+  const levelUpNext = () => {
+    level++;
+    need = Math.round(need * 1.28 + 3);
+    P.hp = Math.min(st.maxHp, P.hp + 12); // un niveau soigne un peu
+    showLevelUp();
+  };
 
   const showPause = () => {
     if (mode !== "play") return;
@@ -352,7 +358,7 @@
   const hurt = (dmg) => {
     if (P.inv > 0) return;
     P.hp -= dmg;
-    P.inv = 0.7;
+    P.inv = 0.8;
     P.flash = 0.2;
     if (P.hp <= 0) { P.hp = 0; end(false); }
   };
@@ -373,7 +379,7 @@
     P.flash = Math.max(0, P.flash - dt);
 
     // les ennemis arrivent : plus vite à mesure que le temps passe
-    spawnAcc += (1.2 + t * 0.03) * dt;
+    spawnAcc += (1.4 + t * 0.04) * dt;
     while (spawnAcc >= 1) {
       spawnAcc -= 1;
       if (enemies.length >= MAX_ENEMIES) continue;
@@ -388,8 +394,8 @@
       nextWave += 30;
       const n = Math.min(14 + Math.floor(t / 10), 40);
       for (let i = 0; i < n && enemies.length < MAX_ENEMIES; i++) {
-        const a = (i / n) * 6.283, rad = Math.hypot(cssW, cssH) / zoom / 2 + 40;
-        spawn("crawler", clamp(P.x + Math.cos(a) * rad, 20, ARENA_W - 20), clamp(P.y + Math.sin(a) * rad, 20, ARENA_H - 20));
+        const [x, y] = edgePoint(30 + (i % 3) * 14);
+        spawn("crawler", x, y);
       }
       banner("vague");
     }
@@ -443,8 +449,8 @@
           }
         }
       }
-      e.x = clamp(e.x + mx * sp * dt + px * 4 * dt, e.r, ARENA_W - e.r);
-      e.y = clamp(e.y + my * sp * dt + py * 4 * dt, e.r, ARENA_H - e.r);
+      e.x = clamp(e.x + mx * sp * dt + px * 10 * dt, e.r, ARENA_W - e.r);
+      e.y = clamp(e.y + my * sp * dt + py * 10 * dt, e.r, ARENA_H - e.r);
       e.hit = Math.max(0, e.hit - dt);
       e.orbCd = Math.max(0, e.orbCd - dt);
       if (d < e.r + P.r) hurt(e.dmg);
