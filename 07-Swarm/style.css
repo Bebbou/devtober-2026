@@ -1,0 +1,411 @@
+/*
+  Direction artistique du Devtober : fond #0D0D0D, texte #E0E0E0, accent #FF0055.
+  Le rose n'apparaît que sur ce qui est actif ou allumé. Traits de 1px, pas de flou ni de lueur.
+  Police : Courier New (comme Loop). Pour Geist (comme Pulse), voir 01-Pulse/index.html.
+*/
+:root {
+  --bg: #0d0d0d;
+  --surface: #111111;
+  --text: #e0e0e0;
+  --muted: #8c8c8c;
+  --dim: #5a5a5a;
+  --line: #1f1f1f;
+  --line-strong: #333333;
+  --pink: #ff0055;
+  --font: "Courier New", Courier, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--bg);
+  color-scheme: dark;
+}
+
+body {
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.6 var(--font);
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+::selection {
+  background: var(--pink);
+  color: #fff;
+}
+
+:focus-visible {
+  outline: 2px solid var(--pink);
+  outline-offset: 3px;
+}
+
+/* Marqueur de section : ">> titre" */
+.mark {
+  margin: 0;
+  color: var(--muted);
+}
+
+.mark::before {
+  content: ">> ";
+  color: var(--pink);
+}
+
+/* ---------- En-tête ---------- */
+.top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 70px;
+  padding: 0 28px;
+}
+
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--pink);
+}
+
+.right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.stat {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+#sTime {
+  color: var(--text);
+}
+
+.btn {
+  min-height: 34px;
+  padding: 3px 14px;
+  border: 1px solid var(--line-strong);
+  background: transparent;
+}
+
+.btn:hover:not(:disabled) {
+  border-color: var(--pink);
+  color: var(--pink);
+}
+
+.btn[hidden] {
+  display: none;
+}
+
+.btn.go {
+  border-color: var(--pink);
+  background: var(--pink);
+  color: var(--bg);
+  font-weight: 700;
+}
+
+.btn.go:hover {
+  background: #fff;
+  border-color: #fff;
+  color: var(--bg);
+}
+
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ---------- Le jeu ---------- */
+main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
+.play {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  border-top: 1px solid var(--line);
+  background: var(--bg);
+  overflow: hidden;
+}
+
+#cv {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* les jauges : vie à gauche, expérience en filet sur toute la largeur */
+.bars[hidden] {
+  display: none;
+}
+
+.bar {
+  position: absolute;
+  background: var(--line);
+}
+
+.bar i {
+  display: block;
+  height: 100%;
+  background: var(--text);
+}
+
+.bar.xp {
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 3px;
+}
+
+.bar.xp i {
+  background: var(--pink);
+}
+
+.bar.hp {
+  top: 14px;
+  left: 14px;
+  width: min(220px, 50vw);
+  height: 8px;
+  border: 1px solid var(--line-strong);
+  background: var(--bg);
+}
+
+.bar.hp.low i {
+  background: var(--pink);
+}
+
+.banner {
+  position: absolute;
+  top: 44px;
+  left: 50%;
+  margin: 0;
+  padding: 4px 14px;
+  border: 1px solid var(--pink);
+  background: var(--bg);
+  color: var(--pink);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.banner[hidden] {
+  display: none;
+}
+
+/* ---------- Écrans : menu, niveau, pause, fin ---------- */
+.panel {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 20px 16px;
+  background: rgba(13, 13, 13, 0.92);
+  overflow-y: auto;
+}
+
+.panel[hidden] {
+  display: none;
+}
+
+.panel .mark {
+  font-size: 16px;
+}
+
+#pBody {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: min(460px, 100%);
+  text-align: center;
+}
+
+#pBody p {
+  margin: 0;
+  color: var(--muted);
+}
+
+#pBody .big {
+  color: var(--text);
+  font-size: 28px;
+  line-height: 1.2;
+}
+
+#pBody .small {
+  font-size: 12px;
+  color: var(--dim);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 2px 24px;
+  margin: 0;
+  text-align: left;
+}
+
+.stats dt {
+  color: var(--muted);
+}
+
+.stats dd {
+  margin: 0;
+  color: var(--text);
+  text-align: right;
+}
+
+/* les trois choix au niveau supérieur */
+.cards {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+}
+
+.card {
+  display: block;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  text-align: left;
+}
+
+.card:hover,
+.card:focus-visible {
+  border-color: var(--pink);
+}
+
+.card b {
+  display: block;
+  color: var(--text);
+}
+
+.card span {
+  color: var(--muted);
+}
+
+.card .lv {
+  float: right;
+  color: var(--dim);
+}
+
+.card kbd {
+  margin-right: 8px;
+  color: var(--pink);
+  font: inherit;
+}
+
+@media (max-width: 700px) {
+  .top {
+    height: 54px;
+    padding: 0 12px;
+  }
+
+  .right {
+    gap: 10px;
+  }
+
+  .stat#sKills {
+    display: none;
+  }
+
+  .foot {
+    display: none;
+  }
+}
+
+/* ---------- Pied de page : les crédits ---------- */
+.foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px 28px;
+  padding: 12px 28px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+  color: var(--dim);
+}
+
+.foot p {
+  margin: 0;
+}
+
+.foot .mark {
+  display: inline;
+  margin-right: 8px;
+}
+
+.foot nav {
+  display: flex;
+  gap: 6px 16px;
+}
+
+.foot a {
+  color: var(--muted);
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.foot a:hover {
+  color: var(--pink);
+  border-color: var(--pink);
+}
+
+/* Les animations CSS s'arrêtent si le navigateur le demande (les boucles en JS testent `calm`, voir script.js) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+#pBody .small a {
+  color: var(--muted);
+  border-bottom: 1px solid var(--line-strong);
+}

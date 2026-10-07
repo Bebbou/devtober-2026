@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#0d0d0d" />
+    <title>Swarm · jour 07</title>
+    <meta
+      name="description"
+      content="Un jeu de survie en arène : tu bouges, ça tire tout seul, des centaines d'ennemis arrivent. Cinq minutes à tenir, une amélioration à chaque niveau."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Devtober 2026" />
+    <meta property="og:title" content="Swarm · jour 07" />
+    <meta
+      property="og:description"
+      content="Un jeu de survie en arène : tu bouges, ça tire tout seul, des centaines d'ennemis arrivent. Cinq minutes à tenir."
+    />
+    <meta property="og:image" content="https://bebbou.github.io/devtober-2026/docs/og/swarm.jpg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="top">
+      <a class="logo" href="#"><i></i>swarm</a>
+      <div class="right">
+        <span class="stat" id="sTime" aria-hidden="true">0:00</span>
+        <span class="stat" id="sLevel" aria-hidden="true">niv 1</span>
+        <span class="stat" id="sKills" aria-hidden="true">0 tués</span>
+        <button class="btn" id="pause" type="button" aria-label="Mettre en pause" hidden>pause</button>
+        <button class="btn" id="help" type="button" aria-label="Comment jouer">?</button>
+      </div>
+    </header>
+
+    <main id="stage">
+      <div class="play" id="play">
+        <canvas id="cv" role="img" aria-label="Le jeu : ton personnage au centre, des ennemis qui arrivent de partout"></canvas>
+
+        <div class="bars" id="bars" hidden>
+          <div class="bar hp" id="hpBar"><i id="hpFill"></i></div>
+          <div class="bar xp" id="xpBar"><i id="xpFill"></i></div>
+        </div>
+
+        <p class="banner" id="banner" hidden></p>
+
+        <div class="panel" id="panel" role="dialog" aria-modal="true" aria-labelledby="pTitle" hidden>
+          <p class="mark" id="pTitle"></p>
+          <div id="pBody"></div>
+        </div>
+      </div>
+      <p class="sr" id="live" role="status" aria-live="polite"></p>
+    </main>
+
+    <footer class="foot">
+      <p><span class="mark">crédits</span> Conçu par <a href="https://github.com/Bebbou">Lino Volle</a>. Inspiré du mode Swarm de League of Legends : aucun élément de Riot Games n'est utilisé.</p>
+      <nav aria-label="Liens">
+        <a href="../docs/07-swarm.html">doc</a>
+        <a href="https://github.com/Bebbou/devtober-2026/tree/main/07-Swarm">code</a>
+        <a href="https://github.com/Bebbou">github</a>
+      </nav>
+    </footer>
+
+    <script src="script.js"></script>
+  </body>
+</html>
