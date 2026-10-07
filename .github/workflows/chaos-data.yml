@@ -1,4 +1,4 @@
-# Collecte les titres de presse toutes les heures, les classe et les place sur la carte de Chaos,
+# Collecte les titres de presse toutes les 30 minutes, les classe et les place sur la carte de Chaos,
 # puis les publie dans events.json sur la branche "chaos-data".
 #
 # Le fichier précédent est repris et complété : les flux ne gardent que quelques heures de titres,
@@ -10,7 +10,7 @@ name: chaos-data
 
 on:
   schedule:
-    - cron: "17 * * * *"
+    - cron: "17,47 * * * *"
   workflow_dispatch:
   push:
     branches: [main]

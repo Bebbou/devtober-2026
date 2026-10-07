@@ -72,7 +72,7 @@ Lino commite et pousse lui-même. Ne pas faire de commit, de push ni de branche 
 
 ## Chaos (jour 5)
 
-- Carte de France des faits rapportés par la presse. La collecte est `.github/scripts/chaos-collect.mjs` (Node sans dépendance, 129 flux RSS) lancée toutes les heures par `.github/workflows/chaos-data.yml`, qui publie `events.json` sur la branche `chaos-data` (ne pas y toucher). `05-Chaos/events.json` est une copie de secours, la plus récente des deux l'emporte.
+- Carte de France des faits rapportés par la presse. La collecte est `.github/scripts/chaos-collect.mjs` (Node sans dépendance, 129 flux RSS) lancée toutes les 30 minutes (minutes 17 et 47) par `.github/workflows/chaos-data.yml`, souvent retardée par GitHub, qui publie `events.json` sur la branche `chaos-data` (ne pas y toucher). `05-Chaos/events.json` est une copie de secours, la plus récente des deux l'emporte.
 - Les catégories sont des mots-clés sur le titre (`CATS`) : les resserrer plutôt que les élargir, un mot trop large range des procès en « violences ». `EXCLUS` (violences sexuelles, suicides) et `PAS_UN_EVENEMENT` (procès, affaires, tribunes) écartent des titres.
 - Le lieu vient de la commune du titre (API `geo.api.gouv.fr`), sinon d'un département cité, sinon du département du flux France 3. Les contours sont dans `05-Chaos/france.js` (générés depuis `gregoiredavid/france-geojson`, Licence Ouverte) et servent aussi à la collecte.
 - Le fond est un SVG (départements et nombres), les pastilles et les bulles sont sur un canevas (`#cv`). Ne pas remettre un élément SVG par pastille : 5 400 éléments rendaient la carte inutilisable. Les photos sont réduites une fois en vignettes rondes (`makeSprite`), jamais copiées dans le dépôt.

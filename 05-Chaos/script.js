@@ -10,7 +10,7 @@
 
   const F = window.FRANCE;
   const KEY = "devtober-chaos-5";
-  // Les données sont collectées toutes les heures par l'Action GitHub (.github/workflows/chaos-data.yml).
+  // Les données sont collectées toutes les 30 minutes par l'Action GitHub (.github/workflows/chaos-data.yml).
   // La copie du dossier sert tant que la branche chaos-data n'existe pas, ou si elle est hors service.
   const RAW = "https://raw.githubusercontent.com/Bebbou/devtober-2026/";
   const URLS = [RAW + "chaos-data/events.json", "events.json"];
