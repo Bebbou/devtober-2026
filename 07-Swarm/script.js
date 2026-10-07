@@ -7,6 +7,10 @@
   const calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   const KEY = "devtober-swarm-7";
+
+  // pour essayer sans attendre, dans l'adresse : #temps=140 (départ à 2:20), #invincible, #perf (temps de calcul à l'écran)
+  const q = new URLSearchParams(location.hash.slice(1));
+  const dbg = { time: Number(q.get("temps")) || 0, god: q.has("invincible"), perf: q.has("perf") };
   const PINK = "#ff0055", LIGHT = "#e0e0e0", GREY = "#8c8c8c", DARK = "#5a5a5a", BG = "#0d0d0d";
 
   const ARENA_W = 2200, ARENA_H = 1500; // en pixels du monde
@@ -333,16 +337,18 @@
     ["Tirer", "Automatique, sur l'ennemi le plus proche."],
     ["Dash", "Espace, ou le bouton rond sur téléphone. Il te protège un instant, il revient en 2,4 s."],
     ["Grandir", "Les cristaux blancs remplissent la barre rose : à chaque niveau, une amélioration parmi trois."],
-    ["Tenir", "5 minutes. Un trait rose pointillé annonce une charge, deux boss arrivent à 2:30 et 4:15. P : pause."],
+    ["Danger", "Tout ce qui est rose te blesse : tirs ennemis, ligne de charge. Tes tirs sont blancs."],
+    ["Tenir", "5 minutes. Deux boss arrivent à 2:30 et 4:15. P : pause."],
   ];
-  const showHow = () => {
+  // back : où revenir après « compris » (le menu, ou la pause quand on était en partie)
+  const showHow = (back) => {
     show("comment jouer", (b) => {
       const dl = el("dl", "how");
       HOW.forEach((r) => { dl.appendChild(el("dt", "", r[0])); dl.appendChild(el("dd", "", r[1])); });
       b.appendChild(dl);
       b.appendChild(button("compris", () => {
         try { localStorage.setItem(KEY + "-vu", "1"); } catch (e) { /* on s'en passe */ }
-        showMenu();
+        if (back) back(); else showMenu();
       }, true));
     }, true);
   };
@@ -511,6 +517,11 @@
     soundOn();
     reset();
     freeze = 0;
+    if (dbg.time) {
+      t = dbg.time;
+      bossAt = bossAt.filter((b) => b > t);
+      nextWave = (Math.floor(t / 30) + 1) * 30;
+    }
     hud.hp = hud.xp = hud.dash = hud.boss = -1; // les jauges se redessinent
     $("#play").classList.remove("low");
     hidePanel();
@@ -582,7 +593,7 @@
   };
 
   const hurt = (dmg) => {
-    if (P.inv > 0) return;
+    if (P.inv > 0 || dbg.god) return;
     P.hp -= dmg;
     P.inv = 0.8;
     P.flash = 0.2;
@@ -984,7 +995,7 @@
 
     // les ondes
     waves.forEach((w) => {
-      g.strokeStyle = PINK;
+      g.strokeStyle = LIGHT;
       g.lineWidth = 3;
       g.globalAlpha = Math.max(0, w.life / w.t);
       g.beginPath();
@@ -1041,8 +1052,8 @@
       }
     }
 
-    // les tirs : roses, car ils sont actifs
-    g.fillStyle = PINK;
+    // tes tirs sont blancs, ceux des ennemis roses : tout ce qui est rose te blesse
+    g.fillStyle = LIGHT;
     for (let i = 0; i < bullets.length; i++) {
       const b = bullets[i];
       g.fillRect(b.x - 3, b.y - 3, 6, 6);
@@ -1050,12 +1061,14 @@
       g.fillRect(b.x - b.vx * 0.018 - 2, b.y - b.vy * 0.018 - 2, 4, 4);
       g.globalAlpha = 1;
     }
+    g.fillStyle = PINK;
     for (let i = 0; i < ebullets.length; i++) {
       const b = ebullets[i];
       g.beginPath();
       g.arc(b.x, b.y, 4, 0, 6.283);
       g.fill();
     }
+    g.fillStyle = LIGHT;
     for (let o = 0; o < st.orbs; o++) {
       const a = orbAngle + (o / st.orbs) * 6.283;
       g.fillRect(P.x + Math.cos(a) * 52 - 5, P.y + Math.sin(a) * 52 - 5, 10, 10);
@@ -1114,8 +1127,10 @@
     }
   };
 
+  let perfAcc = 0, perfN = 0, perfTxt = "";
   const frame = (now) => {
     raf = requestAnimationFrame(frame);
+    const c0 = dbg.perf ? performance.now() : 0;
     const dt = clamp((now - last) / 1000, 0, 1 / 30);
     last = now;
     if (mode === "play") {
@@ -1124,6 +1139,19 @@
       drawHud();
     } else if (mode === "menu") drift(dt);
     render();
+    if (dbg.perf) {
+      perfAcc += performance.now() - c0;
+      if (++perfN >= 30) {
+        perfTxt = (perfAcc / perfN).toFixed(1) + " ms · " + enemies.length + " ennemis";
+        cv.dataset.perf = perfTxt;
+        perfAcc = perfN = 0;
+      }
+      g.setTransform(dpr, 0, 0, dpr, 0, 0);
+      g.fillStyle = LIGHT;
+      g.font = "12px 'Courier New', monospace";
+      g.textAlign = "left";
+      g.fillText(perfTxt, 14, cssH - 40);
+    }
   };
 
   /* ---------- Départ ---------- */
@@ -1138,7 +1166,8 @@
   dashBtn.addEventListener("pointerdown", (e) => { e.preventDefault(); dash(); });
   $("#help").addEventListener("click", () => {
     if (mode === "play") showPause();
-    if (mode === "menu" || mode === "pause" || mode === "over" || mode === "win") showHow();
+    else if (mode === "pause") showHow(() => { mode = "play"; showPause(); });
+    else if (mode === "menu" || mode === "over" || mode === "win") showHow();
   });
   window.addEventListener("resize", () => { fit(); render(); });
   fit();
