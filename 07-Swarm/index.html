@@ -28,6 +28,7 @@
         <span class="stat" id="sTime" aria-hidden="true">0:00</span>
         <span class="stat" id="sLevel" aria-hidden="true">niv 1</span>
         <span class="stat" id="sKills" aria-hidden="true">0 tués</span>
+        <button class="btn" id="sound" type="button" aria-label="Son" aria-pressed="true">son</button>
         <button class="btn" id="pause" type="button" aria-label="Mettre en pause" hidden>pause</button>
         <button class="btn" id="help" type="button" aria-label="Comment jouer">?</button>
       </div>
@@ -40,7 +41,11 @@
         <div class="bars" id="bars" hidden>
           <div class="bar hp" id="hpBar"><i id="hpFill"></i></div>
           <div class="bar xp" id="xpBar"><i id="xpFill"></i></div>
+          <div class="bar dash" id="dashBar"><i id="dashFill"></i></div>
         </div>
+        <div class="bossbar" id="bossBar" hidden><span>boss</span><div class="bar"><i id="bossFill"></i></div></div>
+        <p class="chips" id="chips" aria-hidden="true"></p>
+        <button class="dashbtn" id="dashBtn" type="button" aria-label="Dash (touche Espace)" hidden>dash</button>
 
         <p class="banner" id="banner" hidden></p>
 

@@ -209,6 +209,105 @@ main {
   background: var(--pink);
 }
 
+.bar.dash {
+  top: 28px;
+  left: 14px;
+  width: min(220px, 50vw);
+  height: 3px;
+}
+
+.bar.dash i {
+  background: var(--muted);
+}
+
+/* le boss : une barre au milieu en haut tant qu'il est là */
+.bossbar {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: min(280px, 40vw);
+  transform: translateX(-50%);
+  color: var(--pink);
+  font-size: 12px;
+  pointer-events: none;
+}
+
+.bossbar[hidden] {
+  display: none;
+}
+
+.bossbar .bar {
+  position: relative;
+  flex: 1;
+  height: 6px;
+}
+
+.bossbar .bar i {
+  background: var(--pink);
+}
+
+/* les améliorations prises */
+.chips {
+  position: absolute;
+  bottom: 10px;
+  left: 14px;
+  right: 120px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0;
+  pointer-events: none;
+}
+
+.chips span {
+  padding: 0 6px;
+  border: 1px solid var(--line-strong);
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 18px;
+}
+
+/* le bouton dash, utile au doigt */
+.dashbtn {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  width: 76px;
+  height: 76px;
+  border: 2px solid var(--line-strong);
+  border-radius: 50%;
+  background: var(--bg);
+  color: var(--dim);
+  touch-action: none;
+}
+
+.dashbtn[hidden] {
+  display: none;
+}
+
+.dashbtn.ready {
+  border-color: var(--text);
+  color: var(--text);
+}
+
+.dashbtn:active {
+  border-color: var(--pink);
+  color: var(--pink);
+}
+
+/* il reste peu de vie : un cadre rose autour du jeu */
+.play.low::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 3px solid var(--pink);
+  pointer-events: none;
+}
+
 .banner {
   position: absolute;
   top: 44px;
@@ -238,6 +337,10 @@ main {
   padding: 20px 16px;
   background: rgba(13, 13, 13, 0.92);
   overflow-y: auto;
+}
+
+.panel.clear {
+  background: rgba(13, 13, 13, 0.74);
 }
 
 .panel[hidden] {
@@ -278,6 +381,11 @@ main {
   flex-wrap: wrap;
   justify-content: center;
   gap: 10px;
+}
+
+.diff .btn[aria-pressed="true"] {
+  border-color: var(--pink);
+  color: var(--pink);
 }
 
 .stats {
@@ -353,7 +461,7 @@ main {
     display: none;
   }
 
-  .foot {
+  body .foot {
     display: none;
   }
 }
@@ -408,4 +516,11 @@ main {
 #pBody .small a {
   color: var(--muted);
   border-bottom: 1px solid var(--line-strong);
+}
+
+/* à la souris, la touche Espace suffit : le bouton dash ne sert qu'au doigt */
+@media (hover: hover) and (pointer: fine) {
+  .dashbtn {
+    display: none;
+  }
 }
