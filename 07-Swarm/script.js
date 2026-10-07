@@ -264,7 +264,9 @@
     b.addEventListener("click", fn);
     return b;
   };
-  const show = (title, build, clear) => {
+  panel.tabIndex = -1;
+  // noFocus : ne pas mettre le focus sur un bouton (au niveau supérieur, une touche encore enfoncée validerait la première carte)
+  const show = (title, build, clear, noFocus) => {
     pTitle.textContent = title;
     pBody.textContent = "";
     pBody._picks = null;
@@ -272,7 +274,8 @@
     build(pBody);
     panel.hidden = false;
     const first = pBody.querySelector("button");
-    if (first) first.focus({ preventScroll: true });
+    if (noFocus) panel.focus({ preventScroll: true });
+    else if (first) first.focus({ preventScroll: true });
   };
   const hidePanel = () => { panel.hidden = true; };
 
@@ -412,7 +415,7 @@
       });
       b.appendChild(cards);
       b.appendChild(el("p", "small", "Z S ou ↑ ↓ pour choisir · Entrée pour valider · ou touches 1 2 3"));
-    });
+    }, false, true);
     pBody._picks = picks;
   };
   const choose = (u) => {
@@ -507,7 +510,10 @@
   };
   window.addEventListener("keydown", (e) => {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
-    if (mode === "levelup" && moveCard(e)) return;
+    if (mode === "levelup" && (UP[e.code] || DOWN[e.code])) {
+      if (!e.repeat) moveCard(e); else e.preventDefault();
+      return;
+    }
     if (KEYMAP[e.code]) { keys[KEYMAP[e.code]] = true; if (mode === "play") e.preventDefault(); }
     if (e.code === "Space" && mode === "play") { e.preventDefault(); dash(); }
     if (e.code === "KeyP" || e.code === "Escape") {
@@ -1285,6 +1291,15 @@
       g.fillText(perfTxt, 14, cssH - 40);
     }
   };
+
+  // avec #perf, l'état est lisible depuis la console : ça sert aux tests automatiques
+  if (dbg.perf) {
+    window.__swarm = {
+      get P() { return P; }, get enemies() { return enemies; }, get ebullets() { return ebullets; }, get gems() { return gems; },
+      get mode() { return mode; }, get t() { return t; }, get level() { return level; }, get kills() { return kills; },
+      get st() { return st; }, get lv() { return lv; }, get score() { return liveScore(); },
+    };
+  }
 
   /* ---------- Départ ---------- */
   $("#pause").addEventListener("click", showPause);
