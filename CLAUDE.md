@@ -8,7 +8,7 @@ Site statique sur GitHub Pages : `https://bebbou.github.io/devtober-2026/`. La r
 
 | Chemin | Contenu |
 | :-- | :-- |
-| `NN-Nom/` | le projet du jour (`01-Pulse`, `02-Loop`, `03-Bloom`, `04-Drift`, `05-Chaos`) |
+| `NN-Nom/` | le projet du jour (`01-Pulse`, `02-Loop`, `03-Bloom`, `04-Drift`, `05-Chaos`, `07-Swarm` ; le jour 6, Tiny, a été sauté) |
 | `docs/` | le site de documentation : une page `NN-nom.html` par jour, `pages.js` (THEMES et DOCS), `style.css`, `script.js` |
 | `_template/` | les fichiers de départ d'un jour et de sa page de doc (voir `/new-day`) |
 | `.github/` | la collecte des données de Pulse (`status.json` sur la branche `pulse-data`, ne pas y toucher) |
@@ -79,6 +79,16 @@ Lino commite et pousse lui-même. Ne pas faire de commit, de push ni de branche 
 - `MAX_PTS` (500) règle le poids de la carte, et `needed()` dit quelles photos précharger (l'écran de chargement attend toutes celles de la vue, 15 s au plus). `NOPHOTO` liste les catégories sans photo (vide : Lino veut montrer l'information).
 - Mémoire : `localStorage` clé `devtober-chaos-5` (drapeau de visite `-vu`). L'adresse porte la vue (`p`, `off`, `t`, `x`, `q`, `d`, `e`) et prime sur la mémoire.
 - Tests dans le panneau intégré : même consigne que pour Drift (`requestAnimationFrame` s'arrête quand il est masqué). Pour le déroulé : cliquer sur « Run workflow » de `chaos-data` après la fusion dans `main`.
+
+## Swarm (jour 7)
+
+- Jeu de survie en arène, canevas 2D écrit à la main (`script.js`, un seul fichier). Les ennemis sont rangés dans une grille de cases de 48 px (`cells`) : la poussée entre ennemis, les tirs et les lames ne regardent que les neuf cases voisines. Les tirs avancent en trois petits pas par image, sinon un tir rapide traverse un petit ennemi à 30 images par seconde.
+- Les images sont du pixel art en texte (`ART`), dessiné une fois par pose, par côté et par éclair blanc (`sprite`). Pas de flou ni de lueur. Le rose ne sert qu'à ce qui blesse (tirs ennemis, zones, lignes de charge) : les tirs, les lames et l'onde du joueur sont blancs.
+- Les améliorations ont quatre raretés (`UPGRADES`, une valeur par rareté dans `vals`) et trois évolutions (`EVOS`). Les ennemis sont dans `TYPES`, leur arrivée dépend du temps dans `update`. Difficulté : `DIFFS`.
+- Mémoire : `localStorage` clé `devtober-swarm-7` (drapeau de visite `-vu`). Sons : Web Audio, bips synthétisés, rien à télécharger.
+- Paramètres de test dans l'adresse : `#temps=N`, `#invincible`, `#lames=N`, `#perf` (temps de calcul à l'écran), `#test` (comme `#perf` sans affichage). Avec l'un des deux derniers, l'état est dans `window.__swarm` et `window.__swarmRaf` remplace `requestAnimationFrame` : c'est ainsi qu'on pilote une partie dans le panneau intégré, où la page masquée ne reçoit pas `requestAnimationFrame`. Recharger la page après avoir changé l'adresse.
+- L'équilibre a été réglé avec un robot qui esquive et choisit ses améliorations, pas avec des humains : le refaire si on change les débits, la vie des ennemis ou les valeurs de rareté.
+- Aucun élément de Riot Games (jeu d'origine : le mode Swarm de League of Legends) : le dire dans les crédits.
 
 ## À faire plus tard
 
