@@ -29,8 +29,8 @@
     cv.width = Math.round(cssW * dpr);
     cv.height = Math.round(cssH * dpr);
     g.imageSmoothingEnabled = false; // les sprites restent des pixels nets
-    // sur petit écran on voit moins de monde, mais pas moins de 0,78 fois sa taille
-    zoom = clamp(Math.min(cssW, cssH) / 480, 0.78, 1.3);
+    // sur petit écran on voit moins de monde, mais pas moins de 0,9 fois sa taille
+    zoom = clamp(Math.min(cssW, cssH) / 420, 0.9, 1.3);
   };
 
   /* ---------- Ce que la personne a enregistré ---------- */
@@ -192,6 +192,7 @@
 
   /* ---------- L'état d'une partie ---------- */
   let P, st, lv, enemies, bullets, ebullets, gems, drops, parts, texts, waves, ghosts;
+  let freeze = 0; // pause d'image à la mort du boss
   let t, kills, level, xp, need, spawnAcc, nextWave, bossAt, cam, joy, orbAngle, pending, mode, fireCd, waveCd, combo, comboT, shake, score, dm;
   const keys = {};
   mode = "menu"; // menu, play, levelup, pause, over, win
@@ -199,6 +200,10 @@
   const CELL = 48;
   const COLS = Math.ceil(ARENA_W / CELL) + 1, ROWS = Math.ceil(ARENA_H / CELL) + 1;
   for (let i = 0; i < COLS * ROWS; i++) cells.push([]);
+
+  // la série de tués multiplie le score : x2 à 10, x3 à 20, jusqu'à x5
+  const comboMult = () => 1 + Math.min(4, Math.floor(combo / 10));
+  const liveScore = () => score + Math.floor(t) * 5 + level * 50;
 
   const reset = () => {
     P = { x: ARENA_W / 2, y: ARENA_H / 2, r: 9, hp: 100, inv: 0, flash: 0, aim: 0, dash: 0, dashCd: 0, dx: 1, dy: 0, face: 1, walk: 0 };
@@ -286,6 +291,7 @@
   const showMenu = () => {
     mode = "menu";
     attractMode();
+    document.body.classList.remove("playing");
     $("#pause").hidden = true;
     $("#dashBtn").hidden = true;
     $("#bars").hidden = true;
@@ -306,7 +312,7 @@
       if (best.games) b.appendChild(statsList([["meilleur temps", fmt(best.t[best.diff] || 0)], ["victoires", String(best.wins[best.diff] || 0)], ["meilleur score", String(best.score)]]));
       const row = el("div", "row");
       row.appendChild(button("jouer", start, true));
-      row.appendChild(button("comment jouer", () => showHow(0)));
+      row.appendChild(button("comment jouer", () => showHow()));
       b.appendChild(row);
       b.appendChild(el("p", "small", "ZQSD ou flèches · Espace : dash · P : pause · au doigt : glisse n'importe où"));
       // le pied de page est caché sur téléphone : les crédits sont ici
@@ -321,22 +327,23 @@
     }, true);
   };
 
+  // les règles tiennent sur un seul écran
   const HOW = [
-    "Bouge avec ZQSD, WASD ou les flèches. Au doigt ou à la souris, glisse n'importe où sur l'écran : un joystick apparaît sous ton doigt. Tu tires tout seul sur l'ennemi le plus proche.",
-    "Espace (ou le bouton dash sur téléphone) fait une glissade qui te protège un instant. Elle revient au bout de 2 secondes et demie : sers-t'en pour traverser un groupe.",
-    "Les ennemis lâchent des cristaux blancs. Ramasse-les : la barre rose en haut se remplit, et à chaque niveau tu choisis une amélioration parmi trois. Des cœurs, des aimants et des bombes tombent parfois.",
-    "Tiens 5 minutes. Les tireurs envoient des projectiles roses, les foncheurs préviennent par une ligne rose avant de charger, et deux boss arrivent à 2:30 et à 4:15. P met en pause.",
+    ["Bouger", "ZQSD, WASD ou les flèches. Au doigt ou à la souris : glisse n'importe où, un joystick apparaît."],
+    ["Tirer", "Automatique, sur l'ennemi le plus proche."],
+    ["Dash", "Espace, ou le bouton rond sur téléphone. Il te protège un instant, il revient en 2,4 s."],
+    ["Grandir", "Les cristaux blancs remplissent la barre rose : à chaque niveau, une amélioration parmi trois."],
+    ["Tenir", "5 minutes. Un trait rose pointillé annonce une charge, deux boss arrivent à 2:30 et 4:15. P : pause."],
   ];
-  const showHow = (n) => {
-    show("comment jouer " + (n + 1) + " / " + HOW.length, (b) => {
-      b.appendChild(el("p", "", HOW[n]));
-      const row = el("div", "row");
-      row.appendChild(button(n === HOW.length - 1 ? "compris" : "suivant", () => {
-        if (n === HOW.length - 1) { try { localStorage.setItem(KEY + "-vu", "1"); } catch (e) { /* on s'en passe */ } showMenu(); }
-        else showHow(n + 1);
+  const showHow = () => {
+    show("comment jouer", (b) => {
+      const dl = el("dl", "how");
+      HOW.forEach((r) => { dl.appendChild(el("dt", "", r[0])); dl.appendChild(el("dd", "", r[1])); });
+      b.appendChild(dl);
+      b.appendChild(button("compris", () => {
+        try { localStorage.setItem(KEY + "-vu", "1"); } catch (e) { /* on s'en passe */ }
+        showMenu();
       }, true));
-      if (n < HOW.length - 1) row.appendChild(button("passer", showMenu));
-      b.appendChild(row);
     }, true);
   };
 
@@ -412,7 +419,7 @@
 
   const end = (won, giveUp) => {
     mode = won ? "win" : "over";
-    score = kills * 10 + Math.floor(t) * 5 + level * 50 + (won ? 1000 : 0);
+    score = liveScore() + (won ? 1000 : 0);
     best.games++;
     if (won) best.wins[best.diff] = (best.wins[best.diff] || 0) + 1;
     const record = t > (best.t[best.diff] || 0);
@@ -503,10 +510,12 @@
   const start = () => {
     soundOn();
     reset();
+    freeze = 0;
     hud.hp = hud.xp = hud.dash = hud.boss = -1; // les jauges se redessinent
     $("#play").classList.remove("low");
     hidePanel();
     drawChips();
+    document.body.classList.add("playing");
     $("#bars").hidden = false;
     $("#pause").hidden = false;
     $("#dashBtn").hidden = false;
@@ -550,12 +559,16 @@
     kills++;
     combo++;
     comboT = 2.5;
+    score += 10 * comboMult();
     SFX.kill();
     burst(e.x, e.y, e.type === "boss" ? 40 : 6, e.type === "boss" ? PINK : GREY, e.type === "boss" ? 300 : 140);
     if (e.type === "boss") {
       for (let k = 0; k < 8; k++) dropGem(e.x, e.y, 4);
       drops.push({ type: "heart", x: e.x, y: e.y, life: 20 });
       shake = Math.max(shake, 12);
+      freeze = calm ? 0 : 0.45;
+      banner("boss vaincu");
+      SFX.win();
     } else {
       dropGem(e.x, e.y, e.xp);
       const r = Math.random();
@@ -895,6 +908,10 @@
     if (lvl !== hud.level) { hud.level = lvl; $("#sLevel").textContent = lvl; }
     if (ks !== hud.kills) { hud.kills = ks; $("#sKills").textContent = ks; }
     const hp = Math.round((P.hp / st.maxHp) * 100), xpp = Math.round((xp / need) * 100), ds = Math.round((1 - P.dashCd / DASH_CD) * 100);
+    const hpt = Math.ceil(P.hp) + " / " + st.maxHp;
+    if (hpt !== hud.hpt) { hud.hpt = hpt; $("#hpTxt").textContent = hpt; }
+    const sc = liveScore() + " pts";
+    if (sc !== hud.sc) { hud.sc = sc; $("#scoreTxt").textContent = sc; }
     if (hp !== hud.hp) {
       hud.hp = hp;
       $("#hpFill").style.width = hp + "%";
@@ -1082,15 +1099,18 @@
       g.arc(joy.ox, joy.oy, 56, 0, 6.283);
       g.stroke();
       const dx = joy.x - joy.ox, dy = joy.y - joy.oy, d = Math.hypot(dx, dy), k = d > 56 ? 56 / d : 1;
+      g.globalAlpha = 0.4;
       g.fillStyle = GREY;
       g.beginPath();
       g.arc(joy.ox + dx * k, joy.oy + dy * k, 20, 0, 6.283);
       g.fill();
+      g.globalAlpha = 1;
     }
     if (combo >= 5 && (mode === "play" || mode === "levelup" || mode === "pause")) {
-      g.font = "bold " + (combo >= 25 ? 26 : 20) + "px 'Courier New', monospace";
-      g.fillStyle = combo >= 25 ? PINK : LIGHT;
-      g.fillText("x" + combo, cssW / 2, 96);
+      const mu = comboMult();
+      g.font = "bold " + (mu >= 3 ? 20 : 16) + "px 'Courier New', monospace";
+      g.fillStyle = mu >= 3 ? PINK : LIGHT;
+      g.fillText("série " + combo + (mu > 1 ? "  score x" + mu : ""), cssW / 2, 96);
     }
   };
 
@@ -1099,7 +1119,8 @@
     const dt = clamp((now - last) / 1000, 0, 1 / 30);
     last = now;
     if (mode === "play") {
-      update(dt);
+      if (freeze > 0) freeze -= dt;
+      else update(dt);
       drawHud();
     } else if (mode === "menu") drift(dt);
     render();
@@ -1117,7 +1138,7 @@
   dashBtn.addEventListener("pointerdown", (e) => { e.preventDefault(); dash(); });
   $("#help").addEventListener("click", () => {
     if (mode === "play") showPause();
-    if (mode === "menu" || mode === "pause" || mode === "over" || mode === "win") showHow(0);
+    if (mode === "menu" || mode === "pause" || mode === "over" || mode === "win") showHow();
   });
   window.addEventListener("resize", () => { fit(); render(); });
   fit();
@@ -1125,7 +1146,7 @@
 
   let seen = false;
   try { seen = !!localStorage.getItem(KEY + "-vu"); } catch (e) { /* visite proposée à chaque fois */ }
-  if (seen) showMenu(); else showHow(0);
+  if (seen) showMenu(); else showHow();
   last = performance.now();
   raf = requestAnimationFrame(frame);
 })();

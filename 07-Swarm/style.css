@@ -105,6 +105,11 @@ a {
   color: var(--text);
 }
 
+/* en dehors d'une partie, temps, niveau et tués ne disent rien */
+body:not(.playing) .stat {
+  display: none;
+}
+
 .btn {
   min-height: 34px;
   padding: 3px 14px;
@@ -207,6 +212,25 @@ main {
 
 .bar.hp.low i {
   background: var(--pink);
+}
+
+/* la vie en chiffres, à droite de sa barre ; le score en haut à droite */
+.hptxt {
+  position: absolute;
+  top: 10px;
+  left: calc(14px + min(220px, 50vw) + 8px);
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.scoretxt {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
 }
 
 .bar.dash {
@@ -340,7 +364,7 @@ main {
 }
 
 .panel.clear {
-  background: rgba(13, 13, 13, 0.74);
+  background: rgba(13, 13, 13, 0.84);
 }
 
 .panel[hidden] {
@@ -457,8 +481,18 @@ main {
     gap: 10px;
   }
 
-  .stat#sKills {
+  body .stat#sKills {
     display: none;
+  }
+
+  /* l'en-tête est étroit : le nom du jeu devient un point */
+  .logo {
+    font-size: 0;
+  }
+
+  .logo i {
+    width: 10px;
+    height: 10px;
   }
 
   body .foot {
@@ -523,4 +557,21 @@ main {
   .dashbtn {
     display: none;
   }
+}
+
+.how {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 16px;
+  margin: 0;
+  text-align: left;
+}
+
+.how dt {
+  color: var(--pink);
+}
+
+.how dd {
+  margin: 0;
+  color: var(--muted);
 }
