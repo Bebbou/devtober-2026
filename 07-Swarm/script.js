@@ -10,7 +10,7 @@
 
   // pour essayer sans attendre, dans l'adresse : #temps=140 (départ à 2:20), #invincible, #perf (temps de calcul à l'écran)
   const q = new URLSearchParams(location.hash.slice(1));
-  const dbg = { time: Number(q.get("temps")) || 0, god: q.has("invincible"), perf: q.has("perf"), orbs: Number(q.get("lames")) || 0 };
+  const dbg = { time: Number(q.get("temps")) || 0, god: q.has("invincible"), perf: q.has("perf"), test: q.has("perf") || q.has("test"), orbs: Number(q.get("lames")) || 0 };
   const PINK = "#ff0055", LIGHT = "#e0e0e0", GREY = "#8c8c8c", DARK = "#5a5a5a", BG = "#0d0d0d";
 
   const ARENA_W = 2200, ARENA_H = 1500; // en pixels du monde
@@ -645,7 +645,7 @@
     mode = "play";
     last = performance.now();
     live("C'est parti");
-    if (dbg.perf && window.__swarmRaf) schedule(frame); // test : une boucle pilotée de l'extérieur
+    if (dbg.test && window.__swarmRaf) schedule(frame); // test : une boucle pilotée de l'extérieur
     else if (!raf) raf = requestAnimationFrame(frame);
   };
 
@@ -1405,7 +1405,7 @@
   };
 
   // en test (#perf), une page masquée ne reçoit pas requestAnimationFrame : window.__swarmRaf le remplace
-  const schedule = (f) => (dbg.perf && window.__swarmRaf ? window.__swarmRaf(f) : requestAnimationFrame(f));
+  const schedule = (f) => (dbg.test && window.__swarmRaf ? window.__swarmRaf(f) : requestAnimationFrame(f));
   let perfAcc = 0, perfN = 0, perfTxt = "";
   const frame = (now) => {
     raf = schedule(frame);
@@ -1433,12 +1433,12 @@
     }
   };
 
-  // avec #perf, l'état est lisible depuis la console : ça sert aux tests automatiques
-  if (dbg.perf) {
+  // avec #perf ou #test, l'état est lisible depuis la console : ça sert aux tests automatiques
+  if (dbg.test) {
     window.__swarm = {
       get P() { return P; }, get enemies() { return enemies; }, get ebullets() { return ebullets; }, get gems() { return gems; },
       get mode() { return mode; }, get t() { return t; }, get level() { return level; }, get kills() { return kills; },
-      get st() { return st; }, get lv() { return lv; }, get score() { return liveScore(); },
+      get st() { return st; }, get lv() { return lv; }, get score() { return liveScore(); }, sprite,
     };
   }
 

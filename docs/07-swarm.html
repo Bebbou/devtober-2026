@@ -6,7 +6,13 @@
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#0d0d0d">
 <title>Swarm · Jour 07 · Devtober 2026</title>
-<meta name="description" content="Jour 07 du Devtober 2026 : Swarm, À COMPLÉTER.">
+<meta name="description" content="Jour 07 du Devtober 2026 : Swarm, un jeu de survie en arène. Tu bouges, ça tire tout seul, des centaines d'ennemis arrivent. Cinq minutes à tenir.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Devtober 2026">
+<meta property="og:title" content="Swarm · Jour 07 · Devtober 2026">
+<meta property="og:description" content="Jour 07 du Devtober 2026 : Swarm, un jeu de survie en arène. Cinq minutes à tenir.">
+<meta property="og:image" content="https://bebbou.github.io/devtober-2026/docs/og/swarm.jpg">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -29,7 +35,7 @@
   <main>
     <header>
       <h1>Swarm</h1>
-      <p class="lead">Jour 07. À COMPLÉTER : ce que c'est, en une ou deux phrases.</p>
+      <p class="lead">Jour 07. Un jeu de survie en arène vue du dessus : on se déplace, le tir est automatique, des centaines d'ennemis arrivent. Chaque ennemi tué lâche un cristal, chaque niveau offre une amélioration. Une partie dure 5 minutes au plus.</p>
       <p class="links">
         <a href="../07-Swarm/">ouvrir le projet</a>
         <a href="https://github.com/Bebbou/devtober-2026/tree/main/07-Swarm">code source</a>
@@ -38,35 +44,156 @@
 
     <section id="apercu" data-name="aperçu">
       <h2>aperçu</h2>
-      <p>À COMPLÉTER.</p>
+      <p>Le thème est « Swarm ». Je me suis inspiré du mode Swarm de League of Legends, aujourd'hui retiré : un personnage seul contre une foule qui grossit. Les personnages, les sons et le code sont à moi, sans élément de Riot Games.</p>
       <div class="frame">
         <iframe src="../07-Swarm/index.html" title="Swarm, en direct" loading="lazy"></iframe>
       </div>
-      <p class="cap">Version en direct. <a href="../07-Swarm/">L'ouvrir en plein écran</a></p>
+      <p class="cap">Version en direct. Clique dans le jeu avant d'utiliser le clavier. <a href="../07-Swarm/">L'ouvrir en plein écran</a></p>
     </section>
 
-    <section id="fonctionnement" data-name="fonctionnement">
-      <h2>fonctionnement</h2>
-      <p>À COMPLÉTER.</p>
+    <section id="commandes" data-name="commandes">
+      <h2>commandes</h2>
+      <div class="tblwrap">
+        <table class="tbl">
+          <thead><tr><th>geste</th><th>effet</th></tr></thead>
+          <tbody>
+            <tr><td>ZQSD, WASD, flèches</td><td>Déplacent le personnage.</td></tr>
+            <tr><td>glisser (doigt ou souris)</td><td>Un joystick apparaît là où le doigt se pose. Il remplace le clavier.</td></tr>
+            <tr><td>Espace, bouton « dash »</td><td>Glissade rapide de 0,16 s qui protège un instant et repousse les ennemis à moins de 90 px. Elle revient après 2,4 s. Le bouton rond n'apparaît qu'au doigt.</td></tr>
+            <tr><td>P, Échap, « pause »</td><td>Met en pause. Le jeu se met aussi en pause quand l'onglet est caché.</td></tr>
+            <tr><td>Z S ↑ ↓, Entrée, 1 2 3</td><td>Choisissent une carte au niveau supérieur. Aucune carte n'est sélectionnée à l'ouverture, pour qu'une touche encore enfoncée ne valide rien.</td></tr>
+            <tr><td>facile, normal, difficile</td><td>Règlent la vitesse d'arrivée (x0,75, x1, x1,3), les dégâts reçus (x0,7, x1, x1,3) et la vie des ennemis (x0,85, x1, x1,2).</td></tr>
+            <tr><td>son, muet</td><td>Coupe les bips. Le choix est gardé.</td></tr>
+            <tr><td>?</td><td>Rouvre les règles. Pendant une partie, il passe d'abord par la pause.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="ennemis" data-name="les ennemis">
+      <h2>les ennemis</h2>
+      <p>Ils arrivent juste en dehors de l'écran, sur les quatre bords. Le débit part de 1,1 par seconde et monte de 0,04 par seconde, plafonné à 320 ennemis en même temps. Une vague de crawlers tombe toutes les 30 secondes. Leur vie monte de 1/260 par seconde de partie.</p>
+      <div class="tblwrap">
+        <table class="tbl">
+          <thead><tr><th>ennemi</th><th>comportement</th></tr></thead>
+          <tbody>
+            <tr><td>crawler</td><td>Petit et rapide, il fonce sur toi. 2 points de vie au départ.</td></tr>
+            <tr><td>brute (dès 0:35)</td><td>Gros et lent, 10 points de vie, 15 de dégâts au contact.</td></tr>
+            <tr><td>tireur (dès 1:10)</td><td>Garde ses distances et tire un projectile rose toutes les 2,2 s.</td></tr>
+            <tr><td>mage (dès 1:30)</td><td>Garde ses distances et marque le sol là où tu te trouves : un cercle rose pointillé se remplit en 1 s, puis claque.</td></tr>
+            <tr><td>foncheur (dès 1:40)</td><td>Trace une ligne rose pointillée pendant 0,6 s, puis charge tout droit.</td></tr>
+            <tr><td>blindé (dès 2:00)</td><td>26 points de vie, lent. Il encaisse les tirs deux fois moins bien, mais pas les lames, l'onde ni les explosions.</td></tr>
+            <tr><td>gélatineux (dès 2:30)</td><td>Se casse en trois crawlers en mourant.</td></tr>
+            <tr><td>boss (2:30 et 4:15)</td><td>Grand, il envoie un cercle de 12 projectiles toutes les 3 s. Il laisse 8 gros cristaux et un cœur.</td></tr>
+            <tr><td>orage (1:45 et 3:45)</td><td>Huit zones roses tombent autour de toi, l'une après l'autre.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Une règle de lecture : ce qui est rose te blesse, tes tirs sont blancs.</p>
+    </section>
+
+    <section id="ameliorations" data-name="les améliorations">
+      <h2>les améliorations</h2>
+      <p>À chaque niveau, trois cartes. Chacune a une rareté tirée au hasard : commun, rare, épique ou légendaire. La valeur change avec la rareté. Par exemple, « Dégâts » donne +1, +1,5, +2,5 ou +4 par tir. Les épiques sortent à partir du niveau 3 et les légendaires à partir du niveau 6, de plus en plus souvent.</p>
+      <p>Une carte vaut 1 à 4 points selon sa rareté. Chaque amélioration a un plafond de points, et les pastilles en bas à gauche donnent le total.</p>
+      <div class="tblwrap">
+        <table class="tbl">
+          <thead><tr><th>amélioration</th><th>effet (de commun à légendaire)</th></tr></thead>
+          <tbody>
+            <tr><td>Cadence, Dégâts, Portée</td><td>Tir plus rapide (10 à 36 %), plus fort (+1 à +4), plus loin (+15 à +60 %).</td></tr>
+            <tr><td>Salve, Perforant</td><td>Plus de projectiles (+1 à +3, 9 au plus), tirs qui traversent plus d'ennemis (+1 à +5).</td></tr>
+            <tr><td>Vitesse, Glissade, Aimant</td><td>Déplacement plus rapide, dash plus souvent, cristaux ramassés de plus loin.</td></tr>
+            <tr><td>Lames, Onde</td><td>Lames qui tournent autour de toi (12 au plus). Onde qui repousse et blesse, plus large et plus fréquente.</td></tr>
+            <tr><td>Critique, Éclat</td><td>Chance de tir double. Tirs qui explosent en zone.</td></tr>
+            <tr><td>Cœur, Régénération, Armure, Vol de vie</td><td>Plus de PV, PV rendus par seconde, dégâts reçus en moins, PV rendus à chaque ennemi tué.</td></tr>
+            <tr><td>évolutions</td><td>Quand deux améliorations ont 3 points chacune, une carte d'évolution remplace la troisième : Tempête (Lames + Onde), Rafale (Salve + Perforant), Vampire (Cœur + Vol de vie). Elle ne vient qu'une fois.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="partie" data-name="la partie">
+      <h2>la partie</h2>
+      <p>Le décor est un canevas 2D, redessiné à chaque image. Les ennemis sont rangés dans une grille de cases de 48 px, ce qui évite de comparer chacun avec tous les autres : pour la poussée entre ennemis et pour les tirs, on ne regarde que les neuf cases voisines. Les personnages sont du pixel art écrit en texte (une chaîne par rangée) et dessiné une fois sur de petits canevas, puis réutilisé.</p>
+      <p>Un tir rapide peut traverser un petit ennemi entre deux images : à 520 px par seconde et 30 images par seconde, il avance de 17 px pour une cible de 20 px de large. Chaque image est donc coupée en trois petits pas (extrait simplifié).</p>
       <div class="code" data-label-js="script.js">
 <script type="text/plain" data-lang="js">
-// À COMPLÉTER : l'extrait de code qui explique l'idée du jour
+// trois petits pas par image, pour qu'un tir rapide ne traverse pas un ennemi
+for (let sub = 0; sub < 3 && !gone; sub++) {
+  const h = dt / 3;
+  bl.x += bl.vx * h;
+  bl.y += bl.vy * h;
+  bl.life -= h;
+  if (bl.life <= 0 || bl.x < 0 || bl.y < 0 || bl.x > ARENA_W || bl.y > ARENA_H) { gone = true; break; }
+  // on ne regarde que les cases voisines de la grille
+  for (const e of voisins(bl.x, bl.y)) {
+    if (e.hp <= 0 || bl.hit.indexOf(e) >= 0) continue;
+    const dx = e.x - bl.x, dy = e.y - bl.y;
+    if (dx * dx + dy * dy < (e.r + 3) * (e.r + 3)) {
+      damage(e, st.dmg, crit, kx, ky, "bullet");
+      bl.hit.push(e);
+      if (bl.pierce > 0) bl.pierce--; else { gone = true; break; }
+    }
+  }
+}
 </script>
       </div>
       <div class="tblwrap">
         <table class="tbl">
           <thead><tr><th>élément</th><th>rôle</th></tr></thead>
           <tbody>
-            <tr><td>À COMPLÉTER</td><td>À COMPLÉTER</td></tr>
+            <tr><td>arène</td><td>2 200 par 1 500 pixels du monde. La caméra suit le personnage, avec un zoom qui dépend de la taille de l'écran.</td></tr>
+            <tr><td>score</td><td>10 points par ennemi tué, multipliés par la série : x2 à 15 tués d'affilée, x3 à 30. Plus 5 points par seconde, 50 par niveau et 1 000 pour une victoire.</td></tr>
+            <tr><td>mémoire</td><td><code>localStorage</code>, clé <code>devtober-swarm-7</code> : difficulté, son, meilleur temps et victoires par difficulté, meilleur score.</td></tr>
+            <tr><td>son</td><td>Des bips synthétisés avec Web Audio (ondes carrées, triangle, dents de scie). Rien à télécharger.</td></tr>
+            <tr><td>vignette de partage</td><td><code>docs/og/swarm.jpg</code>.</td></tr>
           </tbody>
         </table>
       </div>
     </section>
 
+    <section id="essayer" data-name="pour essayer">
+      <h2>pour essayer</h2>
+      <p>Des paramètres dans l'adresse servent à voir un moment précis sans y arriver en jouant :</p>
+      <ul class="bul">
+        <li><code>#temps=140</code> fait démarrer la partie à 2:20, utile pour voir les boss.</li>
+        <li><code>#invincible</code> empêche de mourir.</li>
+        <li><code>#lames=3</code> donne trois lames dès le départ.</li>
+        <li><code>#perf</code> affiche en bas à gauche le temps de calcul par image et le nombre d'ennemis. Avec ce paramètre, l'état du jeu est aussi lisible dans <code>window.__swarm</code>, ce qui m'a servi à écrire un petit robot de test.</li>
+        <li><code>#test</code> fait la même chose que <code>#perf</code> sans rien afficher.</li>
+      </ul>
+      <p>On les combine : <code>#temps=225&invincible&perf</code>. Après avoir changé l'adresse, il faut recharger la page.</p>
+    </section>
+
+    <section id="acces" data-name="accessibilité">
+      <h2>accessibilité</h2>
+      <ul class="bul">
+        <li>Le menu, les règles, la pause et les cartes de niveau se manient au clavier. Les cartes se parcourent avec Z, S ou les flèches.</li>
+        <li>Avec « réduire les animations » dans le système, il n'y a plus de tremblement, d'éclats, de clignotement après un coup ni de nombres qui montent. La pause à la mort d'un boss disparaît aussi. Le jeu reste le même.</li>
+        <li>Le jeu se met en pause tout seul quand la fenêtre perd le focus.</li>
+        <li>Le jeu lui-même est un canevas : un lecteur d'écran lit seulement les messages (niveau atteint, vague, boss, orage, résultat).</li>
+        <li>Les couleurs ne portent pas seules l'information : les zones et les charges dangereuses sont aussi en pointillé, et le rose est réservé au danger.</li>
+      </ul>
+    </section>
+
     <section id="limites" data-name="limites">
       <h2>limites</h2>
       <ul class="bul">
-        <li>À COMPLÉTER</li>
+        <li>L'équilibre a été réglé avec un robot qui esquive et choisit ses améliorations, plus quelques parties à la main. En normal, il meurt entre 1:30 et 2:00, sauf une partie sur six qui a atteint 5:00 avec deux évolutions. Je ne sais pas si c'est juste pour un humain.</li>
+        <li>Je n'ai pas testé le tactile (joystick et bouton dash) sur un téléphone, ni les sons au casque.</li>
+        <li>Le temps de calcul est de 0,6 à 1,0 ms par image avec 320 ennemis dans le panneau intégré de mon éditeur. Ce chiffre ne couvre pas le dessin à l'écran et ne vaut pas pour un téléphone d'entrée de gamme.</li>
+        <li>Un seul personnage, une seule arme à tir automatique.</li>
+        <li>Contre un mur, les ennemis peuvent former un tas : le dash et l'onde servent à en sortir.</li>
+        <li>Il n'y a pas de serveur : les scores restent dans le navigateur.</li>
+      </ul>
+    </section>
+
+    <section id="credits" data-name="crédits">
+      <h2>crédits</h2>
+      <ul class="bul">
+        <li>Idée : le mode Swarm de League of Legends (Riot Games). Aucun personnage, image, son ni texte de Riot n'est repris.</li>
+        <li>Dessins en pixel art, sons et code : à moi, sans bibliothèque.</li>
+        <li>Police : Courier New, celle du système.</li>
       </ul>
     </section>
 
