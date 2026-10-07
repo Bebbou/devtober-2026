@@ -210,6 +210,15 @@ main {
   background: var(--bg);
 }
 
+/* dix segments, comme des cellules de vie */
+.bar.hp::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(90deg, transparent 0, transparent calc(10% - 2px), var(--bg) calc(10% - 2px), var(--bg) 10%);
+  pointer-events: none;
+}
+
 .bar.hp.low i {
   background: var(--pink);
 }
@@ -410,6 +419,13 @@ main {
 .diff .btn[aria-pressed="true"] {
   border-color: var(--pink);
   color: var(--pink);
+}
+
+.logo-px {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  image-rendering: pixelated;
 }
 
 .stats {

@@ -133,6 +133,8 @@
       ["..ppppppppp..", ".p#########p.", "p###########p", "p#ooo###ooo#p", "p#opo###opo#p", "p#ooo###ooo#p", "p###########p", "p##o#o#o#o##p", ".p#########p.", ".p##.###.##p.", ".p##..#..##p.", "..p.......p..", "..p.......p.."],
       ["..ppppppppp..", ".p#########p.", "p###########p", "p#ooo###ooo#p", "p#opo###opo#p", "p#ooo###ooo#p", "p###########p", "p##o#o#o#o##p", ".p#########p.", ".p##.###.##p.", ".p#..###..#p.", "..p.......p..", "..p.......p.."],
     ] },
+    gem: { pal: { "#": LIGHT, m: GREY }, frames: [["..#..", ".#m#.", "#mmm#", ".#m#.", "..#.."], ["..#..", ".###.", "#####", ".###.", "..#.."]] },
+    gemBig: { pal: { "#": LIGHT, p: PINK }, frames: [["...#...", "..###..", ".##p##.", "###p###", ".##p##.", "..###..", "...#..."]] },
     heart: { pal: { "#": PINK }, frames: [[".#.#.", "#####", "#####", ".###.", "..#.."]] },
     magnet: { pal: { "#": LIGHT, p: PINK, o: BG }, frames: [["#.....#", "#.....#", "#.....#", "#.....#", "##...##", ".#####.", "..ppp.."]] },
     bomb: { pal: { "#": GREY, p: PINK, o: BG }, frames: [["....p..", "...p...", ".#####.", "#######", "#######", "#######", ".#####."]] },
@@ -292,6 +294,36 @@
     }
   };
 
+  // le titre en gros pixels : cinq lettres de 5 x 5, tracées ici
+  const LOGO = {
+    S: [".####", "#....", ".###.", "....#", "####."],
+    W: ["#...#", "#...#", "#.#.#", "##.##", "#...#"],
+    A: [".###.", "#...#", "#####", "#...#", "#...#"],
+    R: ["####.", "#...#", "####.", "#.#..", "#..##"],
+    M: ["#...#", "##.##", "#.#.#", "#...#", "#...#"],
+  };
+  const logo = () => {
+    const sc = 6, word = "SWARM";
+    const c = document.createElement("canvas");
+    c.width = (word.length * 6 - 1) * sc;
+    c.height = 5 * sc;
+    c.className = "logo-px";
+    c.setAttribute("role", "img");
+    c.setAttribute("aria-label", "swarm");
+    const x = c.getContext("2d");
+    word.split("").forEach((ch, i) => {
+      LOGO[ch].forEach((row, r) => {
+        row.split("").forEach((cell, k) => {
+          if (cell !== "#") return;
+          // la barre du A est rose : c'est le seul point actif du titre
+          x.fillStyle = ch === "A" && r === 2 ? PINK : LIGHT;
+          x.fillRect((i * 6 + k) * sc, r * sc, sc, sc);
+        });
+      });
+    });
+    return c;
+  };
+
   const showMenu = () => {
     mode = "menu";
     attractMode();
@@ -301,7 +333,8 @@
     $("#bars").hidden = true;
     $("#bossBar").hidden = true;
     $("#chips").textContent = "";
-    show("swarm", (b) => {
+    show("jour 07", (b) => {
+      b.appendChild(logo());
       b.appendChild(el("p", "big", "Tiens 5 minutes."));
       b.appendChild(el("p", "", "Tu te déplaces, ça tire tout seul. Chaque ennemi tué lâche un cristal : à chaque niveau, tu choisis une amélioration."));
       const row0 = el("div", "row diff");
@@ -378,6 +411,7 @@
         cards.appendChild(c);
       });
       b.appendChild(cards);
+      b.appendChild(el("p", "small", "Z S ou ↑ ↓ pour choisir · Entrée pour valider · ou touches 1 2 3"));
     });
     pBody._picks = picks;
   };
@@ -458,8 +492,22 @@
 
   /* ---------- Entrées ---------- */
   const KEYMAP = { KeyW: "u", KeyZ: "u", ArrowUp: "u", KeyS: "d", ArrowDown: "d", KeyA: "l", KeyQ: "l", ArrowLeft: "l", KeyD: "r", ArrowRight: "r" };
+  // au niveau supérieur, les touches de déplacement parcourent les cartes ; Entrée ou Espace valide
+  const UP = { KeyW: 1, KeyZ: 1, ArrowUp: 1, KeyA: 1, KeyQ: 1, ArrowLeft: 1 };
+  const DOWN = { KeyS: 1, ArrowDown: 1, KeyD: 1, ArrowRight: 1 };
+  const moveCard = (e) => {
+    const cards = [...pBody.querySelectorAll(".card")];
+    if (!cards.length) return false;
+    const dir = UP[e.code] ? -1 : DOWN[e.code] ? 1 : 0;
+    if (!dir) return false;
+    e.preventDefault();
+    const i = cards.indexOf(document.activeElement);
+    cards[(i < 0 ? (dir > 0 ? 0 : cards.length - 1) : (i + dir + cards.length) % cards.length)].focus();
+    return true;
+  };
   window.addEventListener("keydown", (e) => {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (mode === "levelup" && moveCard(e)) return;
     if (KEYMAP[e.code]) { keys[KEYMAP[e.code]] = true; if (mode === "play") e.preventDefault(); }
     if (e.code === "Space" && mode === "play") { e.preventDefault(); dash(); }
     if (e.code === "KeyP" || e.code === "Escape") {
@@ -654,6 +702,7 @@
     P.dashCd = Math.max(0, P.dashCd - dt);
     P.inv = Math.max(0, P.inv - dt);
     P.flash = Math.max(0, P.flash - dt);
+    P.muzzle = Math.max(0, (P.muzzle || 0) - dt);
     comboT -= dt;
     if (comboT <= 0) combo = 0;
     shake = Math.max(0, shake - 40 * dt);
@@ -784,6 +833,7 @@
         fireCd = st.cd;
         const base = Math.atan2(near.y - P.y, near.x - P.x);
         P.aim = base;
+        P.muzzle = 0.06;
         SFX.shoot();
         for (let k = 0; k < st.count; k++) {
           const a = base + (k - (st.count - 1) / 2) * 0.2;
@@ -980,6 +1030,34 @@
     g.restore();
   };
 
+  // le damier des bords : un motif dense, puis un motif clairsemé, chacun de pixels de 2 px
+  let vigA = null, vigB = null;
+  const dither = (cells) => {
+    const c = document.createElement("canvas");
+    c.width = c.height = 4;
+    const x = c.getContext("2d");
+    x.fillStyle = BG;
+    cells.forEach((p) => x.fillRect(p[0], p[1], 1, 1));
+    return g.createPattern(c, "repeat");
+  };
+  const vignette = () => {
+    if (!vigA) {
+      vigA = dither([[0, 0], [2, 0], [1, 1], [3, 1], [0, 2], [2, 2], [1, 3], [3, 3]]);
+      vigB = dither([[0, 0], [2, 2]]);
+    }
+    const m = new DOMMatrix().scale(2);
+    vigA.setTransform(m);
+    vigB.setTransform(m);
+    const bands = [[0, 26, vigA], [26, 26, vigB]];
+    bands.forEach((b) => {
+      g.fillStyle = b[2];
+      g.fillRect(b[0], b[0], cssW - b[0] * 2, b[1]);
+      g.fillRect(b[0], cssH - b[0] - b[1], cssW - b[0] * 2, b[1]);
+      g.fillRect(b[0], b[0] + b[1], b[1], cssH - (b[0] + b[1]) * 2);
+      g.fillRect(cssW - b[0] - b[1], b[0] + b[1], b[1], cssH - (b[0] + b[1]) * 2);
+    });
+  };
+
   const render = () => {
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.fillStyle = BG;
@@ -1031,14 +1109,22 @@
       g.globalAlpha = 1;
     });
 
-    // les cristaux
-    g.fillStyle = LIGHT;
+    // les cristaux : de petits losanges qui scintillent
     for (let i = 0; i < gems.length; i++) {
       const gm = gems[i];
       if (!inView(gm.x, gm.y, 10)) continue;
-      const big = gm.v > 3;
-      g.fillRect(gm.x - 2, gm.y - 2, big ? 6 : 4, big ? 6 : 4);
+      const bob = calm || gm.pull ? 0 : Math.sin(t * 4 + gm.x * 0.05) * 1.5;
+      if (gm.v > 3) blit("gemBig", gm.x, gm.y + bob, 1.4, 0, false, false);
+      else blit("gem", gm.x, gm.y + bob, 1, calm ? 0 : Math.floor(t * 3 + gm.x * 0.1) & 1, false, false);
     }
+
+    // les ombres : une fine bande sombre sous chaque personnage, pour poser les images au sol
+    g.fillStyle = "#0a0a0a";
+    for (let i = 0; i < enemies.length; i++) {
+      const e = enemies[i];
+      if (inView(e.x, e.y, 40)) g.fillRect(Math.round(e.x - e.r * 0.8), Math.round(e.y + e.r * 0.85), Math.round(e.r * 1.6), 3);
+    }
+    if (mode !== "menu") g.fillRect(Math.round(P.x - 8), Math.round(P.y + 8), 16, 3);
 
     // les bonus : ils clignotent avant de disparaître
     drops.forEach((d) => {
@@ -1083,11 +1169,15 @@
     g.fillStyle = LIGHT;
     for (let i = 0; i < bullets.length; i++) {
       const b = bullets[i];
-      g.fillRect(b.x - 3, b.y - 3, 6, 6);
-      g.globalAlpha = 0.45;
-      g.fillRect(b.x - b.vx * 0.018 - 2, b.y - b.vy * 0.018 - 2, 4, 4);
-      g.globalAlpha = 1;
+      g.save();
+      g.translate(b.x, b.y);
+      g.rotate(Math.atan2(b.vy, b.vx));
+      g.fillRect(-5, -1.5, 11, 3);
+      g.globalAlpha = 0.4;
+      g.fillRect(-15, -1, 9, 2);
+      g.restore();
     }
+    g.globalAlpha = 1;
     g.fillStyle = PINK;
     for (let i = 0; i < ebullets.length; i++) {
       const b = ebullets[i];
@@ -1126,6 +1216,10 @@
       blit("player", P.x, P.y, 2, calm ? 0 : Math.floor(P.walk * 8) & 1, P.face < 0, P.flash > 0);
       g.fillStyle = BG;
       g.fillRect(Math.round(P.x - 4 + Math.cos(P.aim) * 2), Math.round(P.y - 5 + Math.sin(P.aim) * 2), 8, 3);
+      if (P.muzzle > 0) {
+        g.fillStyle = LIGHT;
+        g.fillRect(Math.round(P.x + Math.cos(P.aim) * 14 - 2), Math.round(P.y + Math.sin(P.aim) * 14 - 2), 5, 5);
+      }
     }
 
     // les nombres de dégâts
@@ -1140,8 +1234,9 @@
     });
     g.globalAlpha = 1;
 
-    // l'écran : joystick, série de tués
+    // l'écran : bords assombris en damier (sans flou), joystick, série de tués
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    vignette();
     if (joy) {
       g.strokeStyle = "#333333";
       g.lineWidth = 2;
