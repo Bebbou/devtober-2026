@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#0d0d0d" />
+    <title>Gravity · jour 09</title>
+    <meta
+      name="description"
+      content="Une sphère massive au centre, des bateaux qui l'orbitent sans jamais s'échapper. On peut en lancer d'autres au clic."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Devtober 2026" />
+    <meta property="og:title" content="Gravity · jour 09" />
+    <meta
+      property="og:description"
+      content="Une sphère massive au centre, des bateaux qui l'orbitent sans jamais s'échapper."
+    />
+    <meta property="og:image" content="https://bebbou.github.io/devtober-2026/docs/og/gravity.jpg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="top">
+      <a class="logo" href="#"><i></i>gravity</a>
+      <div class="right">
+        <label class="ctl" for="mass">masse
+          <input id="mass" type="range" min="50" max="200" value="100" step="5" />
+        </label>
+        <button id="launch" type="button">lancer un bateau</button>
+        <button id="pause" type="button" aria-pressed="false">pause</button>
+      </div>
+    </header>
+
+    <main id="stage">
+      <canvas id="cv" tabindex="0" aria-label="Bateaux en orbite autour d'une sphère. Flèches : tourner, plus et moins : zoom, entrée : lancer un bateau."></canvas>
+      <p class="hint" id="hint">clic : lancer un bateau · glisser : tourner · molette : zoom</p>
+      <p class="stat" id="stat" aria-live="off"></p>
+    </main>
+
+    <footer class="foot">
+      <p><span class="mark">crédits</span> Conçu par <a href="https://github.com/Bebbou">Lino Volle</a> · <a href="https://threejs.org">Three.js</a> (MIT)</p>
+      <nav aria-label="Liens">
+        <a href="../docs/09-gravity.html">doc</a>
+        <a href="https://github.com/Bebbou/devtober-2026/tree/main/09-Gravity">code</a>
+        <a href="https://github.com/Bebbou">github</a>
+      </nav>
+    </footer>
+
+    <script type="module" src="script.js"></script>
+  </body>
+</html>
