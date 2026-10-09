@@ -12,6 +12,7 @@ Un projet par jour pendant le **Devtober 2026**
 | 04 | Drift | [`04-Drift`](04-Drift)
 | 05 | Chaos | [`05-Chaos`](05-Chaos)
 | 07 | Swarm | [`07-Swarm`](07-Swarm)
+| 09 | Gravity | [`09-Gravity`](09-Gravity)
 
 ## Documentation
 

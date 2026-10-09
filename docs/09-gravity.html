@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0d0d0d">
+<title>Gravity · Jour 09 · Devtober 2026</title>
+<meta name="description" content="Jour 09 du Devtober 2026 : Gravity, des bateaux low-poly en orbite autour d'une sphère, en Three.js.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="top">
+  <a class="logo" href="index.html"><i></i>devtober 2026</a>
+</header>
+
+<div class="shell">
+  <aside class="side">
+    <nav id="docNav">
+      <p class="mark">documents</p>
+      <a href="index.html">accueil</a>
+    </nav>
+    <nav id="secNav">
+      <p class="mark">sur cette page</p>
+    </nav>
+  </aside>
+
+  <main>
+    <header>
+      <h1>Gravity</h1>
+      <p class="lead">Jour 09. Une sphère au centre et 48 bateaux low-poly qui tournent autour sans jamais s'échapper. Un clic en lance un autre.</p>
+      <p class="links">
+        <a href="../09-Gravity/">ouvrir le projet</a>
+        <a href="https://github.com/Bebbou/devtober-2026/tree/main/09-Gravity">code source</a>
+      </p>
+    </header>
+
+    <section id="apercu" data-name="aperçu">
+      <h2>aperçu</h2>
+      <p>Chaque bateau part avec une vitesse tangente. À chaque pas de calcul, la gravité de la sphère courbe sa trajectoire. On tourne autour de la scène en glissant, on zoome à la molette, et le curseur « masse » change l'attraction.</p>
+      <div class="frame">
+        <iframe src="../09-Gravity/index.html" title="Gravity, en direct" loading="lazy"></iframe>
+      </div>
+      <p class="cap">Version en direct. <a href="../09-Gravity/">L'ouvrir en plein écran</a></p>
+    </section>
+
+    <section id="fonctionnement" data-name="fonctionnement">
+      <h2>fonctionnement</h2>
+      <p>Un seul corps attire : la sphère. Les bateaux ne s'attirent pas entre eux, ce qui garde chaque orbite stable. L'accélération vaut GM / r² vers le centre. Le calcul est un leapfrog à pas fixe de 1/120 s, car avec Euler l'énergie dérive et les orbites s'ouvrent ou tombent sur la sphère.</p>
+      <p>La vitesse de départ vaut entre 0,8 et 1,1 fois la vitesse circulaire. La vitesse de libération vaut 1,41 fois cette valeur, donc un bateau reste lié. Pour le pire départ (0,8 à 20 unités du centre), le point le plus bas est à 9,4, au-dessus de la sphère (rayon 6).</p>
+      <div class="code" data-label-js="physics.js">
+<script type="text/plain" data-lang="js">
+export function step(b, dt = STEP) {
+  accel(b, a);
+  b.vx += a[0] * dt * 0.5;  b.vy += a[1] * dt * 0.5;  b.vz += a[2] * dt * 0.5;
+  b.x += b.vx * dt;  b.y += b.vy * dt;  b.z += b.vz * dt;
+  accel(b, a);
+  b.vx += a[0] * dt * 0.5;  b.vy += a[1] * dt * 0.5;  b.vz += a[2] * dt * 0.5;
+}
+</script>
+      </div>
+      <div class="tblwrap">
+        <table class="tbl">
+          <thead><tr><th>élément</th><th>rôle</th></tr></thead>
+          <tbody>
+            <tr><td>physics.js</td><td>gravité, intégration, création des bateaux, changement de masse</td></tr>
+            <tr><td>script.js</td><td>scène Three.js, bateaux instanciés, traînées, caméra, commandes</td></tr>
+            <tr><td>InstancedMesh</td><td>un seul dessin pour tous les bateaux (120 au plus)</td></tr>
+            <tr><td>traînées</td><td>48 points par bateau, un point tous les 0,05 s, rose pour le dernier lancé</td></tr>
+            <tr><td>masse</td><td>quand elle change, les vitesses sont multipliées par la racine du rapport, ce qui garde la forme des orbites</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Test dans l'adresse : <code>#test</code> expose <code>window.__gravity</code> et ne lance pas la boucle d'animation.</p>
+    </section>
+
+    <section id="limites" data-name="limites">
+      <h2>limites</h2>
+      <ul class="bul">
+        <li>Les bateaux sont modélisés en code (5 triangles), pas dans Blockbench.</li>
+        <li>Pas de collision avec la sphère : un bateau qui passerait sous 9 unités est remis sur une orbite circulaire.</li>
+        <li>Avec « réduire les animations », le temps s'écoule à 30 % de la vitesse normale.</li>
+        <li>Three.js est copié dans <code>vendor/</code> : le projet demande un serveur, pas un double-clic.</li>
+      </ul>
+    </section>
+
+    <footer class="foot">
+      <span>devtober 2026 · jour 09 · par Lino Volle · Three.js (MIT)</span>
+      <a href="index.html">retour à l'accueil</a>
+    </footer>
+  </main>
+</div>
+
+<script src="pages.js"></script>
+<script src="script.js"></script>
+</body>
+</html>

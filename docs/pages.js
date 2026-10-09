@@ -24,4 +24,5 @@ window.DOCS = [
   { day: "04", title: "Drift", href: "04-drift.html", status: "Terminé" },
   { day: "05", title: "Chaos", href: "05-chaos.html", status: "Terminé" },
   { day: "07", title: "Swarm", href: "07-swarm.html", status: "Terminé" },
+  { day: "09", title: "Gravity", href: "09-gravity.html", status: "Terminé" },
 ];
