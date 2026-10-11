@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#0d0d0d" />
+    <title>Lost · jour 12</title>
+    <meta name="description" content="Une page 404 dans le noir : la souris est une lampe torche, et la sortie est cachée quelque part." />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="top">
+      <a class="logo" href="../docs/"><i></i>lost</a>
+    </header>
+
+    <main id="stage">
+      <h1>404</h1>
+      <p class="t lead">Vous êtes perdu.</p>
+      <p class="t" style="left: 30%; top: 20%">cette page n'existe pas</p>
+      <p class="t" style="left: 68%; top: 28%">il n'y a rien par ici</p>
+      <p class="t" style="left: 32%; top: 76%">continue</p>
+      <p class="t" style="left: 66%; top: 64%">pas par là</p>
+      <p class="t" style="left: 50%; top: 90%">tu tournes en rond</p>
+      <a class="exit" id="exit" href="../docs/">sortir</a>
+      <noscript><p class="t lead" style="top: 75%"><a href="../docs/">Retour à la documentation</a></p></noscript>
+    </main>
+    <canvas id="dark" aria-hidden="true"></canvas>
+    <p id="hint" role="status"></p>
+
+    <footer class="foot">
+      <p><span class="mark">crédits</span> Conçu par <a href="https://github.com/Bebbou">Lino Volle</a></p>
+      <nav aria-label="Liens">
+        <a href="../docs/12-lost.html">doc</a>
+        <a href="https://github.com/Bebbou/devtober-2026/tree/main/12-Lost">code</a>
+        <a href="https://github.com/Bebbou">github</a>
+      </nav>
+    </footer>
+
+    <script src="script.js"></script>
+  </body>
+</html>
