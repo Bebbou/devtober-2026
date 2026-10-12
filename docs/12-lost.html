@@ -6,7 +6,7 @@
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#0d0d0d">
 <title>Lost · Jour 12 · Devtober 2026</title>
-<meta name="description" content="Jour 12 du Devtober 2026 : Lost, À COMPLÉTER.">
+<meta name="description" content="Jour 12 du Devtober 2026 : Lost, une page 404 dans le noir où la souris est une lampe torche.">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -29,7 +29,7 @@
   <main>
     <header>
       <h1>Lost</h1>
-      <p class="lead">Jour 12. À COMPLÉTER : ce que c'est, en une ou deux phrases.</p>
+      <p class="lead">Jour 12. Une page 404 dans le noir. La souris éclaire un disque autour d'elle, et le bouton « sortir » est caché quelque part.</p>
       <p class="links">
         <a href="../12-Lost/">ouvrir le projet</a>
         <a href="https://github.com/Bebbou/devtober-2026/tree/main/12-Lost">code source</a>
@@ -38,7 +38,7 @@
 
     <section id="apercu" data-name="aperçu">
       <h2>aperçu</h2>
-      <p>À COMPLÉTER.</p>
+      <p>Le bouton est placé au hasard à chaque chargement, hors de la zone éclairée au départ. Il passe au rose quand le faisceau est dessus. Sans souris, les flèches déplacent la lampe et Tab l'amène directement sur le bouton.</p>
       <div class="frame">
         <iframe src="../12-Lost/index.html" title="Lost, en direct" loading="lazy"></iframe>
       </div>
@@ -47,26 +47,42 @@
 
     <section id="fonctionnement" data-name="fonctionnement">
       <h2>fonctionnement</h2>
-      <p>À COMPLÉTER.</p>
+      <p>Un canevas plein écran est rempli de la couleur du fond. Le faisceau est un dégradé radial dessiné en mode <code>destination-out</code>, qui efface le noir et laisse voir le texte en dessous. La boucle d'animation ne tourne que tant que le faisceau n'a pas rattrapé le pointeur.</p>
       <div class="code" data-label-js="script.js">
 <script type="text/plain" data-lang="js">
-// À COMPLÉTER : l'extrait de code qui explique l'idée du jour
+ctx.globalCompositeOperation = "source-over";
+ctx.fillStyle = "#0d0d0d";
+ctx.fillRect(0, 0, w, h);
+ctx.globalCompositeOperation = "destination-out";
+const g = ctx.createRadialGradient(beam.x, beam.y, 0, beam.x, beam.y, radius);
+g.addColorStop(0, "rgba(0,0,0,1)");
+g.addColorStop(0.55, "rgba(0,0,0,0.85)");
+g.addColorStop(1, "rgba(0,0,0,0)");
 </script>
       </div>
       <div class="tblwrap">
         <table class="tbl">
           <thead><tr><th>élément</th><th>rôle</th></tr></thead>
           <tbody>
-            <tr><td>À COMPLÉTER</td><td>À COMPLÉTER</td></tr>
+            <tr><td>placeExit</td><td>place le bouton au hasard, hors du centre de l'écran</td></tr>
+            <tr><td>tick</td><td>le faisceau rattrape sa cible de 22 % à chaque image, puis la boucle s'arrête</td></tr>
+            <tr><td>resize</td><td>rayon du faisceau entre 90 et 150 px, résolution du canevas plafonnée à 2</td></tr>
+            <tr><td>checkFound</td><td>le bouton devient rose quand son centre est à moins d'un demi-rayon du faisceau</td></tr>
+            <tr><td>clavier</td><td>flèches par pas de 48 px, et Tab amène la lampe sur le bouton</td></tr>
+            <tr><td>indice</td><td>après 30 s, un texte donne la direction du bouton (vers le haut, vers la gauche...)</td></tr>
           </tbody>
         </table>
       </div>
+      <p>Test dans l'adresse : <code>#test</code> expose <code>window.__lost</code> (bouton, faisceau, cible).</p>
     </section>
 
     <section id="limites" data-name="limites">
       <h2>limites</h2>
       <ul class="bul">
-        <li>À COMPLÉTER</li>
+        <li>Le bouton change de place à chaque chargement : il peut être loin du point de départ.</li>
+        <li>L'indice n'apparaît qu'une fois, après 30 s, et ne suit pas le faisceau ensuite.</li>
+        <li>Avec « réduire les animations », le faisceau suit le pointeur sans délai.</li>
+        <li>Aucune bibliothèque : tout est écrit à la main, il n'y a rien à créditer.</li>
       </ul>
     </section>
 
