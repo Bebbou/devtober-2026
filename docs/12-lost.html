@@ -6,7 +6,7 @@
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#0d0d0d">
 <title>Lost · Jour 12 · Devtober 2026</title>
-<meta name="description" content="Jour 12 du Devtober 2026 : Lost, À COMPLÉTER.">
+<meta name="description" content="Jour 12 du Devtober 2026 : Lost, une page 404 dans le noir où la souris est une lampe torche.">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -29,7 +29,7 @@
   <main>
     <header>
       <h1>Lost</h1>
-      <p class="lead">Jour 12. À COMPLÉTER : ce que c'est, en une ou deux phrases.</p>
+      <p class="lead">Jour 12. Une page 404 plongée dans le noir. Le faisceau suit le pointeur et il faut retrouver le bouton « sortir » caché quelque part.</p>
       <p class="links">
         <a href="../12-Lost/">ouvrir le projet</a>
         <a href="https://github.com/Bebbou/devtober-2026/tree/main/12-Lost">code source</a>
@@ -38,7 +38,7 @@
 
     <section id="apercu" data-name="aperçu">
       <h2>aperçu</h2>
-      <p>À COMPLÉTER.</p>
+      <p>Au départ, seul le centre de l'écran est éclairé et le bouton est placé au hasard en dehors. On déplace la lampe à la souris ou au doigt. Au clavier, les flèches la bougent de 48 px et Tab l'amène directement sur le bouton. Quand le faisceau passe sur le bouton, il devient rose.</p>
       <div class="frame">
         <iframe src="../12-Lost/index.html" title="Lost, en direct" loading="lazy"></iframe>
       </div>
@@ -47,26 +47,47 @@
 
     <section id="fonctionnement" data-name="fonctionnement">
       <h2>fonctionnement</h2>
-      <p>À COMPLÉTER.</p>
+      <p>Un canevas plein écran est rempli de noir (#0d0d0d). Un dégradé radial est ensuite soustrait avec <code>destination-out</code>, ce qui perce le noir autour du faisceau. Le texte et le bouton restent du HTML normal sous le canevas.</p>
+      <p>Le faisceau rattrape sa cible de 22 % de l'écart à chaque image, et la boucle <code>requestAnimationFrame</code> s'arrête quand l'écart passe sous 0,5 px : rien ne tourne quand la lampe est immobile. Le rayon vaut 28 % du plus petit côté de l'écran, entre 90 et 150 px. Le bouton est trouvé quand son centre est à moins d'un demi-rayon du faisceau. Après 30 s sans succès, un texte indique la direction du bouton.</p>
       <div class="code" data-label-js="script.js">
 <script type="text/plain" data-lang="js">
-// À COMPLÉTER : l'extrait de code qui explique l'idée du jour
+const draw = () => {
+  ctx.globalCompositeOperation = "source-over";
+  ctx.fillStyle = "#0d0d0d";
+  ctx.fillRect(0, 0, w, h);
+  ctx.globalCompositeOperation = "destination-out";
+  const g = ctx.createRadialGradient(beam.x, beam.y, 0, beam.x, beam.y, radius);
+  g.addColorStop(0, "rgba(0,0,0,1)");
+  g.addColorStop(0.55, "rgba(0,0,0,0.85)");
+  g.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = g;
+  ctx.fillRect(beam.x - radius, beam.y - radius, radius * 2, radius * 2);
+};
 </script>
       </div>
       <div class="tblwrap">
         <table class="tbl">
           <thead><tr><th>élément</th><th>rôle</th></tr></thead>
           <tbody>
-            <tr><td>À COMPLÉTER</td><td>À COMPLÉTER</td></tr>
+            <tr><td>index.html</td><td>les phrases égarées (positions en pourcentage), le bouton « sortir », le canevas et l'indice</td></tr>
+            <tr><td>script.js</td><td>faisceau, détection du bouton, clavier, indice</td></tr>
+            <tr><td>style.css</td><td>mise en page, bouton rose quand il est trouvé, petits écrans, animations réduites</td></tr>
+            <tr><td>placeExit</td><td>tire une position au hasard hors de la zone éclairée au départ</td></tr>
+            <tr><td>#hint</td><td>zone <code>role="status"</code> où l'indice est écrit, lue par les lecteurs d'écran</td></tr>
           </tbody>
         </table>
       </div>
+      <p>Test dans l'adresse : <code>#test</code> expose <code>window.__lost</code> (bouton, faisceau, cible, <code>move</code>).</p>
     </section>
 
     <section id="limites" data-name="limites">
       <h2>limites</h2>
       <ul class="bul">
-        <li>À COMPLÉTER</li>
+        <li>L'indice n'est donné qu'une fois, après 30 s.</li>
+        <li>Le noir est visuel : le bouton reste dans la page et atteignable avec Tab ou un lecteur d'écran.</li>
+        <li>Avec « réduire les animations », le faisceau colle au pointeur sans retard.</li>
+        <li>Les phrases égarées sont placées à la main dans <code>index.html</code>.</li>
+        <li>C'est une démonstration : la page 404 du site est <code>404.html</code>, à la racine.</li>
       </ul>
     </section>
 
