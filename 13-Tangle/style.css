@@ -1,0 +1,320 @@
+/*
+  Direction artistique du Devtober : fond #0D0D0D, texte #E0E0E0, accent #FF0055.
+  Le rose n'apparaît que sur ce qui est actif ou allumé. Traits de 1px, pas de flou ni de lueur.
+  Police : Courier New (comme Loop).
+*/
+:root {
+  --bg: #0d0d0d;
+  --surface: #111111;
+  --text: #e0e0e0;
+  --muted: #8c8c8c;
+  --dim: #5a5a5a;
+  --line: #1f1f1f;
+  --line-strong: #333333;
+  --pink: #ff0055;
+  --font: "Courier New", Courier, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--bg);
+  color-scheme: dark;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.6 var(--font);
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+::selection {
+  background: var(--pink);
+  color: #fff;
+}
+
+:focus-visible {
+  outline: 2px solid var(--pink);
+  outline-offset: 3px;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+/* Marqueur de section : ">> titre" */
+.mark {
+  margin: 0;
+  color: var(--muted);
+}
+
+.mark::before {
+  content: ">> ";
+  color: var(--pink);
+}
+
+/* ---------- En-tête ---------- */
+.top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 70px;
+  padding: 0 28px;
+}
+
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--pink);
+}
+
+.score {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: var(--muted);
+}
+
+#help {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: none;
+  border: 1px solid var(--line-strong);
+  color: var(--muted);
+}
+
+#help:hover {
+  color: var(--pink);
+  border-color: var(--pink);
+}
+
+/* ---------- Contenu ---------- */
+main {
+  flex: 1;
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 28px 24px;
+}
+
+.board {
+  position: relative;
+  border: 1px solid var(--line);
+}
+
+#cv {
+  display: block;
+  width: 100%;
+  height: 46vh;
+  min-height: 260px;
+}
+
+.live {
+  min-height: 1.6em;
+  margin: 10px 0 0;
+  color: var(--muted);
+}
+
+.panel {
+  margin-top: 14px;
+}
+
+.count {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px 0;
+  color: var(--dim);
+}
+
+.count span {
+  margin-right: 8px;
+}
+
+.count button {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: none;
+  border: 1px solid var(--line-strong);
+  color: var(--muted);
+}
+
+.count button[aria-pressed="true"] {
+  color: var(--text);
+  border-color: var(--text);
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 8px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+}
+
+.card:hover,
+.card:focus-visible {
+  border-color: var(--pink);
+}
+
+.card svg {
+  display: block;
+  width: 100%;
+  height: 4px;
+}
+
+.card small {
+  color: var(--dim);
+}
+
+.endtext {
+  margin: 6px 0 12px;
+  font-size: 16px;
+}
+
+.endtext b {
+  font-weight: normal;
+  color: var(--pink);
+}
+
+.btn {
+  padding: 8px 18px;
+  background: none;
+  border: 1px solid var(--text);
+}
+
+.btn:hover {
+  color: var(--pink);
+  border-color: var(--pink);
+}
+
+/* ---------- Aide en 3 bulles ---------- */
+.tour {
+  position: absolute;
+  left: 14px;
+  top: 14px;
+  max-width: 300px;
+  padding: 12px 14px;
+  background: var(--bg);
+  border: 1px solid var(--pink);
+}
+
+.tour p {
+  margin: 0 0 10px;
+}
+
+.tour button {
+  padding: 4px 12px;
+  margin-right: 6px;
+  background: none;
+  border: 1px solid var(--line-strong);
+  color: var(--muted);
+}
+
+.tour button:hover {
+  color: var(--pink);
+  border-color: var(--pink);
+}
+
+/* ---------- Pied de page : les crédits ---------- */
+.foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px 28px;
+  padding: 12px 28px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+  color: var(--dim);
+}
+
+.foot p {
+  margin: 0;
+}
+
+.foot .mark {
+  display: inline;
+  margin-right: 8px;
+}
+
+.foot nav {
+  display: flex;
+  gap: 6px 16px;
+}
+
+.foot a {
+  color: var(--muted);
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.foot a:hover {
+  color: var(--pink);
+  border-color: var(--pink);
+}
+
+/* Petits écrans : la course descend au lieu d'aller vers la droite */
+@media (max-width: 600px) {
+  .top,
+  .foot {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  main {
+    padding: 0 16px 20px;
+  }
+
+  #cv {
+    height: 60vh;
+  }
+
+  .cards {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Les animations CSS s'arrêtent si le navigateur le demande (les boucles en JS testent `calm`, voir script.js) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
