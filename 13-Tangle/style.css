@@ -144,6 +144,19 @@ main {
   margin-top: 14px;
 }
 
+/* Consigne du double toucher : seulement sur écran tactile */
+.hint {
+  display: none;
+  margin: 6px 0 0;
+  color: var(--muted);
+}
+
+@media (pointer: coarse) {
+  .hint {
+    display: block;
+  }
+}
+
 .count {
   display: flex;
   align-items: center;
@@ -188,6 +201,7 @@ main {
 }
 
 .card:hover,
+.card.hot,
 .card:focus-visible {
   border-color: var(--c, var(--pink));
 }

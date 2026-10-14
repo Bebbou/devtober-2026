@@ -47,7 +47,7 @@
 
     <section id="fonctionnement" data-name="fonctionnement">
       <h2>fonctionnement</h2>
-      <p>Chaque branche avance par commits à intervalle et à taille aléatoires. Le classement ne dépend que de cette avancée. L'enchevêtrement est dessiné à part : la position latérale d'une branche est une fonction de son avancée, faite de deux sinus à fréquence et phase tirées au hasard, dont l'amplitude grandit avec la course. Toutes les courbes partent donc du même point et se croisent de plus en plus.</p>
+      <p>Chaque branche avance par commits à intervalle et à taille aléatoires. Le classement ne dépend que de cette avancée. L'enchevêtrement est dessiné à part : la position latérale d'une branche est une fonction de son avancée : sa colonne de départ, plus deux sinus à fréquence et phase tirées au hasard, dont l'amplitude grandit avec la course. Chaque branche part de son propre nœud sur la barre Initial Commit, puis les colonnes se resserrent vers le centre en milieu de course, où les courbes s'enchevêtrent, et se rouvrent vers main. Une position qui sort du cadre est repliée, ce qui fait rebondir la branche sur le bord.</p>
       <div class="code" data-label-js="script.js">
 <script type="text/plain" data-lang="js">
 // une branche en retard rattrape un peu, sinon la tête s'envole
@@ -60,7 +60,8 @@ b.p += 0.026 * (0.5 + r()) * b.form * catchUp;
         <table class="tbl">
           <thead><tr><th>élément</th><th>rôle</th></tr></thead>
           <tbody>
-            <tr><td>couleur du trait</td><td>une teinte par branche, avec le nom au bout pour ne pas dépendre de la couleur seule</td></tr>
+            <tr><td>couleur du trait</td><td>une teinte par branche, avec le nom écrit au pied de sa colonne pour ne pas dépendre de la couleur seule</td></tr>
+            <tr><td>survol</td><td>le graphe ou une carte met une branche en avant (les autres s'estompent) et affiche son nom et son nombre de commits ; au doigt, un premier toucher repère, un second mise</td></tr>
             <tr><td>anneau blanc</td><td>la branche choisie ; une croix blanche marque le conflit si elle perd</td></tr>
             <tr><td>#graine=N</td><td>fixe le tirage</td></tr>
             <tr><td>#test</td><td>pas de boucle d'animation, l'état est dans window.__tangle</td></tr>

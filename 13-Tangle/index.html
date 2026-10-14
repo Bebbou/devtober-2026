@@ -23,7 +23,7 @@
 
     <main id="stage">
       <section class="board">
-        <canvas id="cv" role="img" aria-label="Course de branches git qui s'enchevêtrent entre Initial Commit et main"></canvas>
+        <canvas id="cv" role="img" aria-label="Course de branches git, chacune dans sa colonne, entre Initial Commit en bas et main en haut"></canvas>
         <div id="tour" class="tour" role="dialog" aria-label="Aide" hidden>
           <p id="tourText"></p>
           <div>
@@ -36,7 +36,8 @@
       <p id="live" class="live" aria-live="polite"></p>
 
       <section id="pick" class="panel">
-        <p class="mark">miser sur une branche</p>
+        <p class="mark">miser sur une branche : sur le graphe ou sur une carte</p>
+        <p class="hint">Touche une branche pour la repérer, touche-la encore pour miser.</p>
         <div class="count" role="group" aria-label="Nombre de branches">
           <span>branches</span>
         </div>

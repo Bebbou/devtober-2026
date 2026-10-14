@@ -50,6 +50,8 @@
     t: 0,
     leader: -1,
     leaderChanges: 0,
+    hover: -1,
+    cardHover: -1,
     lastSay: 0,
     started: false,
     games: 0,
@@ -89,6 +91,7 @@
         name: name,
         color: COLORS[i],
         f1: 1.5 + r() * 2, ph1: r(), f2: 4 + r() * 4, ph2: r(),
+        c: (i + 0.5) / st.n, sp: 1 / st.n,
         p: 0, shown: 0, commits: [], next: 0.2 + r() * 0.6, form: 1,
       });
     }
@@ -98,11 +101,15 @@
     st.t = 0;
     st.leader = -1;
     st.leaderChanges = 0;
+    st.hover = -1;
+    st.cardHover = -1;
     st.lastSay = 0;
     pickEl.hidden = false;
     endEl.hidden = true;
     liveEl.textContent = "";
     buildCards();
+    layout();
+    setCursor();
     draw();
   }
 
@@ -157,6 +164,7 @@
 
   function finish() {
     st.phase = "end";
+    if (lastType !== "mouse") st.hover = -1;
     for (const b of st.branches) b.shown = b.p;
     const won = st.winner === st.bet;
     st.games++;
@@ -183,19 +191,40 @@
   }
 
   // ---------- Dessin ----------
-  // position transversale d'une branche quand elle a progressé de q : deux sinus, qui s'amplifient avec q
+  const TAU = Math.PI * 2;
+  const FONT = "11px 'Courier New', monospace";
+  const PADX = 22;
+  const Y_MAIN = 52;
+
+  // replie une position sur [0, 1] : une branche rebondit sur le bord au lieu de sortir du cadre
+  function fold(v) {
+    return 1 - Math.abs(1 - (((v % 2) + 2) % 2));
+  }
+
+  // position transversale (0 à 1) d'une branche quand elle a progressé de q : sa colonne, plus deux sinus qui s'amplifient avec q
   function lateral(b, q) {
     const env = Math.min(1, q / 0.1);
-    const amp = (0.08 + 0.14 * Math.min(1, q * 2)) * env;
-    const TAU = Math.PI * 2;
+    const amp = (0.3 + 1.1 * Math.min(1, q * 2)) * env * b.sp;
     const w =
       0.6 * (Math.sin(TAU * (b.f1 * q + b.ph1)) - Math.sin(TAU * b.ph1)) +
       0.4 * (Math.sin(TAU * (b.f2 * q + b.ph2)) - Math.sin(TAU * b.ph2));
-    return 0.5 + amp * w;
+    // les colonnes se resserrent vers le centre en milieu de course (le nœud), puis se rouvrent vers main
+    const pull = 0.65 * Math.sin(Math.PI * q);
+    return fold(b.c + (0.5 - b.c) * pull + amp * w);
   }
 
   let W = 0;
   let H = 0;
+  // hauteur réservée au pied du graphe pour les noms écrits en colonne
+  let baseH = 100;
+
+  function layout() {
+    ctx.font = FONT;
+    let m = 0;
+    for (const b of st.branches) m = Math.max(m, ctx.measureText(b.name).width);
+    // borné : sur un canevas bas, la barre de départ ne doit pas dépasser main
+    baseH = Math.min(Math.ceil(m) + 48, H * 0.4);
+  }
 
   function resize() {
     const dpr = window.devicePixelRatio || 1;
@@ -204,72 +233,92 @@
     cv.width = Math.round(W * dpr);
     cv.height = Math.round(H * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    layout();
   }
 
   // (u, v) : avancée vers main (de bas en haut), puis position transversale, tous deux entre 0 et 1
   function map(u, v) {
-    const x0 = 28, x1 = W - 28, yStart = H - 36, yMain = 44;
-    return [x0 + v * (x1 - x0), yStart - u * (yStart - yMain)];
+    const yStart = H - baseH;
+    return [PADX + v * (W - 2 * PADX), yStart - u * (yStart - Y_MAIN)];
   }
 
-  function trace(b, upto) {
+  function trace(b, from, to) {
     ctx.beginPath();
-    let first = true;
-    for (let q = 0; q < upto; q += 0.01) {
+    for (let q = from; q < to; q += 0.01) {
       const pt = map(q, lateral(b, q));
-      if (first) { ctx.moveTo(pt[0], pt[1]); first = false; } else ctx.lineTo(pt[0], pt[1]);
+      if (q === from) ctx.moveTo(pt[0], pt[1]); else ctx.lineTo(pt[0], pt[1]);
     }
-    const e = map(upto, lateral(b, upto));
+    const e = map(to, lateral(b, to));
     ctx.lineTo(e[0], e[1]);
     ctx.stroke();
   }
 
-  function label(text, x, y, color) {
+  function text(str, x, y, color) {
     ctx.fillStyle = color;
-    ctx.font = "11px 'Courier New', monospace";
-    const w = ctx.measureText(text).width;
+    ctx.font = FONT;
+    ctx.textBaseline = "middle";
+    ctx.fillText(str, x, y);
+  }
+
+  function label(str, x, y, color) {
+    ctx.font = FONT;
+    const w = ctx.measureText(str).width;
     // le texte reste dans le cadre : il passe à gauche du point près du bord droit
     let tx = x + 9;
     if (tx + w > W - 4) tx = x - w - 8;
-    ctx.textBaseline = "middle";
     // contour de la couleur du fond : le texte reste lisible quand il croise un trait
+    ctx.textBaseline = "middle";
     ctx.lineJoin = "round";
     ctx.lineWidth = 4;
     ctx.strokeStyle = "#0d0d0d";
-    ctx.strokeText(text, tx, y);
-    ctx.fillText(text, tx, y);
+    ctx.strokeText(str, tx, y);
+    ctx.fillStyle = color;
+    ctx.fillText(str, tx, y);
   }
 
-  function drawBranch(i) {
+  // branche mise en avant : le survol du graphe, sinon celui d'une carte
+  function focusIndex() {
+    return st.hover >= 0 ? st.hover : st.cardHover;
+  }
+
+  function drawBranch(i, f) {
     const b = st.branches[i];
     const mine = i === st.bet;
     const ended = st.phase === "end";
     const won = ended && i === st.winner;
+    const hot = i === f;
     const color = b.color;
-    const dim = ended && !won && !mine;
+    let alpha = 1;
+    if (f >= 0) alpha = hot ? 1 : mine || won ? 0.6 : 0.18;
+    else if (ended && !won && !mine) alpha = 0.3;
     // save/restore : le style de cette branche ne déborde pas sur la suite du dessin
     ctx.save();
-    // à la fin, seules la gagnante et la branche misée gardent leur éclat (le trait seulement : le nom reste lisible)
-    ctx.globalAlpha = dim ? 0.3 : 1;
+    ctx.globalAlpha = alpha;
     ctx.strokeStyle = color;
-    ctx.lineWidth = mine ? 3.5 : 2.5;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
-    if (b.shown > 0) trace(b, b.shown);
+    const big = mine || hot;
+    if (b.shown > 0) {
+      // le tracé ancien est plus fin que les derniers 10 % : on voit d'où la branche vient
+      ctx.lineWidth = big ? 2 : 1.5;
+      if (b.shown > 0.1) trace(b, 0, b.shown - 0.1);
+      ctx.lineWidth = big ? 4 : 3;
+      trace(b, Math.max(0, b.shown - 0.1), b.shown);
+    }
     ctx.fillStyle = color;
     for (const c of b.commits) {
       if (c > b.shown + 0.0001) break;
       const pt = map(c, lateral(b, c));
-      ctx.fillRect(pt[0] - 2, pt[1] - 2, 4, 4);
+      ctx.fillRect(pt[0] - 1.5, pt[1] - 1.5, 3, 3);
     }
     const h = map(b.shown, lateral(b, b.shown));
     ctx.beginPath();
-    ctx.arc(h[0], h[1], mine ? 6 : 5, 0, Math.PI * 2);
+    ctx.arc(h[0], h[1], big ? 6 : 5, 0, TAU);
     ctx.fill();
-    if (mine) {
+    if (mine || won) {
       // anneau blanc cerné de sombre : il reste visible même sur une branche claire
       ctx.beginPath();
-      ctx.arc(h[0], h[1], 10, 0, Math.PI * 2);
+      ctx.arc(h[0], h[1], 10, 0, TAU);
       ctx.strokeStyle = "#0d0d0d";
       ctx.lineWidth = 4.5;
       ctx.stroke();
@@ -277,6 +326,7 @@
       ctx.lineWidth = 1.5;
       ctx.stroke();
     }
+    ctx.globalAlpha = 1;
     if (ended && mine && !won) {
       // le conflit : une croix et un libellé sur la branche abandonnée
       ctx.strokeStyle = "#ffffff";
@@ -289,40 +339,146 @@
     } else if (won) {
       label("merge to main", h[0], h[1] + 20, "#ffffff");
     }
-    ctx.globalAlpha = 1;
-    label(b.name, h[0], h[1], dim ? "#8c8c8c" : color);
+    // le nom au bout du trait seulement pour la branche survolée, la mise, la gagnante et la tête de course
+    if (b.shown > 0 && (hot || mine || won || (st.phase === "race" && i === st.leader))) {
+      label(hot ? b.name + " · " + b.commits.length + " commits" : b.name, h[0], h[1], color);
+    }
     ctx.restore();
   }
 
   function draw() {
     ctx.clearRect(0, 0, W, H);
-    // ligne d'arrivée, en haut
-    const a = map(1, 0);
-    ctx.strokeStyle = "#333333";
+    const f = focusIndex();
+    const pickPhase = st.phase === "pick";
+    const yStart = H - baseH;
+    const bs = st.branches;
+    // rails : la colonne de chaque branche, très discrète pendant la course
     ctx.lineWidth = 1;
-    ctx.setLineDash([4, 4]);
-    ctx.beginPath();
-    ctx.moveTo(8, a[1]);
-    ctx.lineTo(W - 8, a[1]);
-    ctx.stroke();
+    ctx.setLineDash([2, 6]);
+    for (let i = 0; i < bs.length; i++) {
+      const x = map(0, bs[i].c)[0];
+      ctx.strokeStyle = bs[i].color;
+      ctx.globalAlpha = pickPhase ? (i === f ? 0.7 : 0.3) : i === f ? 0.35 : 0.1;
+      ctx.beginPath();
+      ctx.moveTo(x, yStart);
+      ctx.lineTo(x, Y_MAIN);
+      ctx.stroke();
+    }
     ctx.setLineDash([]);
-    ctx.fillStyle = "#8c8c8c";
-    ctx.font = "11px 'Courier New', monospace";
-    ctx.textBaseline = "middle";
-    ctx.fillText("main", 10, a[1] - 12);
-    // point de départ, en bas
-    const s = map(0, 0.5);
-    for (let i = 0; i < st.branches.length; i++) if (i !== st.bet) drawBranch(i);
-    if (st.bet >= 0) drawBranch(st.bet);
-    ctx.fillStyle = "#e0e0e0";
+    ctx.globalAlpha = 1;
+    // main en haut, Initial Commit en bas
+    ctx.strokeStyle = "#333333";
     ctx.beginPath();
-    ctx.arc(s[0], s[1], 5, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "#8c8c8c";
-    ctx.textAlign = "center";
-    ctx.fillText("Initial Commit", s[0], s[1] + 16);
+    ctx.moveTo(8, Y_MAIN);
+    ctx.lineTo(W - 8, Y_MAIN);
+    ctx.moveTo(8, yStart);
+    ctx.lineTo(W - 8, yStart);
+    ctx.stroke();
     ctx.textAlign = "start";
+    text("main", 10, Y_MAIN - 14, "#8c8c8c");
+    text("Initial Commit", 10, H - 12, "#8c8c8c");
+    // pied de chaque colonne : un nœud et le nom écrit vers le bas
+    for (let i = 0; i < bs.length; i++) {
+      const b = bs[i];
+      const x = map(0, b.c)[0];
+      ctx.globalAlpha = f >= 0 && i !== f ? 0.35 : st.phase === "end" && i !== st.winner && i !== st.bet ? 0.5 : 1;
+      ctx.fillStyle = b.color;
+      ctx.beginPath();
+      ctx.arc(x, yStart, i === f ? 6 : 4, 0, TAU);
+      ctx.fill();
+      ctx.save();
+      ctx.translate(x, yStart + 16);
+      ctx.rotate(Math.PI / 2);
+      text(b.name, 0, 0, b.color);
+      ctx.restore();
+    }
+    ctx.globalAlpha = 1;
+    for (let i = 0; i < bs.length; i++) if (i !== st.bet && i !== f) drawBranch(i, f);
+    if (st.bet >= 0 && st.bet !== f) drawBranch(st.bet, f);
+    if (f >= 0) drawBranch(f, f);
   }
+
+  // ---------- Survol ----------
+  function dist2seg(px, py, a, b) {
+    const dx = b[0] - a[0], dy = b[1] - a[1];
+    const l = dx * dx + dy * dy;
+    let t = l ? ((px - a[0]) * dx + (py - a[1]) * dy) / l : 0;
+    t = Math.max(0, Math.min(1, t));
+    const x = a[0] + t * dx - px, y = a[1] + t * dy - py;
+    return x * x + y * y;
+  }
+
+  // branche sous le pointeur : le pied de colonne et, avant le départ, toute la colonne, puis le tracé
+  function hit(px, py) {
+    const bs = st.branches;
+    const half = (W - 2 * PADX) / bs.length / 2;
+    const yStart = H - baseH;
+    for (let i = 0; i < bs.length; i++) {
+      const x = map(0, bs[i].c)[0];
+      if (Math.abs(px - x) <= half && (st.phase === "pick" || py >= yStart - 6)) return i;
+    }
+    let best = -1;
+    let bd = 12 * 12;
+    for (let i = 0; i < bs.length; i++) {
+      const b = bs[i];
+      let prev = map(0, lateral(b, 0));
+      for (let q = 0.02; q < b.shown + 0.02; q += 0.02) {
+        const pt = map(Math.min(q, b.shown), lateral(b, Math.min(q, b.shown)));
+        const d = dist2seg(px, py, prev, pt);
+        if (d < bd) { bd = d; best = i; }
+        prev = pt;
+      }
+    }
+    return best;
+  }
+
+  function setHover(i) {
+    if (i === st.hover) return;
+    st.hover = i;
+    refresh();
+  }
+
+  // redessine et surligne la carte correspondante
+  function refresh() {
+    const f = focusIndex();
+    for (let k = 0; k < cardsEl.children.length; k++) cardsEl.children[k].classList.toggle("hot", k === f);
+    draw();
+  }
+
+  function pointer(e) {
+    const r = cv.getBoundingClientRect();
+    return hit(e.clientX - r.left, e.clientY - r.top);
+  }
+
+  // dernier type de pointeur : au doigt, le repérage ne se retire pas tout seul
+  let lastType = "mouse";
+  // un clic compte seulement s'il a commencé sur le canevas (pas après un glisser venu d'ailleurs)
+  let downOnCv = false;
+  cv.addEventListener("pointerdown", () => { downOnCv = true; });
+  document.addEventListener("pointerup", () => { downOnCv = false; });
+  // pendant le choix, tout le graphe est cliquable
+  function setCursor() {
+    cv.style.cursor = st.phase === "pick" ? "pointer" : "default";
+  }
+  setCursor();
+  cv.addEventListener("pointermove", (e) => {
+    if (e.pointerType !== "mouse") return;
+    lastType = "mouse";
+    setHover(pointer(e));
+  });
+  cv.addEventListener("pointerleave", (e) => {
+    if (e.pointerType === "mouse") setHover(-1);
+  });
+  cv.addEventListener("pointerup", (e) => {
+    const i = pointer(e);
+    lastType = e.pointerType;
+    if (e.pointerType === "mouse") {
+      if (e.button === 0 && downOnCv && st.phase === "pick" && i >= 0) start(i);
+      return;
+    }
+    // au doigt : un premier toucher repère la branche, un second sur la même la mise
+    if (st.phase === "pick" && i >= 0 && i === st.hover) start(i); else setHover(i);
+  });
 
   // ---------- Interface ----------
   function buildCards() {
@@ -366,6 +522,12 @@
       small.textContent = "miser sur cette branche";
       card.append(name, svg, small);
       card.addEventListener("click", () => start(i));
+      // survoler ou mettre au clavier le focus sur une carte repère la branche sur le graphe
+      const preview = (on) => () => { st.cardHover = on ? i : -1; refresh(); };
+      card.addEventListener("mouseenter", preview(true));
+      card.addEventListener("mouseleave", preview(false));
+      card.addEventListener("focus", preview(true));
+      card.addEventListener("blur", preview(false));
       cardsEl.appendChild(card);
     });
   }
@@ -373,7 +535,10 @@
   function start(i) {
     if (st.phase !== "pick") return;
     st.bet = i;
+    st.cardHover = -1;
+    if (lastType !== "mouse") st.hover = -1;
     st.phase = "race";
+    setCursor();
     pickEl.hidden = true;
     closeTour();
     // le focus reste sur la page : le bouton cliqué vient de disparaître
@@ -420,7 +585,7 @@
 
   // ---------- Aide ----------
   const TOUR = [
-    "Les branches partent toutes de l'Initial Commit. Choisis celle que tu penses voir arriver la première.",
+    "Chaque branche part de l'Initial Commit dans sa colonne. Survole-les pour les repérer, puis clique sur celle que tu penses voir arriver la première.",
     "Les commits tombent au hasard. Les branches se croisent et s'emmêlent, mais seule l'avance vers main compte.",
     "La première à toucher main fait l'unique merge. Si ce n'est pas la tienne, elle finit en conflit.",
   ];
@@ -465,6 +630,8 @@
       st: st,
       start: start,
       newRound: newRound,
+      hover: (i) => { st.hover = i; refresh(); },
+      hit: hit,
       run: (sec) => {
         const n = Math.round(sec / FIXED_DT);
         for (let k = 0; k < n && st.phase === "race"; k++) step();
