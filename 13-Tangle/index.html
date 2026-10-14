@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#0d0d0d" />
+    <title>Tangle · jour 13</title>
+    <meta
+      name="description"
+      content="Mise sur une branche git. Les branches partent du même commit, s'emmêlent en avançant, et une seule fait le merge vers main."
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="top">
+      <a class="logo" href="#"><i></i>tangle</a>
+      <div class="score">
+        <span id="score">0 / 0</span>
+        <button id="help" type="button" aria-label="Revoir l'aide">?</button>
+      </div>
+    </header>
+
+    <main id="stage">
+      <section class="board">
+        <canvas id="cv" role="img" aria-label="Course de branches git, chacune dans sa colonne, entre Initial Commit en bas et main en haut"></canvas>
+        <div id="tour" class="tour" role="dialog" aria-label="Aide" hidden>
+          <p id="tourText"></p>
+          <div>
+            <button id="tourNext" type="button">suivant</button>
+            <button id="tourSkip" type="button">fermer</button>
+          </div>
+        </div>
+      </section>
+
+      <p id="live" class="live" aria-live="polite"></p>
+
+      <section id="pick" class="panel">
+        <p class="mark">miser sur une branche : sur le graphe ou sur une carte</p>
+        <p class="hint">Touche une branche pour la repérer, touche-la encore pour miser.</p>
+        <div class="count" role="group" aria-label="Nombre de branches">
+          <span>branches</span>
+        </div>
+        <div id="cards" class="cards"></div>
+      </section>
+
+      <section id="end" class="panel" hidden>
+        <p class="mark" id="endMark">résultat</p>
+        <p id="endText" class="endtext"></p>
+        <button id="again" type="button" class="btn">relancer</button>
+      </section>
+    </main>
+
+    <footer class="foot">
+      <p><span class="mark">crédits</span> Conçu par <a href="https://github.com/Bebbou">Lino Volle</a>. Aucune bibliothèque.</p>
+      <nav aria-label="Liens">
+        <a href="../docs/13-tangle.html">doc</a>
+        <a href="https://github.com/Bebbou/devtober-2026/tree/main/13-Tangle">code</a>
+        <a href="https://github.com/Bebbou">github</a>
+      </nav>
+    </footer>
+
+    <script src="script.js"></script>
+  </body>
+</html>

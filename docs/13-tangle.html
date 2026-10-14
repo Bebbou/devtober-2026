@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0d0d0d">
+<title>Tangle · Jour 13 · Devtober 2026</title>
+<meta name="description" content="Jour 13 du Devtober 2026 : Tangle, un pari sur des branches git qui s'enchevêtrent jusqu'au merge vers main.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="top">
+  <a class="logo" href="index.html"><i></i>devtober 2026</a>
+</header>
+
+<div class="shell">
+  <aside class="side">
+    <nav id="docNav">
+      <p class="mark">documents</p>
+      <a href="index.html">accueil</a>
+    </nav>
+    <nav id="secNav">
+      <p class="mark">sur cette page</p>
+    </nav>
+  </aside>
+
+  <main>
+    <header>
+      <h1>Tangle</h1>
+      <p class="lead">Jour 13. On mise sur une branche git. Entre 4 et 8 branches partent du même commit, s'emmêlent en avançant, et la première qui touche main fait le seul merge.</p>
+      <p class="links">
+        <a href="../13-Tangle/">ouvrir le projet</a>
+        <a href="https://github.com/Bebbou/devtober-2026/tree/main/13-Tangle">code source</a>
+      </p>
+    </header>
+
+    <section id="apercu" data-name="aperçu">
+      <h2>aperçu</h2>
+      <p>On choisit une branche, puis la course se joue seule, en 13 à 23 secondes. Si la branche choisie arrive la première, le pari est gagné. Sinon elle finit en « CONFLICT » et on peut relancer avec de nouveaux noms et un nouveau tirage.</p>
+      <div class="frame">
+        <iframe src="../13-Tangle/index.html" title="Tangle, en direct" loading="lazy"></iframe>
+      </div>
+      <p class="cap">Version en direct. <a href="../13-Tangle/">L'ouvrir en plein écran</a></p>
+    </section>
+
+    <section id="fonctionnement" data-name="fonctionnement">
+      <h2>fonctionnement</h2>
+      <p>Chaque branche avance par commits à intervalle et à taille aléatoires. Le classement ne dépend que de cette avancée. L'enchevêtrement est dessiné à part : la position latérale d'une branche est une fonction de son avancée : sa colonne de départ, plus deux sinus à fréquence et phase tirées au hasard, dont l'amplitude grandit avec la course. Chaque branche part de son propre nœud sur la barre Initial Commit, puis les colonnes se resserrent vers le centre en milieu de course, où les courbes s'enchevêtrent, et se rouvrent vers main. Une position qui sort du cadre est repliée, ce qui fait rebondir la branche sur le bord.</p>
+      <div class="code" data-label-js="script.js">
+<script type="text/plain" data-lang="js">
+// une branche en retard rattrape un peu, sinon la tête s'envole
+const catchUp = Math.max(0.6, Math.min(1.6, 1 + 0.8 * (avg - b.p)));
+b.p += 0.026 * (0.5 + r()) * b.form * catchUp;
+</script>
+      </div>
+      <p>La simulation avance par pas fixes de 1/60 s, avec un générateur à graine (mulberry32) : la fréquence d'affichage ne change pas le résultat, et une graine redonne la même course. Sur 600 courses simulées à 5 branches, chaque branche gagne entre 18 % et 22 % du temps, la durée moyenne est de 17,5 s et la tête change de main 18 fois en moyenne.</p>
+      <div class="tblwrap">
+        <table class="tbl">
+          <thead><tr><th>élément</th><th>rôle</th></tr></thead>
+          <tbody>
+            <tr><td>couleur du trait</td><td>une teinte par branche, avec le nom écrit au pied de sa colonne pour ne pas dépendre de la couleur seule</td></tr>
+            <tr><td>survol</td><td>le graphe ou une carte met une branche en avant (les autres s'estompent) et affiche son nom et son nombre de commits ; au doigt, un premier toucher repère, un second mise</td></tr>
+            <tr><td>anneau blanc</td><td>la branche choisie ; une croix blanche marque le conflit si elle perd</td></tr>
+            <tr><td>#graine=N</td><td>fixe le tirage</td></tr>
+            <tr><td>#test</td><td>pas de boucle d'animation, l'état est dans window.__tangle</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="limites" data-name="limites">
+      <h2>limites</h2>
+      <ul class="bul">
+        <li>À 8 branches sur un petit écran, les noms se chevauchent.</li>
+        <li>Avec « réduire les animations », la course avance par bonds de 0,4 s.</li>
+        <li>Le score (victoires et parties) reste dans le navigateur, sans classement.</li>
+      </ul>
+    </section>
+
+    <footer class="foot">
+      <span>devtober 2026 · jour 13 · par Lino Volle</span>
+      <a href="index.html">retour à l'accueil</a>
+    </footer>
+  </main>
+</div>
+
+<script src="pages.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
