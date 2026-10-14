@@ -60,8 +60,8 @@ b.p += 0.026 * (0.5 + r()) * b.form * catchUp;
         <table class="tbl">
           <thead><tr><th>élément</th><th>rôle</th></tr></thead>
           <tbody>
-            <tr><td>trait pointillé</td><td>distingue les branches sans couleur, avec le nom au bout</td></tr>
-            <tr><td>trait rose</td><td>la branche choisie, puis le conflit si elle perd</td></tr>
+            <tr><td>couleur du trait</td><td>une teinte par branche, avec le nom au bout pour ne pas dépendre de la couleur seule</td></tr>
+            <tr><td>anneau blanc</td><td>la branche choisie ; une croix blanche marque le conflit si elle perd</td></tr>
             <tr><td>#graine=N</td><td>fixe le tirage</td></tr>
             <tr><td>#test</td><td>pas de boucle d'animation, l'état est dans window.__tangle</td></tr>
           </tbody>

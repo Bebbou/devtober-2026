@@ -23,8 +23,8 @@
     "feat/cache", "fix/null", "perf/images", "feat/search", "docs/readme", "fix/race",
     "feat/export", "test/e2e", "feat/i18n", "fix/scroll",
   ];
-  // un motif de trait par branche : sans couleur, c'est ce qui les distingue
-  const DASHES = [[], [8, 4], [2, 4], [12, 3, 2, 3], [1, 3], [16, 5], [6, 2, 1, 2], [3, 7]];
+  // une couleur franche par branche ; le nom au bout du trait la double pour ceux qui ne distinguent pas les teintes
+  const COLORS = ["#ff0055", "#ff8a00", "#ffd60a", "#2bd96b", "#00d4ff", "#3d7bff", "#b45cff", "#9bb0c9"];
   const MIN_N = 4;
   const MAX_N = 8;
   const FIXED_DT = 1 / 60;
@@ -87,7 +87,7 @@
       const name = pool.splice((r() * pool.length) | 0, 1)[0];
       st.branches.push({
         name: name,
-        dash: DASHES[i],
+        color: COLORS[i],
         f1: 1.5 + r() * 2, ph1: r(), f2: 4 + r() * 4, ph2: r(),
         p: 0, shown: 0, commits: [], next: 0.2 + r() * 0.6, form: 1,
       });
@@ -196,7 +196,6 @@
 
   let W = 0;
   let H = 0;
-  let portrait = false;
 
   function resize() {
     const dpr = window.devicePixelRatio || 1;
@@ -205,18 +204,12 @@
     cv.width = Math.round(W * dpr);
     cv.height = Math.round(H * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    // même seuil que le CSS (largeur de fenêtre), sinon la hauteur du canevas et l'orientation se contredisent
-    portrait = window.matchMedia("(max-width: 600px)").matches;
   }
 
-  // (u, v) : avancée vers main, puis position transversale, tous deux entre 0 et 1
+  // (u, v) : avancée vers main (de bas en haut), puis position transversale, tous deux entre 0 et 1
   function map(u, v) {
-    if (portrait) {
-      const x0 = 28, x1 = W - 28, y0 = 44, y1 = H - 36;
-      return [x0 + v * (x1 - x0), y0 + u * (y1 - y0)];
-    }
-    const x0 = 40, x1 = W - 130, y0 = 30, y1 = H - 30;
-    return [x0 + u * (x1 - x0), y0 + v * (y1 - y0)];
+    const x0 = 28, x1 = W - 28, yStart = H - 36, yMain = 44;
+    return [x0 + v * (x1 - x0), yStart - u * (yStart - yMain)];
   }
 
   function trace(b, upto) {
@@ -235,10 +228,15 @@
     ctx.fillStyle = color;
     ctx.font = "11px 'Courier New', monospace";
     const w = ctx.measureText(text).width;
-    // le texte reste dans le cadre, et passe à gauche du point en bas de l'écran étroit
-    let tx = portrait ? x + 8 : x + 9;
+    // le texte reste dans le cadre : il passe à gauche du point près du bord droit
+    let tx = x + 9;
     if (tx + w > W - 4) tx = x - w - 8;
     ctx.textBaseline = "middle";
+    // contour de la couleur du fond : le texte reste lisible quand il croise un trait
+    ctx.lineJoin = "round";
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = "#0d0d0d";
+    ctx.strokeText(text, tx, y);
     ctx.fillText(text, tx, y);
   }
 
@@ -247,56 +245,72 @@
     const mine = i === st.bet;
     const ended = st.phase === "end";
     const won = ended && i === st.winner;
-    let color = "#8c8c8c";
-    if (mine) color = "#ff0055";
-    else if (ended && !won) color = "#5a5a5a";
-    else if (won) color = "#e0e0e0";
+    const color = b.color;
+    const dim = ended && !won && !mine;
+    // save/restore : le style de cette branche ne déborde pas sur la suite du dessin
+    ctx.save();
+    // à la fin, seules la gagnante et la branche misée gardent leur éclat (le trait seulement : le nom reste lisible)
+    ctx.globalAlpha = dim ? 0.3 : 1;
     ctx.strokeStyle = color;
-    ctx.lineWidth = mine ? 2.5 : 1.5;
-    ctx.setLineDash(b.dash);
+    ctx.lineWidth = mine ? 3.5 : 2.5;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
     if (b.shown > 0) trace(b, b.shown);
-    ctx.setLineDash([]);
     ctx.fillStyle = color;
     for (const c of b.commits) {
       if (c > b.shown + 0.0001) break;
       const pt = map(c, lateral(b, c));
-      ctx.fillRect(pt[0] - 1.5, pt[1] - 1.5, 3, 3);
+      ctx.fillRect(pt[0] - 2, pt[1] - 2, 4, 4);
     }
     const h = map(b.shown, lateral(b, b.shown));
     ctx.beginPath();
-    ctx.arc(h[0], h[1], mine ? 5 : 4, 0, Math.PI * 2);
+    ctx.arc(h[0], h[1], mine ? 6 : 5, 0, Math.PI * 2);
     ctx.fill();
+    if (mine) {
+      // anneau blanc cerné de sombre : il reste visible même sur une branche claire
+      ctx.beginPath();
+      ctx.arc(h[0], h[1], 10, 0, Math.PI * 2);
+      ctx.strokeStyle = "#0d0d0d";
+      ctx.lineWidth = 4.5;
+      ctx.stroke();
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
     if (ended && mine && !won) {
       // le conflit : une croix et un libellé sur la branche abandonnée
-      ctx.strokeStyle = "#ff0055";
+      ctx.strokeStyle = "#ffffff";
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.moveTo(h[0] - 7, h[1] - 7); ctx.lineTo(h[0] + 7, h[1] + 7);
       ctx.moveTo(h[0] + 7, h[1] - 7); ctx.lineTo(h[0] - 7, h[1] + 7);
       ctx.stroke();
-      label("CONFLICT", h[0], h[1] - 14, "#ff0055");
+      label("CONFLICT", h[0], h[1] + 20, "#ffffff");
     } else if (won) {
-      label("merge to main", h[0], h[1] - 14, mine ? "#ff0055" : "#e0e0e0");
+      label("merge to main", h[0], h[1] + 20, "#ffffff");
     }
-    label(b.name, h[0], h[1], color);
+    ctx.globalAlpha = 1;
+    label(b.name, h[0], h[1], dim ? "#8c8c8c" : color);
+    ctx.restore();
   }
 
   function draw() {
     ctx.clearRect(0, 0, W, H);
-    // ligne d'arrivée
+    // ligne d'arrivée, en haut
     const a = map(1, 0);
     ctx.strokeStyle = "#333333";
     ctx.lineWidth = 1;
     ctx.setLineDash([4, 4]);
     ctx.beginPath();
-    if (portrait) { ctx.moveTo(8, a[1]); ctx.lineTo(W - 8, a[1]); } else { ctx.moveTo(a[0], 10); ctx.lineTo(a[0], H - 10); }
+    ctx.moveTo(8, a[1]);
+    ctx.lineTo(W - 8, a[1]);
     ctx.stroke();
     ctx.setLineDash([]);
-    ctx.fillStyle = "#5a5a5a";
+    ctx.fillStyle = "#8c8c8c";
     ctx.font = "11px 'Courier New', monospace";
     ctx.textBaseline = "middle";
-    if (portrait) ctx.fillText("main", 10, a[1] - 9); else ctx.fillText("main", a[0] + 8, 14);
-    // point de départ
+    ctx.fillText("main", 10, a[1] - 12);
+    // point de départ, en bas
     const s = map(0, 0.5);
     for (let i = 0; i < st.branches.length; i++) if (i !== st.bet) drawBranch(i);
     if (st.bet >= 0) drawBranch(st.bet);
@@ -305,7 +319,9 @@
     ctx.arc(s[0], s[1], 5, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = "#8c8c8c";
-    if (portrait) ctx.fillText("Initial Commit", s[0] + 10, s[1] - 14); else ctx.fillText("Initial Commit", s[0] - 6, s[1] - 16);
+    ctx.textAlign = "center";
+    ctx.fillText("Initial Commit", s[0], s[1] + 16);
+    ctx.textAlign = "start";
   }
 
   // ---------- Interface ----------
@@ -332,6 +348,7 @@
       const card = document.createElement("button");
       card.type = "button";
       card.className = "card";
+      card.style.setProperty("--c", b.color);
       const name = document.createElement("span");
       name.textContent = b.name;
       const NS = "http://www.w3.org/2000/svg";
@@ -341,10 +358,9 @@
       svg.setAttribute("aria-hidden", "true");
       const ln = document.createElementNS(NS, "line");
       ln.setAttribute("x1", "0"); ln.setAttribute("x2", "100"); ln.setAttribute("y1", "2"); ln.setAttribute("y2", "2");
-      ln.setAttribute("stroke", "#8c8c8c");
-      ln.setAttribute("stroke-width", "2");
+      ln.setAttribute("stroke", b.color);
+      ln.setAttribute("stroke-width", "3");
       ln.setAttribute("vector-effect", "non-scaling-stroke");
-      if (b.dash.length) ln.setAttribute("stroke-dasharray", b.dash.map((d) => d * 1.5).join(" "));
       svg.appendChild(ln);
       const small = document.createElement("small");
       small.textContent = "miser sur cette branche";
